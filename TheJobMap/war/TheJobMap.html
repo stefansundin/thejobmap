@@ -1,62 +1,60 @@
-<!doctype html>
-<!-- The DOCTYPE declaration above will set the     -->
-<!-- browser's rendering engine into                -->
-<!-- "Standards Mode". Replacing this declaration   -->
-<!-- with a "Quirks Mode" doctype is not supported. -->
-
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<head>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<style type="text/css">
+  html { height: 100% }
+  body { height: 100%; margin: 0; padding: 0 }
+  #map_canvas { height: 100% }
+</style>
+<script type="text/javascript"
+    src="http://maps.googleapis.com/maps/api/js?sensor=true">
+</script>
+<script type="text/javascript">
 
-    <!--                                                               -->
-    <!-- Consider inlining CSS to reduce the number of requested files -->
-    <!--                                                               -->
-    <link type="text/css" rel="stylesheet" href="TheJobMap.css">
+	
+function initialize() {
+	var latlng = new google.maps.LatLng(64.661517,16.523438);
+	var myOptions = {
+		zoom: 5,
+		center: latlng,
+		mapTypeId: google.maps.MapTypeId.ROADMAP
+	};
+	var map = new google.maps.Map(document.getElementById("map"), myOptions);
 
-    <!--                                           -->
-    <!-- Any title is fine                         -->
-    <!--                                           -->
-    <title>Web Application Starter Project</title>
-    
-    <!--                                           -->
-    <!-- This script loads your compiled module.   -->
-    <!-- If you add any GWT meta tags, they must   -->
-    <!-- be added before this line.                -->
-    <!--                                           -->
-    <script type="text/javascript" language="javascript" src="thejobmap/thejobmap.nocache.js"></script>
-  </head>
+	// Define Marker properties
+	var image = new google.maps.MarkerImage('images/markers/ltulogo.png',
+		new google.maps.Size(22, 22),
+		new google.maps.Point(0,0),
+		new google.maps.Point(10, 22)
+	);
 
-  <!--                                           -->
-  <!-- The body can have arbitrary html, or      -->
-  <!-- you can leave the body empty if you want  -->
-  <!-- to create a completely dynamic UI.        -->
-  <!--                                           -->
-  <body>
+	// Add Marker
+	var marker1 = new google.maps.Marker({
+		position: new google.maps.LatLng(65.617753,22.137108),
+		map: map,
+		icon: image // This path is the custom pin to be shown. Remove this line and the proceeding comma to use default pin
+	});
 
-    <!-- OPTIONAL: include this if you want history support -->
-    <iframe src="javascript:''" id="__gwt_historyFrame" tabIndex='-1' style="position:absolute;width:0;height:0;border:0"></iframe>
-    
-    <!-- RECOMMENDED if your web app will not function without JavaScript enabled -->
-    <noscript>
-      <div style="width: 22em; position: absolute; left: 50%; margin-left: -11em; color: red; background-color: white; border: 1px solid red; padding: 4px; font-family: sans-serif">
-        Your web browser must have JavaScript enabled
-        in order for this application to display correctly.
-      </div>
-    </noscript>
+	// Add listener for a click on the pin
+	google.maps.event.addListener(marker1, 'click', function() {
+		infowindow1.open(map, marker1);
+	});
 
-    <h1>Web Application Starter Project</h1>
+	// Add information window
+	var infowindow1 = new google.maps.InfoWindow({
+		content:  createInfo('Luleå university of technology', '<a title="Click to view our website" href="http://www.evoluted.net">Our Website</a>')
+	});
 
-    <table align="center">
-      <tr>
-        <td colspan="2" style="font-weight:bold;">Please enter your name:</td>        
-      </tr>
-      <tr>
-        <td id="nameFieldContainer"></td>
-        <td id="sendButtonContainer"></td>
-      </tr>
-      <tr>
-        <td colspan="2" style="color:red;" id="errorLabelContainer"></td>
-      </tr>
-    </table>
-  </body>
+	// Create information window
+	function createInfo(title, content) {
+		return '<div class="infowindow"><strong>'+ title +'</strong><p>'+content+'</p></div>';
+	}
+}
+
+</script>
+</head>
+<body onload="initialize()">
+  <div id="map" style="width:100%; height:100%"></div>
+</body>
 </html>
