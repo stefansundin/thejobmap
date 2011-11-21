@@ -41,7 +41,7 @@ public class TheJobMap implements EntryPoint {
 	public void onModuleLoad() {
 		final Button sendButton = new Button("Send");
 		final TextBox nameField = new TextBox();
-		nameField.setText("GWT User");
+		nameField.setText("Jaha!");
 		final Label errorLabel = new Label();
 
 		// We can add style names to widgets
@@ -49,9 +49,10 @@ public class TheJobMap implements EntryPoint {
 
 		// Add the nameField and sendButton to the RootPanel
 		// Use RootPanel.get() to get the entire body element
-		RootPanel.get("nameFieldContainer").add(nameField);
-		RootPanel.get("sendButtonContainer").add(sendButton);
-		RootPanel.get("errorLabelContainer").add(errorLabel);
+		RootPanel.get("sidebar").add(new HTML("<br>"));
+		RootPanel.get("sidebar").add(nameField);
+		RootPanel.get("sidebar").add(sendButton);
+		RootPanel.get("sidebar").add(errorLabel);
 
 		// Focus the cursor on the name field when the app loads
 		nameField.setFocus(true);
