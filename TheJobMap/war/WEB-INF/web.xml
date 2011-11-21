@@ -10,11 +10,19 @@
     <servlet-name>greetServlet</servlet-name>
     <servlet-class>com.appspot.thejobmap.server.GreetingServiceImpl</servlet-class>
   </servlet>
-  
   <servlet-mapping>
     <servlet-name>greetServlet</servlet-name>
     <url-pattern>/thejobmap/greet</url-pattern>
   </servlet-mapping>
+  
+<servlet>
+  <servlet-name>markerServlet</servlet-name>
+  <servlet-class>com.appspot.thejobmap.server.MarkerServiceImpl</servlet-class>
+</servlet>
+<servlet-mapping>
+  <servlet-name>markerServlet</servlet-name>
+  <url-pattern>/thejobmap/marker</url-pattern>
+</servlet-mapping>
   
   <!-- Default page to serve -->
   <welcome-file-list>

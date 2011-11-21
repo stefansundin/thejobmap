@@ -35,6 +35,9 @@ public class TheJobMap implements EntryPoint {
 	private final GreetingServiceAsync greetingService = GWT
 			.create(GreetingService.class);
 
+	private final MarkerServiceAsync markerService = GWT
+			.create(MarkerService.class);
+	
 	/**
 	 * This is the entry point method.
 	 */
@@ -149,5 +152,76 @@ public class TheJobMap implements EntryPoint {
 		MyHandler handler = new MyHandler();
 		sendButton.addClickHandler(handler);
 		nameField.addKeyUpHandler(handler);
+		
+		// MarkerService
+		final Button addMarkerButton = new Button("Add Marker");
+		
+		RootPanel.get("sidebar").add(new HTML("<br>"));
+		RootPanel.get("sidebar").add(addMarkerButton);
+		
+		addMarkerButton.addClickHandler(new ClickHandler() {
+			public void onClick(ClickEvent event) {
+				// First ask for input
+				
+				final DialogBox dialogBox = new DialogBox();
+				dialogBox.setText("Add marker to map");
+				dialogBox.setAnimationEnabled(true);
+				
+				final Button closeButton = new Button("Close");
+				closeButton.getElement().setId("closeButton");
+				closeButton.addClickHandler(new ClickHandler() {
+					public void onClick(ClickEvent event) {
+						dialogBox.hide();
+					}
+				});
+
+				final Label textToServerLabel = new Label();
+				final HTML serverResponseLabel = new HTML();
+				serverResponseLabel.setText("Waiting.");
+				
+				final TextBox latlongField = new TextBox();
+				latlongField.setText("65.619569,22.150519");
+
+				final Button sendButton = new Button("Send");
+				sendButton.getElement().setId("sendButton");
+				sendButton.addClickHandler(new ClickHandler() {
+					public void onClick(ClickEvent event) {
+						//dialogBox.hide();
+
+						String textToServer = latlongField.getText();
+						textToServerLabel.setText(textToServer);
+						serverResponseLabel.setText("Sending... ");
+						markerService.myMethod(textToServer,
+								new AsyncCallback<String>() {
+									public void onFailure(Throwable caught) {
+										// Show the RPC error message to the user
+										dialogBox.setText("Failure!");
+										serverResponseLabel.addStyleName("serverResponseLabelError");
+										serverResponseLabel.setHTML(SERVER_ERROR);
+										closeButton.setFocus(true);
+									}
+
+									public void onSuccess(String result) {
+										dialogBox.setText("Success!");
+										serverResponseLabel.removeStyleName("serverResponseLabelError");
+										serverResponseLabel.setHTML(result);
+										closeButton.setFocus(true);
+									}
+								});
+					}
+				});
+				
+				VerticalPanel dialogVPanel = new VerticalPanel();
+				dialogVPanel.addStyleName("dialogVPanel");
+				dialogVPanel.add(new HTML("<b>Latlong:</b>"));
+				dialogVPanel.add(latlongField);
+				dialogVPanel.add(sendButton);
+				dialogVPanel.add(new HTML("<br><b>Server replies:</b>"));
+				dialogVPanel.add(serverResponseLabel);
+				dialogVPanel.add(closeButton);
+				dialogBox.setWidget(dialogVPanel);
+				dialogBox.center();
+			}
+		});
 	}
 }
