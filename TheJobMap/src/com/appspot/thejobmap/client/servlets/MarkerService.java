@@ -1,4 +1,4 @@
-package com.appspot.thejobmap.client;
+package com.appspot.thejobmap.client.servlets;
 
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
@@ -8,5 +8,5 @@ import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
  */
 @RemoteServiceRelativePath("marker")
 public interface MarkerService extends RemoteService {
-	public String myMethod(String s);
+	public String storeMarker(String latlong);
 }

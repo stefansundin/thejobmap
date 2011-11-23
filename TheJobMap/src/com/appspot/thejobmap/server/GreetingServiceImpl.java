@@ -1,6 +1,6 @@
 package com.appspot.thejobmap.server;
 
-import com.appspot.thejobmap.client.GreetingService;
+import com.appspot.thejobmap.client.servlets.GreetingService;
 import com.appspot.thejobmap.shared.FieldVerifier;
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 

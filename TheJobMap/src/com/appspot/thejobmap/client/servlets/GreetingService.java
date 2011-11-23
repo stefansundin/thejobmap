@@ -1,4 +1,4 @@
-package com.appspot.thejobmap.client;
+package com.appspot.thejobmap.client.servlets;
 
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;

@@ -4,7 +4,9 @@ function initialize() {
 	var myOptions = {
 		zoom: 5,
 		center: initialLocation,
-		mapTypeId: google.maps.MapTypeId.ROADMAP
+		mapTypeId: google.maps.MapTypeId.ROADMAP,
+		streetViewControl: false,
+	    mapTypeControl: false,
 	};
 	var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
 
@@ -33,7 +35,7 @@ function initialize() {
 
 	// Add information window
 	var infowindow1 = new google.maps.InfoWindow({
-		content:  createInfo('Luleå university of technology', '<a title="Click to view our website" href="http://www.ltu.se">Our Website</a>')
+		content:  createInfo('Luleï¿½ university of technology', '<a title="Click to view our website" href="http://www.ltu.se">Our Website</a>')
 	});
 
 	// Create information window
