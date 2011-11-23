@@ -100,6 +100,19 @@ public class Marker {
 						closeButton.setFocus(true);
 					}
 				});
-
+	}
+	
+	
+	public void getMarker(){
+		final Button getMarkerButton = new Button("Show Marker");
+		
+		RootPanel.get("sidebar").add(new HTML("<br>"));
+		RootPanel.get("sidebar").add(getMarkerButton);
+		/*
+		getMarkerButton.addClickHandler(new ClickHandler() {
+			public void onClick(ClickEvent event) {
+				createGUI();
+			}
+		});*/
 	}
 }

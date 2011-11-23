@@ -37,6 +37,7 @@ public class TheJobMap implements EntryPoint {
 	private final GreetingServiceAsync greetingService = GWT.create(GreetingService.class);
 
 	private final Marker marker = GWT.create(Marker.class);
+	private final Marker getMarker = GWT.create(Marker.class);
 	
 	/**
 	 * This is the entry point method.
@@ -155,5 +156,6 @@ public class TheJobMap implements EntryPoint {
 		
 		// Initialize marker
 		marker.init();
+		getMarker.getMarker();
 	}
 }
