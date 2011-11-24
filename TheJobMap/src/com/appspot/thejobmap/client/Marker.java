@@ -36,6 +36,17 @@ public class Marker {
 				createGUI();
 			}
 		});
+		
+		final Button getMarkerButton = new Button("Show Marker");
+		
+		RootPanel.get("sidebar").add(new HTML("<br>"));
+		RootPanel.get("sidebar").add(getMarkerButton);
+		
+		getMarkerButton.addClickHandler(new ClickHandler() {
+			public void onClick(ClickEvent event) {
+				showMarker();
+			}
+		});
 	}
 	
 	private void createGUI() {
@@ -103,16 +114,70 @@ public class Marker {
 	}
 	
 	
-	public void getMarker(){
-		final Button getMarkerButton = new Button("Show Marker");
+	
+	/*
+	 * Window for choosing city to show markers in
+	 */
+	public void showMarker(){
+		dialogBox.setText("Write a city to show available jobs");
+		dialogBox.setAnimationEnabled(true);
 		
-		RootPanel.get("sidebar").add(new HTML("<br>"));
-		RootPanel.get("sidebar").add(getMarkerButton);
-		/*
-		getMarkerButton.addClickHandler(new ClickHandler() {
+		closeButton.getElement().setId("closeButton");
+		closeButton.addClickHandler(new ClickHandler() {
 			public void onClick(ClickEvent event) {
-				createGUI();
+				dialogBox.hide();
 			}
-		});*/
+		});
+		
+		serverResponseLabel.setText("Waiting.");
+		
+		final TextBox latlongField = new TextBox();
+		latlongField.setText("Luleå");
+
+		final Button sendButton = new Button("Send");
+		sendButton.getElement().setId("sendButton");
+		sendButton.addClickHandler(new ClickHandler() {
+			public void onClick(ClickEvent event) {
+				// Click send button
+				String city = latlongField.getText();
+				getCityMarkers(city);
+			}
+		});
+		
+		VerticalPanel dialogVPanel = new VerticalPanel();
+		dialogVPanel.addStyleName("dialogVPanel");
+		dialogVPanel.add(new HTML("<b>City:</b>"));
+		dialogVPanel.add(latlongField);
+		dialogVPanel.add(sendButton);
+		dialogVPanel.add(new HTML("<br><b>Server replies:</b>"));
+		dialogVPanel.add(serverResponseLabel);
+		dialogVPanel.add(closeButton);
+		dialogBox.setWidget(dialogVPanel);
+		dialogBox.center();
+	}
+	
+	/*
+	 * To find all the markers in database for the chosen city
+	 * Läsa in alla markörer och skriva ut i fönstret. sen rita ut alla markörer på kartan.
+	 */
+	private void getCityMarkers(String latlong) {
+		textToServerLabel.setText(latlong);
+		serverResponseLabel.setText("Reading... ");
+		markerService.getMarker(latlong,
+				new AsyncCallback<String>() {
+					public void onFailure(Throwable caught) {
+						dialogBox.setText("Failure!");
+						serverResponseLabel.addStyleName("serverResponseLabelError");
+						serverResponseLabel.setHTML("Network problem.");
+						closeButton.setFocus(true);
+					}
+
+					public void onSuccess(String result) {
+						dialogBox.setText("Success!");
+						serverResponseLabel.removeStyleName("serverResponseLabelError");
+						serverResponseLabel.setHTML(result);
+						closeButton.setFocus(true);
+					}
+				});
 	}
 }
