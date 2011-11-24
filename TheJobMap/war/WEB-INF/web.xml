@@ -6,15 +6,7 @@
          xmlns="http://java.sun.com/xml/ns/javaee">
 
   <!-- Servlets -->
-  <servlet>
-    <servlet-name>greetServlet</servlet-name>
-    <servlet-class>com.appspot.thejobmap.server.GreetingServiceImpl</servlet-class>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>greetServlet</servlet-name>
-    <url-pattern>/thejobmap/greet</url-pattern>
-  </servlet-mapping>
-  
+
 <servlet>
   <servlet-name>markerServlet</servlet-name>
   <servlet-class>com.appspot.thejobmap.server.MarkerServiceImpl</servlet-class>
