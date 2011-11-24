@@ -24,6 +24,15 @@
   <url-pattern>/thejobmap/marker</url-pattern>
 </servlet-mapping>
   
+<servlet>
+  <servlet-name>openIDServlet</servlet-name>
+  <servlet-class>com.appspot.thejobmap.server.OpenIDServiceImpl</servlet-class>
+</servlet>
+<servlet-mapping>
+  <servlet-name>openIDServlet</servlet-name>
+  <url-pattern>/thejobmap/openid</url-pattern>
+</servlet-mapping>
+  
   <!-- Default page to serve -->
   <welcome-file-list>
     <welcome-file>TheJobMap.html</welcome-file>
