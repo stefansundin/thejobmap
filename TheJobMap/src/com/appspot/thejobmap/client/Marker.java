@@ -21,6 +21,7 @@ public class Marker {
 	final DialogBox dialogBox = new DialogBox();
 	final Label textToServerLabel = new Label();
 	final HTML serverResponseLabel = new HTML();
+	final VerticalPanel serverResponseResult = new VerticalPanel();
 	final Button closeButton = new Button("Close");
 	
 	public void init() {
@@ -151,6 +152,7 @@ public class Marker {
 		dialogVPanel.add(sendButton);
 		dialogVPanel.add(new HTML("<br><b>Server replies:</b>"));
 		dialogVPanel.add(serverResponseLabel);
+		dialogVPanel.add(serverResponseResult);
 		dialogVPanel.add(closeButton);
 		dialogBox.setWidget(dialogVPanel);
 		dialogBox.center();
@@ -158,13 +160,12 @@ public class Marker {
 	
 	/*
 	 * To find all the markers in database for the chosen city
-	 * Läsa in alla markörer och skriva ut i fönstret. sen rita ut alla markörer på kartan.
 	 */
 	private void getCityMarkers(String latlong) {
 		textToServerLabel.setText(latlong);
 		serverResponseLabel.setText("Reading... ");
 		markerService.getMarker(latlong,
-				new AsyncCallback<String>() {
+				new AsyncCallback<String[]>() {
 					public void onFailure(Throwable caught) {
 						dialogBox.setText("Failure!");
 						serverResponseLabel.addStyleName("serverResponseLabelError");
@@ -172,10 +173,14 @@ public class Marker {
 						closeButton.setFocus(true);
 					}
 
-					public void onSuccess(String result) {
+					public void onSuccess(String[] result) {
 						dialogBox.setText("Success!");
 						serverResponseLabel.removeStyleName("serverResponseLabelError");
-						serverResponseLabel.setHTML(result);
+						for(int i=0; i<result.length; i++){
+						//serverResponseLabel.setHTML(result[i]); //rensa listan mellan varje koll.
+							Label latlong = new Label(result[i]);
+							serverResponseResult.add(latlong);
+						}
 						closeButton.setFocus(true);
 					}
 				});

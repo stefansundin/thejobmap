@@ -20,7 +20,7 @@ function initialize() {
 		new google.maps.Point(0,0),
 		new google.maps.Point(10, 22)
 	);
-
+	
 	// Add Marker
 	var marker1 = new google.maps.Marker({
 		position: new google.maps.LatLng(65.617753,22.137108),

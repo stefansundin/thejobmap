@@ -30,7 +30,10 @@ public class MarkerServiceImpl extends RemoteServiceServlet implements MarkerSer
 		return "done";
 	}
 	
-	public String getMarker(String latlong) {
+	/*
+	 * Get markers from the database and return them in an array to the client
+	 */
+	public String[] getMarker(String latlong) {
 		DatastoreService getLatlong = DatastoreServiceFactory.getDatastoreService();
 		
 		// Check if the category exists
@@ -43,12 +46,6 @@ public class MarkerServiceImpl extends RemoteServiceServlet implements MarkerSer
 			allLatlong[i] = (String) markers.get(i).getProperty("latlong");
 			System.out.println(allLatlong[i]);
 		}
-				
-		if(markers.size()>0){
-			return (String) markers.get(0).getProperty("latlong");
-		}
-		else{
-			return "No markers saved!";
-		}
+		return allLatlong;
 	}
 }
