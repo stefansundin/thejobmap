@@ -21,6 +21,28 @@ body {
 #panel #account {
 	float: right;
 	margin-top: -20px;
+	background-color: rgb(201,223,175);
+	padding: 3px 10px 3px 15px;
+	
+	border-left: 1px solid rgb(224,236,191);
+	border-bottom: 1px solid rgb(224,236,191);
+	
+	-webkit-border-bottom-left-radius: 20px;
+	-moz-border-radius-bottomleft: 20px;
+	border-bottom-left-radius: 20px;
+}
+#panel #account button {
+	margin-left: 10px;
+}
+.gwt-DialogBox#login {
+	position: absolute !important;
+	top: 50px !important;
+	right: 15px !important;
+	left: auto !important;
+}
+.gwt-DialogBox#login img {
+	cursor: pointer;
+	margin: 5px 0;
 }
 
 #page {
@@ -42,6 +64,17 @@ body {
 	position: fixed;
 	bottom: 0;
 	left: 0;
-	width: 500px;
-	z-order: 100;
+	width: 250px;
+	height: 100px;
+	border-top: 1px dashed grey;
+	white-space: nowrap;
+	overflow: hidden;
+}
+#console:hover {
+	background: white;
+	width: 100%;
+	overflow: auto;
+}
+#console .error {
+	color: red;
 }

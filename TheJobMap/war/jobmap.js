@@ -1,9 +1,8 @@
 
 function initialize() {
-	var initialLocation = new google.maps.LatLng(62.390369, 17.314453);
 	var myOptions = {
 		zoom: 5,
-		center: initialLocation,
+		center: new google.maps.LatLng(62.390369, 17.314453),
 		mapTypeId: google.maps.MapTypeId.ROADMAP,
 		streetViewControl: false,
 	    mapTypeControl: false,
@@ -43,18 +42,19 @@ function initialize() {
 		return '<div class="infowindow"><strong>'+ title +'</strong><p>'+content+'</p></div>';
 	}
 	
-	// Code from google analytics
-	 var _gaq = _gaq || [];
-	 _gaq.push(['_setAccount', 'UA-27056070-2']);
-	 _gaq.push(['_trackPageview']);
-
-	 (function() {
-	    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-	    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-	    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-	  })();
+	// Google analytics
+	var _gaq = _gaq || [];
+	_gaq.push(['_setAccount', 'UA-27056070-2']);
+	_gaq.push(['_trackPageview']);
+	
+	(function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	})();
 }
 
+// Dynamically resize map
 function resizeMap() {
     var page = document.getElementById("page");
     var panel = document.getElementById("panel");

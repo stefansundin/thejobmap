@@ -17,6 +17,9 @@ public class MarkerServiceImpl extends RemoteServiceServlet implements MarkerSer
 
 	private static final long serialVersionUID = 5552655692270452162L;
 
+	/**
+	 * Store a new marker in the database.
+	 */
 	public String storeMarker(String latlong) {
         Key storeKey = KeyFactory.createKey("Markers", "jaha");
         Date date = new Date();
@@ -30,7 +33,7 @@ public class MarkerServiceImpl extends RemoteServiceServlet implements MarkerSer
 		return "done";
 	}
 	
-	/*
+	/**
 	 * Get markers from the database and return them in an array to the client
 	 */
 	public String[] getMarker(String latlong) {
@@ -44,7 +47,7 @@ public class MarkerServiceImpl extends RemoteServiceServlet implements MarkerSer
 		String [] allLatlong = new String [markers.size()];
 		for(int i=0; i<allLatlong.length; i++){
 			allLatlong[i] = (String) markers.get(i).getProperty("latlong");
-			System.out.println(allLatlong[i]);
+			//System.out.println(allLatlong[i]);
 		}
 		return allLatlong;
 	}

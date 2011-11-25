@@ -1,13 +1,15 @@
 package com.appspot.thejobmap.client;
 
+import java.util.Arrays;
+
 import com.appspot.thejobmap.client.servlets.OpenIDService;
 import com.appspot.thejobmap.client.servlets.OpenIDServiceAsync;
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.dom.client.Style.Cursor;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import com.google.gwt.user.client.ui.Anchor;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.DialogBox;
 import com.google.gwt.user.client.ui.HorizontalPanel;
@@ -15,6 +17,10 @@ import com.google.gwt.user.client.ui.Image;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.VerticalPanel;
+
+/**
+ * Client side part of the OpenID authentication.
+ */
 
 public class OpenID {
 
@@ -31,17 +37,10 @@ public class OpenID {
 	private final static Button logButton = new Button("Logout");
 	
 	private final static DialogBox dialogBox = new DialogBox();
-
-	public static void updateGUI() {
-		nameLabel.setText(getName());
-		if (loggedIn) {
-			logButton.setText("Logout");
-		}
-		else {
-			logButton.setText("Login");
-		}
-	}
 	
+	/**
+	 * Initialize.
+	 */
 	public void init() {
 		initJSNI();
 		checkLoggedIn();
@@ -49,7 +48,6 @@ public class OpenID {
 		RootPanel.get("panel").add(accountPanel);
 		accountPanel.getElement().setId("account");
 		accountPanel.add(nameLabel);
-		accountPanel.setBorderWidth(1);
 		
 		accountPanel.add(logButton);
 		logButton.addClickHandler(new ClickHandler() {
@@ -58,25 +56,41 @@ public class OpenID {
 					logout();
 				}
 				else {
-					createGUI();
+					createLoginGUI();
 				}
 			}
 		});
 		
 		updateGUI();
 	}
-
-	protected void logout() {
-		Window.Location.assign(logoutUrl);
-	}
-
+	
+	/**
+	 * Export GWT functions to JavaScript.
+	 */
 	public static native void initJSNI() /*-{
 		$wnd.checkLoggedIn = $entry(@com.appspot.thejobmap.client.OpenID::checkLoggedIn()); 
 	}-*/;
 	
+	/**
+	 * Update GUI.
+	 */
+	public static void updateGUI() {
+		if (loggedIn) {
+			nameLabel.setText(getName());
+			logButton.setText("Logout");
+		}
+		else {
+			nameLabel.setText("");
+			logButton.setText("Login");
+		}
+	}
+	
+	/**
+	 * Return a human friendly name for the user.
+	 */
 	public static String getName() {
 		if (!loggedIn) {
-			return "not logged in";
+			return null;
 		}
 		if (name != null) {
 			return name;
@@ -84,6 +98,9 @@ public class OpenID {
 		return email;
 	}
 
+	/**
+	 * Ask the server if the user is logged in.
+	 */
 	public static void checkLoggedIn() {
 		dialogBox.hide();
 		
@@ -99,7 +116,7 @@ public class OpenID {
 							return;
 						}
 						
-						Console.printInfo("Logged in ("+result+").");
+						Console.printInfo("Logged in ("+Arrays.toString(result)+").");
 						loggedIn = true;
 						name = result[0];
 						email = result[1];
@@ -111,21 +128,27 @@ public class OpenID {
 				});
 	}
 	
-	private void createGUI() {
-		dialogBox.setText("Login");
+	/**
+	 * Creates login GUI.
+	 */
+	private void createLoginGUI() {
+		dialogBox.getElement().setId("login");
+		dialogBox.setText("Login with OpenID");
 		dialogBox.setAnimationEnabled(true);
 		
-		final VerticalPanel dialogVPanel = new VerticalPanel();
-		final VerticalPanel providerPanel = new VerticalPanel();
-		dialogVPanel.addStyleName("dialogVPanel");
+		final VerticalPanel dialogPanel = new VerticalPanel();
+		dialogPanel.addStyleName("dialogVPanel");
+		dialogPanel.setSpacing(10);
 		
 		final Label waitLabel = new Label("Waiting for server...");
-		dialogVPanel.add(waitLabel);
-		dialogBox.setWidget(dialogVPanel);
-		dialogVPanel.add(providerPanel);
+		dialogPanel.add(waitLabel);
+		dialogBox.setWidget(dialogPanel);
+		
+		final VerticalPanel providerPanel = new VerticalPanel();
+		dialogPanel.add(providerPanel);
 		
 		final Button closeButton = new Button("Close");
-		dialogVPanel.add(closeButton);
+		dialogPanel.add(closeButton);
 
 		// Get login urls from server
 		openIDService.getUrls(
@@ -135,7 +158,7 @@ public class OpenID {
 					}
 
 					public void onSuccess(String[][] providers) {
-						Console.printInfo("Login services: ("+providers+").");
+						Console.printInfo("Login services: ("+Arrays.deepToString(providers)+").");
 						waitLabel.removeFromParent();
 						
 		                class LoginClickHandler implements ClickHandler {
@@ -149,34 +172,50 @@ public class OpenID {
 	                        	openLoginWindow(provider, url);
 	                        }
 		                }
-
+		                
+		                final VerticalPanel providerPanelDeep = new VerticalPanel();
+		                providerPanelDeep.setVisible(false);
+		                
+		                // Add "show more providers" link
+		                final Anchor showMore = new Anchor("+ Show more providers");
+		                showMore.addClickHandler(new ClickHandler() {
+		                	public void onClick(ClickEvent event) {
+	                        	providerPanelDeep.setVisible(true);
+	                        	showMore.setVisible(false);
+	                        }
+		                });
+		                
 		                // Add OpenID links
 						for (String[] provider : providers) {
 							Image image = new Image("images/openid/"+provider[0]+".png");
 			                LoginClickHandler handler = new LoginClickHandler(provider[0], provider[1]);
 			                image.addClickHandler(handler);
-							image.getElement().getStyle().setCursor(Cursor.POINTER);
-			                providerPanel.add(image);
+							
+							if (provider[0].matches("google")) {
+				                providerPanel.add(image);
+							}
+							else {
+								providerPanelDeep.add(image);
+							}
 						}
+						providerPanel.add(showMore);
+						providerPanel.add(providerPanelDeep);
 	                }
 				});
 		
 		// Display dialog
-		dialogBox.center();
+		dialogBox.show();
 		
 		closeButton.addClickHandler(new ClickHandler() {
 			public void onClick(ClickEvent event) {
 				dialogBox.hide();
 			}
 		});
-		
-		//dialogVPanel.add(new HTML("<b>Logged in?</b> "+userService.isUserLoggedIn()+"<br>"));
-		/*dialogVPanel.add(new HTML("<b>Username: </b> "));
-		dialogVPanel.add(new HTML("<br>"));
-		dialogVPanel.add(new HTML("<b>Server replies:</b>"));
-		dialogVPanel.add(serverResponseLabel);*/
 	}
-	
+
+	/**
+	 * Opens a popup window to the OpenID provider's login screen.
+	 */
 	private void openLoginWindow(String provider, String url) {
 		int width = 800;
 		int height = 600;
@@ -187,4 +226,12 @@ public class OpenID {
 				+ ",location=yes,status=yes,resizable=yes";
 		Window.open(url, "thejobmap-login", features);
 	}
+
+	/**
+	 * Sends the user to the OpenID provider's logout screen, which then redirects back.
+	 */
+	protected void logout() {
+		Window.Location.assign(logoutUrl);
+	}
+
 }

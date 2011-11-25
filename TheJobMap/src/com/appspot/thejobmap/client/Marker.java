@@ -1,5 +1,7 @@
 package com.appspot.thejobmap.client;
 
+import java.util.Arrays;
+
 import com.appspot.thejobmap.client.servlets.MarkerService;
 import com.appspot.thejobmap.client.servlets.MarkerServiceAsync;
 import com.google.gwt.core.client.GWT;
@@ -181,6 +183,7 @@ public class Marker {
 							Label latlong = new Label(result[i]);
 							serverResponseResult.add(latlong);
 						}
+						Console.printInfo("New markers: "+Arrays.toString(result));
 						closeButton.setFocus(true);
 					}
 				});
