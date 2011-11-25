@@ -10,5 +10,7 @@ import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
 public interface OpenIDService extends RemoteService {
 	public String login(String latlong);
 	
-	public String isLoggedIn();
+	public String[][] getUrls();
+	
+	public String[] isLoggedIn();
 }

@@ -18,6 +18,11 @@ body {
 	padding-top: 20px;
 }
 
+#panel #account {
+	float: right;
+	margin-top: -20px;
+}
+
 #page {
 	height: 500px;
 }
@@ -31,4 +36,12 @@ body {
 
 #map_canvas {
 	height: 100%;
+}
+
+#console {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	width: 500px;
+	z-order: 100;
 }

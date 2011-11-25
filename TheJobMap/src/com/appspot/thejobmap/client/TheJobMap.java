@@ -9,6 +9,7 @@ import com.google.gwt.core.client.GWT;
  * @author Alexandra Tsampikakis
  */
 public class TheJobMap implements EntryPoint {
+	//private final Console console = GWT.create(Console.class);
 	private final Marker marker = GWT.create(Marker.class);
 	private final OpenID openID = GWT.create(OpenID.class);
 	
@@ -16,10 +17,9 @@ public class TheJobMap implements EntryPoint {
 	 * Entry point.
 	 */
 	public void onModuleLoad() {
-		// Initialize marker
+		// Initialize
+		Console.init();
 		marker.init();
-		
-		// Initialize OpenID
 		openID.init();
 	}
 }
