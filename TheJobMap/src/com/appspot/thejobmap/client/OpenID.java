@@ -107,7 +107,7 @@ public class OpenID {
 		openIDService.isLoggedIn(
 				new AsyncCallback<String[]>() {
 					public void onFailure(Throwable caught) {
-						Console.printError("Network failure.");
+						Console.printError("Network failure (openIDService.isLoggedIn).");
 					}
 
 					public void onSuccess(String[] result) {
@@ -116,7 +116,7 @@ public class OpenID {
 							return;
 						}
 						
-						Console.printInfo("Logged in ("+Arrays.toString(result)+").");
+						Console.printInfo("Logged in ("+Arrays.deepToString(result)+").");
 						loggedIn = true;
 						name = result[0];
 						email = result[1];
@@ -154,7 +154,7 @@ public class OpenID {
 		openIDService.getUrls(
 				new AsyncCallback<String[][]>() {
 					public void onFailure(Throwable caught) {
-						Console.printError("Network failure.");
+						Console.printError("Network failure (openIDService.getUrls).");
 					}
 
 					public void onSuccess(String[][] providers) {

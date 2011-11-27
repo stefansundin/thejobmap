@@ -20,12 +20,13 @@ public class MarkerServiceImpl extends RemoteServiceServlet implements MarkerSer
 	/**
 	 * Store a new marker in the database.
 	 */
-	public String storeMarker(String latlong) {
+	public String storeMarker(Double latitude, Double longitude) {
         Key storeKey = KeyFactory.createKey("Markers", "jaha");
         Date date = new Date();
         Entity entry = new Entity("Markers", storeKey);
-        entry.setProperty("latlong", latlong);
-        entry.setProperty("date", date);
+        entry.setProperty("latitude", latitude);
+        entry.setProperty("longitude", longitude);
+        entry.setProperty("date", date.getTime());
         
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         datastore.put(entry);
@@ -36,17 +37,18 @@ public class MarkerServiceImpl extends RemoteServiceServlet implements MarkerSer
 	/**
 	 * Get markers from the database and return them in an array to the client
 	 */
-	public String[] getMarker(String latlong) {
+	public Double[][] getMarker(String city) {
 		DatastoreService getLatlong = DatastoreServiceFactory.getDatastoreService();
 		
 		// Check if the category exists
 		Query q = new Query("Markers");
-		List<Entity> markers = getLatlong.prepare(q).asList(FetchOptions.Builder.withLimit(5));
+		List<Entity> markers = getLatlong.prepare(q).asList(FetchOptions.Builder.withLimit(100));
 		
 		//Saves all the latlongs in an array
-		String [] allLatlong = new String [markers.size()];
-		for(int i=0; i<allLatlong.length; i++){
-			allLatlong[i] = (String) markers.get(i).getProperty("latlong");
+		Double[][] allLatlong = new Double[markers.size()][2];
+		for (int i=0; i<allLatlong.length; i++) {
+			allLatlong[i][0] = (Double) markers.get(i).getProperty("latitude");
+			allLatlong[i][1] = (Double) markers.get(i).getProperty("longitude");
 			//System.out.println(allLatlong[i]);
 		}
 		return allLatlong;

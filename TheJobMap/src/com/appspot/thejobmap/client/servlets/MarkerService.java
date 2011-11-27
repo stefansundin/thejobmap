@@ -5,6 +5,6 @@ import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
 
 @RemoteServiceRelativePath("marker")
 public interface MarkerService extends RemoteService {
-	public String storeMarker(String latlong);
-	public String[] getMarker(String latlong);
+	public String storeMarker(Double latitude, Double longitude);
+	public Double[][] getMarker(String city);
 }

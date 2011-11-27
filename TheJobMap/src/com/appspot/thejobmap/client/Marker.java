@@ -51,6 +51,13 @@ public class Marker {
 			}
 		});
 	}
+
+	/**
+	 * Export GWT functions to JavaScript.
+	 */
+	public static native void addMarkerToMap(Double latitude, Double longitude, String title, String info) /*-{
+		$wnd.addMarker(latitude, longitude, title, info); 
+	}-*/;
 	
 	private void createGUI() {
 		// First ask for input
@@ -98,19 +105,24 @@ public class Marker {
 	private void storeLatlong(String latlong) {
 		textToServerLabel.setText(latlong);
 		serverResponseLabel.setText("Sending... ");
-		markerService.storeMarker(latlong,
+		String[] latlongs = latlong.split(",");
+		Double latitude = Double.parseDouble(latlongs[0]);
+		Double longitude = Double.parseDouble(latlongs[1]);
+		Console.printInfo("Sending marker: ["+latitude+","+longitude+"]");
+		
+		markerService.storeMarker(latitude, longitude,
 				new AsyncCallback<String>() {
 					public void onFailure(Throwable caught) {
-						dialogBox.setText("Failure!");
-						serverResponseLabel.addStyleName("serverResponseLabelError");
-						serverResponseLabel.setHTML("Network problem.");
-						closeButton.setFocus(true);
+						Console.printError("Network failure (markerService.storeMarker).");
 					}
 
 					public void onSuccess(String result) {
-						dialogBox.setText("Success!");
-						serverResponseLabel.removeStyleName("serverResponseLabelError");
-						serverResponseLabel.setHTML(result);
+						if (result == null) {
+							Console.printInfo("Not logged in.");
+							return;
+						}
+						
+						Console.printInfo("Marker stored successfully.");
 						closeButton.setFocus(true);
 					}
 				});
@@ -163,28 +175,20 @@ public class Marker {
 	/*
 	 * To find all the markers in database for the chosen city
 	 */
-	private void getCityMarkers(String latlong) {
-		textToServerLabel.setText(latlong);
+	private void getCityMarkers(String city) {
+		textToServerLabel.setText(city);
 		serverResponseLabel.setText("Reading... ");
-		markerService.getMarker(latlong,
-				new AsyncCallback<String[]>() {
+		markerService.getMarker(city,
+				new AsyncCallback<Double[][]>() {
 					public void onFailure(Throwable caught) {
-						dialogBox.setText("Failure!");
-						serverResponseLabel.addStyleName("serverResponseLabelError");
-						serverResponseLabel.setHTML("Network problem.");
-						closeButton.setFocus(true);
+						Console.printError("Network failure (markerService.getMarker).");
 					}
 
-					public void onSuccess(String[] result) {
-						dialogBox.setText("Success!");
-						serverResponseLabel.removeStyleName("serverResponseLabelError");
-						for(int i=0; i<result.length; i++){
-						//serverResponseLabel.setHTML(result[i]); //rensa listan mellan varje koll.
-							Label latlong = new Label(result[i]);
-							serverResponseResult.add(latlong);
+					public void onSuccess(Double[][] result) {
+						Console.printInfo("New markers: "+Arrays.deepToString(result));
+						for (int i=0; i<result.length; i++) {
+							addMarkerToMap(result[i][0], result[i][1], "Vafan", "Jaha!");
 						}
-						Console.printInfo("New markers: "+Arrays.toString(result));
-						closeButton.setFocus(true);
 					}
 				});
 	}
