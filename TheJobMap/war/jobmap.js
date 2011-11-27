@@ -1,5 +1,7 @@
 
-var map;
+var map = null;
+var newMarker = null;
+var markers = [];
 
 function initialize() {
 	var myOptions = {
@@ -15,15 +17,6 @@ function initialize() {
 	window.addEventListener("resize", resizeMap, false);
 	resizeMap();
 	
-	// Define Marker properties
-	/*
-	var image = new google.maps.MarkerImage('images/markers/ltulogo.png',
-		new google.maps.Size(22, 22),
-		new google.maps.Point(0,0),
-		new google.maps.Point(10, 22)
-	);
-	*/
-	
 	// Google analytics
 	var _gaq = _gaq || [];
 	_gaq.push(['_setAccount', 'UA-27056070-2']);
@@ -37,11 +30,22 @@ function initialize() {
 }
 
 function addMarker(latitude, longitude, title, info) {
+	// Define Marker properties
+	/*
+	var image = new google.maps.MarkerImage('images/markers/ltulogo.png',
+		new google.maps.Size(22, 22),
+		new google.maps.Point(0,0),
+		new google.maps.Point(10, 22)
+	);
+	*/
+	
 	var marker = new google.maps.Marker({
-		position: new google.maps.LatLng(latitude, longitude),
 		map: map,
+		position: new google.maps.LatLng(latitude, longitude),
 		//icon: image,
+		//icon: "",
 	});
+	markers.push(marker);
 
 	// Add listener for a click on the pin
 	google.maps.event.addListener(marker, 'click', function() {
@@ -52,12 +56,54 @@ function addMarker(latitude, longitude, title, info) {
 	var infowindow = new google.maps.InfoWindow({
 		content: createInfo(title, info)
 	});
+}
 
-	// Create information window
-	function createInfo(title, content) {
-		return '<div class="infowindow"><strong>'+ title +'</strong><p>'+content+'</p></div>';
+function createMarker() {
+	if (newMarker != null) {
+		newMarker.setMap(null);
 	}
 	
+	newMarker = new google.maps.Marker({
+		map: map,
+		position: map.getCenter(),
+		title: "New marker",
+		draggable: true,
+	});
+	
+	google.maps.event.addListener(newMarker, 'click', function() {
+		infowindow.open(map, newMarker);
+	});
+	var infowindow = new google.maps.InfoWindow({
+		content: createInfo(newMarker.title, '<button onclick="storeMarker1();">Store marker</button>')
+	});
+}
+
+function storeMarker1() {
+	var latlng = newMarker.getPosition().toString().replace(/[() ]/g, "");
+	storeMarker(latlng);
+	newMarker.setMap(null);
+	newMarker = null;
+	
+	var split = latlng.indexOf(",");
+	var lat = latlng.substring(0, split);
+	var lng = latlng.substring(split+1);
+	addMarker(lat, lng, "Jaha!", "Vafan");
+}
+
+function clearMarkers() {
+	if (newMarker != null) {
+		newMarker.setMap(null);
+		newMarker = null;
+	}
+	for (var i=0; i < markers.length; i++) {
+		markers[i].setMap(null);
+	}
+	markers = [];
+}
+
+// Create information window
+function createInfo(title, content) {
+	return '<div class="infowindow"><strong>'+ title +'</strong><p>'+content+'</p></div>';
 }
 
 // Dynamically resize map
