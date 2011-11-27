@@ -130,7 +130,7 @@ public class Marker {
 	
 	
 	
-	/*
+	/**
 	 * Window for choosing city to show markers in
 	 */
 	public void showMarker(){
@@ -172,7 +172,7 @@ public class Marker {
 		dialogBox.center();
 	}
 	
-	/*
+	/**
 	 * To find all the markers in database for the chosen city
 	 */
 	private void getCityMarkers(String city) {
