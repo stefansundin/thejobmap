@@ -29,6 +29,7 @@ public class Marker {
 	 */
 	public void init() {
 		initJSNI();
+		getCityMarkers("");
 		
 		RootPanel.get("sidebar").add(new HTML("<br>"));
 
