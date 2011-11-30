@@ -28,7 +28,7 @@ public class OpenIDServiceImpl extends RemoteServiceServlet implements OpenIDSer
     			{ "google",    "google.com/accounts/o8/id" },
     			{ "myopenid",  "myopenid.com" },
     			{ "yahoo",     "yahoo.com" },
-    			{ "wordpress", "wordpress.com" },
+    			//{ "wordpress", "wordpress.com" },
     			//{ "myspace",  "myspace.com" },
     			//{ "aol",      "aol.com" },
     	};
@@ -57,7 +57,8 @@ public class OpenIDServiceImpl extends RemoteServiceServlet implements OpenIDSer
 		ret[0] = user.getNickname();
 		ret[1] = user.getEmail();
 		ret[2] = "user";
-		if (GWT.isProdMode()) {
+		Boolean devmode = (getServletContext().getServerInfo().indexOf("Development") != -1);
+		if (devmode) {
 			ret[3] = userService.createLogoutURL("/");
 		}
 		else {
