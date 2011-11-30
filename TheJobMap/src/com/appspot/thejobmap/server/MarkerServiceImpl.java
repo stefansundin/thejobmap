@@ -19,14 +19,16 @@ public class MarkerServiceImpl extends RemoteServiceServlet implements MarkerSer
 
 	/**
 	 * Store a new marker in the database.
+	 * @param
 	 */
-	public String storeMarker(Double latitude, Double longitude) {
+	public String storeMarker(Double latitude, Double longitude, String markersInfo) {
         Key storeKey = KeyFactory.createKey("Markers", "jaha");
         Date date = new Date();
         Entity entry = new Entity("Markers", storeKey);
         entry.setProperty("latitude", latitude);
         entry.setProperty("longitude", longitude);
         entry.setProperty("date", date.getTime());
+        entry.setProperty("information", markersInfo);
         
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         datastore.put(entry);
@@ -42,7 +44,7 @@ public class MarkerServiceImpl extends RemoteServiceServlet implements MarkerSer
 		
 		// Check if the category exists
 		Query q = new Query("Markers");
-		List<Entity> markers = getLatlong.prepare(q).asList(FetchOptions.Builder.withLimit(100));
+		List<Entity> markers = getLatlong.prepare(q).asList(FetchOptions.Builder.withLimit(1000));
 		
 		//Saves all the latlongs in an array
 		Double[][] allLatlong = new Double[markers.size()][2];

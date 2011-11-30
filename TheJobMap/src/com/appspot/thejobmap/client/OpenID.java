@@ -21,7 +21,6 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 /**
  * Client side part of the OpenID authentication.
  */
-
 public class OpenID {
 
 	private static Boolean loggedIn = false;

@@ -51,17 +51,7 @@ public class Marker {
 		});
 		RootPanel.get("sidebar").add(refreshMarkersButton);
 		RootPanel.get("sidebar").add(new HTML("<br>"));
-		
-		final Button addMarkerButton = new Button("Add Marker");
-		addMarkerButton.addClickHandler(new ClickHandler() {
-			public void onClick(ClickEvent event) {
-				createGUI();
-			}
-		});
-		RootPanel.get("sidebar").add(addMarkerButton);
-		RootPanel.get("sidebar").add(new HTML("<br>"));
 
-		
 		final Button getMarkerButton = new Button("Show Marker");
 		getMarkerButton.addClickHandler(new ClickHandler() {
 			public void onClick(ClickEvent event) {
@@ -75,7 +65,7 @@ public class Marker {
 	 * JSNI
 	 */
 	public static native void initJSNI() /*-{
-		$wnd.storeMarker = $entry(@com.appspot.thejobmap.client.Marker::storeMarker(Ljava/lang/String;)); 
+		$wnd.storeMarker = $entry(@com.appspot.thejobmap.client.Marker::storeMarker(Ljava/lang/String;Ljava/lang/String;)); 
 	}-*/;
 	public static native void addMarkerToMap(Double latitude, Double longitude, String title, String info) /*-{
 		$wnd.addMarker(latitude, longitude, title, info); 
@@ -88,53 +78,17 @@ public class Marker {
 	}-*/;
 	
 	
-	private void createGUI() {
-		// First ask for input
-		dialogBox.setText("Add marker to map");
-		dialogBox.setAnimationEnabled(true);
-		
-		closeButton.getElement().setId("closeButton");
-		closeButton.addClickHandler(new ClickHandler() {
-			public void onClick(ClickEvent event) {
-				dialogBox.hide();
-			}
-		});
-
-		serverResponseLabel.setText("Waiting.");
-		
-		final TextBox latlngField = new TextBox();
-		latlngField.setText("65.619569,22.150519");
-
-		final Button sendButton = new Button("Send");
-		sendButton.getElement().setId("sendButton");
-		sendButton.addClickHandler(new ClickHandler() {
-			public void onClick(ClickEvent event) {
-				// Click send button
-				String latlng = latlngField.getText();
-				storeMarker(latlng);
-				serverResponseLabel.setText("Sending...");
-			}
-		});
-		
-		VerticalPanel dialogPanel = new VerticalPanel();
-		dialogPanel.addStyleName("dialogVPanel");
-		dialogPanel.add(new HTML("<b>Latlong:</b>"));
-		dialogPanel.add(latlngField);
-		dialogPanel.add(sendButton);
-		dialogPanel.add(new HTML("<br><b>Server status:</b>"));
-		dialogPanel.add(serverResponseLabel);
-		dialogPanel.add(closeButton);
-		dialogBox.setWidget(dialogPanel);
-		dialogBox.center();
-	}
-	
-	public static void storeMarker(String latlng) {
+	/**
+	 * Stores the marker in the database from input
+	 * @param latlng
+	 */
+	public static void storeMarker(String latlng, String markersInfo) {
 		String[] latlongs = latlng.split(",");
 		Double latitude = Double.parseDouble(latlongs[0]);
 		Double longitude = Double.parseDouble(latlongs[1]);
-		Console.printInfo("Sending marker: ["+latitude+","+longitude+"]");
+		Console.printInfo("Sending marker: ["+latitude+","+longitude+","+markersInfo+"]");
 		
-		markerService.storeMarker(latitude, longitude,
+		markerService.storeMarker(latitude, longitude, markersInfo,
 				new AsyncCallback<String>() {
 					public void onFailure(Throwable caught) {
 						Console.printError("Network failure (markerService.storeMarker).");

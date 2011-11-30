@@ -29,7 +29,7 @@ function initialize() {
 	})();
 }
 
-function addMarker(latitude, longitude, title, info) {
+function addMarker(latitude, longitude, markersInfo) {
 	// Define Marker properties
 	/*
 	var image = new google.maps.MarkerImage('images/markers/ltulogo.png',
@@ -54,7 +54,7 @@ function addMarker(latitude, longitude, title, info) {
 
 	// Add information window
 	var infowindow = new google.maps.InfoWindow({
-		content: createInfo(title, info)
+		content: createInfo("Titel", markersInfo)
 	});
 }
 
@@ -74,20 +74,21 @@ function createMarker() {
 		infowindow.open(map, newMarker);
 	});
 	var infowindow = new google.maps.InfoWindow({
-		content: createInfo(newMarker.title, '<button onclick="storeMarker1();">Store marker</button>')
+		content: createInfo(newMarker.title,'<textarea id="markersInfo" placeholder="Write description here"></textarea><button onclick="storeMarker1();">Store marker</button>')
 	});
 }
 
 function storeMarker1() {
 	var latlng = newMarker.getPosition().toString().replace(/[() ]/g, "");
-	storeMarker(latlng);
+	var markersInfo = document.getElementById("markersInfo").value;
+	storeMarker(latlng, markersInfo);
 	newMarker.setMap(null);
 	newMarker = null;
 	
 	var split = latlng.indexOf(",");
 	var lat = latlng.substring(0, split);
 	var lng = latlng.substring(split+1);
-	addMarker(lat, lng, "Jaha!", "Vafan");
+	addMarker(lat, lng, markerInfo);
 }
 
 function clearMarkers() {

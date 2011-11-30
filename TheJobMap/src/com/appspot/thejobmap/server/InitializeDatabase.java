@@ -2,6 +2,11 @@ package com.appspot.thejobmap.server;
 
 import com.google.gwt.core.client.GWT;
 
+/**
+ * Admininterface
+ * @author Administrator
+ *
+ */
 public class InitializeDatabase {
 	
 	private final MarkerServiceImpl markerServiceImpl = GWT.create(MarkerServiceImpl.class);
@@ -42,12 +47,15 @@ public class InitializeDatabase {
 			{ "Lund", "55.703903,13.193207" }
 	};
 	
+	/**
+	 * 
+	 */
 	public void init(){
 		for (int i=0; i<cities.length; i++){
 			String[] latlongs = cities[i][1].split(",");
 			Double latitude = Double.parseDouble(latlongs[0]);
 			Double longitude = Double.parseDouble(latlongs[1]);
-			markerServiceImpl.storeMarker(latitude, longitude);
+			markerServiceImpl.storeMarker(latitude, longitude, cities[i][0]);
 		}
 	}
 }
