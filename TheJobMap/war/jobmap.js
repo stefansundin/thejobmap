@@ -13,6 +13,9 @@ function initialize() {
 	};
 	map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
 
+	// Request markers
+	refreshMarkers();
+	
 	// Make map resize dynamically
 	window.addEventListener("resize", resizeMap, false);
 	resizeMap();
@@ -27,6 +30,22 @@ function initialize() {
 		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
 		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
 	})();
+}
+
+function refreshMarkers() {
+	var marker = {
+			lat: 12.34,
+			lng: 44.56,
+			info: "hej",
+	}
+	
+	$.getJSON('/rest/marker',
+	function(data) {
+		console.log(data);
+		$.each(data,function(key, val) {
+			addMarker(val.lat, val.lng, val.info);
+		});
+	});
 }
 
 function addMarker(latitude, longitude, markersInfo) {
@@ -79,16 +98,37 @@ function createMarker() {
 }
 
 function storeMarker1() {
-	var latlng = newMarker.getPosition().toString().replace(/[() ]/g, "");
-	var markersInfo = document.getElementById("markersInfo").value;
-	storeMarker(latlng, markersInfo);
+	var marker = {
+			lat: newMarker.getPosition().lat(),
+			lng: newMarker.getPosition().lng(),
+			info: document.getElementById("markersInfo").value,
+	}
+/*
+	$.post('/rest/marker',marker,
+	function(data) {
+		console.log(data);
+	}, 'json');
+*/
+	
+	$.ajax({
+	  type: 'POST',
+	  url: '/rest/marker',
+	  data: JSON.stringify(marker),
+	  success: function(data){
+		console.log(data);
+	  },
+	  dataType: 'json',
+	  //contentType: 'application/json',
+	});
+	
 	newMarker.setMap(null);
 	newMarker = null;
-	
+	/*
 	var split = latlng.indexOf(",");
 	var lat = latlng.substring(0, split);
 	var lng = latlng.substring(split+1);
 	addMarker(lat, lng, markerInfo);
+	*/
 }
 
 function clearMarkers() {
