@@ -33,7 +33,7 @@ public class UserServlet extends HttpServlet {
 	private static final long serialVersionUID = 2179295545476158168L;
 	
 	/**
-	 * 
+	 * GET - Request of user details.
 	 */
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		Gson gson = new Gson();
@@ -89,7 +89,7 @@ public class UserServlet extends HttpServlet {
 	}
 
 	/**
-	 * 
+	 * POST - Update user details.
 	 */
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		Gson gson = new Gson();
@@ -142,16 +142,33 @@ public class UserServlet extends HttpServlet {
 		writer.close();
 	}
 	
+	/**
+	 * Insert new user into database.
+	 */
 	private void createUser(String email) {
+		// Does the user already exist?
+		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
+		Query q = new Query("Users");
+		q.addFilter("email", Query.FilterOperator.EQUAL, email);
+		PreparedQuery pq = db.prepare(q);
+		if (pq.countEntities(FetchOptions.Builder.withLimit(1)) != 0) {
+			throw new IllegalArgumentException("User already exists!");
+		}
+
 		// Create an entry
 		Key storeKey = KeyFactory.createKey("Users", "jobmap");
 		Date date = new Date();
 		Entity entry = new Entity("Users", storeKey);
 		entry.setProperty("email", email);
+		entry.setProperty("name", null);
+		entry.setProperty("age", null);
+		entry.setProperty("sex", null);
+		entry.setProperty("phonenumber", null);
+		entry.setProperty("education", null);
+		entry.setProperty("workExperience", null);
 		entry.setProperty("creationDate", date.getTime());
 		
 		// Insert in database
-		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		db.put(entry);
 	}
 

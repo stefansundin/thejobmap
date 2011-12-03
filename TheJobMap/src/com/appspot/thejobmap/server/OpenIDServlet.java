@@ -31,7 +31,7 @@ public class OpenIDServlet extends HttpServlet {
 	};
 	
 	/**
-	 * 
+	 * GET - Request of supported OpenID providers.
 	 */
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		Gson gson = new Gson();

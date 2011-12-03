@@ -67,7 +67,13 @@ a {
 	height: 100%;
 }
 
+#markerInfo {
+	width: 250px;
+	height: 50px;
+}
+
 #console {
+	display: none;
 	position: fixed;
 	bottom: 0;
 	left: 0;

@@ -31,7 +31,7 @@ public class MarkerServlet extends HttpServlet {
 	private static final long serialVersionUID = -919160328227007218L;
 	
 	/**
-	 * 
+	 * GET - Request of markers.
 	 */
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		// Query database for markers
@@ -58,7 +58,7 @@ public class MarkerServlet extends HttpServlet {
 	}
 
 	/**
-	 * 
+	 * POST - Addition of marker.
 	 */
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		// Parse input

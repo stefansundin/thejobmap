@@ -1,6 +1,13 @@
+/**
+ * The Job Map.
+ * @author Stefan Sundin
+ * @author Alexandra Tsampikakis
+ */
 
-var map = null;
 
+/**
+ * Initialize environment.
+ */
 function initialize() {
 	var mapOptions = {
 		zoom: 5,
@@ -9,7 +16,7 @@ function initialize() {
 		streetViewControl: false,
 		mapTypeControl: false,
 	};
-	map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+	var map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
 	
 	// Add controls
 	jobmap.init(map);
@@ -35,10 +42,12 @@ function initialize() {
 }
 
 var jobmap = {
+	/** Variables */
 	map: null,
 	markers: [],
 	newMarker: null,
 	mapControls: null,
+	infoWindow: null,
 	user: {
 		loggedIn: false,
 		email: null,
@@ -46,16 +55,32 @@ var jobmap = {
 		privileges: null,
 	},
 	
+	/**
+	 * Initialize The Job Map.
+	 */
 	init: function(map) {
 		jobmap.map = map;
 
+		// Console
+		$('body').keypress(function(e) {
+			if (e.which == 167) { // '§'
+				$('#console').toggle();
+			}
+		})
+		
 		// Create buttons
 		var c = $('<div id="JobMapControls"></div>');
-		$(c).append('<button id="refreshMarkersButton">Refresh markers</button>');
-		google.maps.event.addDomListener($("#refreshMarkersButton",c)[0], "click", jobmap.refreshMarkers);
-		$(c).append('<button id="createMarkerButton">Create marker</button>');
-		google.maps.event.addDomListener($("#createMarkerButton",c)[0], "click", jobmap.createMarker);
 		jobmap.mapControls = c[0];
+		$('<button id="refreshMarkersButton">Refresh markers</button>').appendTo(c);
+		$('<button id="createMarkerButton">Create marker</button>').appendTo(c);
+		google.maps.event.addDomListener($("#refreshMarkersButton",c)[0], "click", jobmap.refreshMarkers);
+		google.maps.event.addDomListener($("#createMarkerButton",c)[0], "click", jobmap.createMarker);
+		
+		// Info Window
+		jobmap.infoWindow = new google.maps.InfoWindow({});
+		google.maps.event.addListener(jobmap.map, 'click', function() {
+			jobmap.infoWindow.close();
+		});
 		
 		// User
 		$('#panel').append('<div id="account"></div>');
@@ -64,6 +89,11 @@ var jobmap = {
 		jobmap.getUser();
 	},
 	
+	/** Markers */
+	
+	/**
+	 * Clear all markers from the map.
+	 */
 	clearMarkers: function() {
 		if (jobmap.newMarker != null) {
 			jobmap.newMarker.setMap(null);
@@ -75,6 +105,9 @@ var jobmap = {
 		jobmap.markers = [];
 	},
 	
+	/**
+	 * Fetch markers from server.
+	 */
 	refreshMarkers: function() {
 		jobmap.clearMarkers();
 		
@@ -87,6 +120,9 @@ var jobmap = {
 		});
 	},
 	
+	/**
+	 * Add a marker to the map.
+	 */
 	addMarker: function(m) {
 		// Define Marker properties
 		/*
@@ -107,15 +143,14 @@ var jobmap = {
 
 		// Add listener for a click on the pin
 		google.maps.event.addListener(marker, 'click', function() {
-			infowindow.open(map, marker);
-		});
-
-		// Add information window
-		var infowindow = new google.maps.InfoWindow({
-			content: createInfo("Titel", m.info)
+			jobmap.infoWindow.setContent(jobmap.createInfo(m));
+			jobmap.infoWindow.open(jobmap.map, marker);
 		});
 	},
 	
+	/**
+	 * Create a new marker.
+	 */
 	createMarker: function() {
 		if (jobmap.newMarker != null) {
 			jobmap.newMarker.setMap(null);
@@ -123,7 +158,7 @@ var jobmap = {
 		
 		jobmap.newMarker = new google.maps.Marker({
 			map: jobmap.map,
-			position: map.getCenter(),
+			position: jobmap.map.getCenter(),
 			title: "Drag me!",
 			draggable: true,
 			animation: google.maps.Animation.BOUNCE,
@@ -132,14 +167,18 @@ var jobmap = {
 			jobmap.newMarker.setAnimation(null);
 		});
 		google.maps.event.addListener(jobmap.newMarker, "click", function() {
-			infowindow.open(map, jobmap.newMarker);
+			jobmap.infoWindow.setContent(jobmap.createInfo(jobmap.newMarker));
+			jobmap.infoWindow.open(jobmap.map, jobmap.newMarker);
 		});
-		
+		/*
 		var infowindow = new google.maps.InfoWindow({
 			content: createInfo("Enter details", '<textarea id="markerInfo" placeholder="Write description here"></textarea><br/><button onclick="jobmap.storeMarker();">Store marker</button>')
-		});
+		});*/
 	},
 	
+	/**
+	 * Send a marker to the server.
+	 */
 	storeMarker: function() {
 		var marker = {
 			lat: jobmap.newMarker.getPosition().lat(),
@@ -155,7 +194,7 @@ var jobmap = {
 			data: JSON.stringify(marker),
 		})
 		.done(function(data) {
-				printInfo("Reply: ", data);
+			printInfo("Reply: ", data);
 		})
 		.fail(function(xhr,txt) {
 			printError("Sending marker failed: "+txt+".");
@@ -166,6 +205,21 @@ var jobmap = {
 		jobmap.addMarker(marker);
 	},
 	
+	/**
+	 * Create the contents of an info window for a marker.
+	 */
+	createInfo: function(marker) {
+		if (marker == jobmap.newMarker) {
+			return '<b>Enter details</b><p><textarea id="markerInfo" placeholder="Write description here"></textarea><br/><button onclick="jobmap.storeMarker();">Store marker</button></p>';
+		}
+		return marker.info;
+	},
+	
+	/** User */
+	
+	/**
+	 * Handler for the login/logout button.
+	 */
 	logButton: function() {
 		if (jobmap.user.loggedIn) {
 			jobmap.logout();
@@ -175,6 +229,9 @@ var jobmap = {
 		}
 	},
 	
+	/**
+	 * Creates the login dialog.
+	 */
 	loginForm: function() {
 		$('<div id="loginForm"></div>').dialog({
 			title: "Login with OpenID",
@@ -223,6 +280,9 @@ var jobmap = {
 		});
 	},
 	
+	/**
+	 * Gets user info from the server.
+	 */
 	getUser: function() {
 		$.getJSON("/rest/user")
 		.done(function(data) {
@@ -248,6 +308,9 @@ var jobmap = {
 		});
 	},
 	
+	/**
+	 * Returns a nicely formatted name for the user.
+	 */
 	getUsername: function() {
 		if (!jobmap.user.loggedIn) {
 			return " ";
@@ -258,16 +321,12 @@ var jobmap = {
 		return jobmap.user.email;
 	},
 	
+	/**
+	 * Redirects the user to the logout url.
+	 */
 	logout: function() {
 		window.location.assign(jobmap.user.logoutUrl);
 	},
-}
-
-
-
-// Create information window
-function createInfo(title, content) {
-	return '<div class="infowindow"><strong>'+ title +'</strong><p>'+content+'</p></div>';
 }
 
 // Dynamically resize map
@@ -291,4 +350,5 @@ function printInfo(txt, json) {
 }
 function printError(txt, json) {
 	print(txt, 'error', json);
+	$('#console').show();
 }
