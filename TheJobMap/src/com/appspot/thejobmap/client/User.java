@@ -1,7 +1,5 @@
 package com.appspot.thejobmap.client;
 
-import com.appspot.thejobmap.client.servlets.UserService;
-import com.appspot.thejobmap.client.servlets.UserServiceAsync;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -19,7 +17,7 @@ public class User {
 	private static String privileges;
 	
 	final static HTML serverResponseLabel = new HTML();
-	final static UserServiceAsync userService = GWT.create(UserService.class);
+	//final static UserServiceAsync userService = GWT.create(UserService.class);
 	private final static DialogBox dialogBox = new DialogBox();
 	
 	private final static HorizontalPanel accountPanel = new HorizontalPanel();
