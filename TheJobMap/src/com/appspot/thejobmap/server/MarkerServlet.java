@@ -68,13 +68,13 @@ public class MarkerServlet extends HttpServlet {
 		reader.close();
 		
 		// Put in an entry
-		Key storeKey = KeyFactory.createKey("Markers", "jaha");
+		Key storeKey = KeyFactory.createKey("Markers", "jobmap");
 		Date date = new Date();
 		Entity entry = new Entity("Markers", storeKey);
 		entry.setProperty("lat", marker.lat);
 		entry.setProperty("lng", marker.lng);
 		entry.setProperty("info", marker.info);
-		entry.setProperty("date", date.getTime());
+		entry.setProperty("creationDate", date.getTime());
 		
 		// Insert in database
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();

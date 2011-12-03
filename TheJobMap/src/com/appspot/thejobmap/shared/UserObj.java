@@ -4,6 +4,8 @@ public class UserObj {
 	public String email;
 	public String name;
 	public String privileges;
+	public Boolean loggedIn;
+	public String logoutUrl;
 	
 	public UserObj() {}
 }

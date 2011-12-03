@@ -13,7 +13,7 @@ function initialize() {
 	
 	// Add controls
 	jobmap.init(map);
-	map.controls[google.maps.ControlPosition.TOP_CENTER].push(jobmap.mapControls[0]);
+	map.controls[google.maps.ControlPosition.TOP_CENTER].push(jobmap.mapControls);
 	
 	// Request markers
 	jobmap.refreshMarkers();
@@ -39,21 +39,29 @@ var jobmap = {
 	markers: [],
 	newMarker: null,
 	mapControls: null,
+	user: {
+		loggedIn: false,
+		email: null,
+		name: null,
+		privileges: null,
+	},
 	
 	init: function(map) {
 		jobmap.map = map;
 
 		// Create buttons
 		var c = $('<div id="JobMapControls"></div>');
-		$(c).append('<button id="RefreshMarkersButton">Refresh markers</button>');
-		google.maps.event.addDomListener($("#RefreshMarkersButton",c)[0], "click", jobmap.refreshMarkers);
-		$(c).append('<button id="CreateMarkerButton">Create marker</button>');
-		google.maps.event.addDomListener($("#CreateMarkerButton",c)[0], "click", jobmap.createMarker);
-		jobmap.mapControls = c;
+		$(c).append('<button id="refreshMarkersButton">Refresh markers</button>');
+		google.maps.event.addDomListener($("#refreshMarkersButton",c)[0], "click", jobmap.refreshMarkers);
+		$(c).append('<button id="createMarkerButton">Create marker</button>');
+		google.maps.event.addDomListener($("#createMarkerButton",c)[0], "click", jobmap.createMarker);
+		jobmap.mapControls = c[0];
 		
 		// User
-		$('#panel').append('<div id="account">hej</div>');
-		$('#account').append('<button>Login</button>').click(jobmap.loginForm);
+		$('#panel').append('<div id="account"></div>');
+		$('#account').append('<span id="username"> </span>');
+		$('<button id="logButton"> </button>').click(jobmap.logButton).appendTo('#account');
+		jobmap.getUser();
 	},
 	
 	clearMarkers: function() {
@@ -158,22 +166,33 @@ var jobmap = {
 		jobmap.addMarker(marker);
 	},
 	
+	logButton: function() {
+		if (jobmap.user.loggedIn) {
+			jobmap.logout();
+		}
+		else {
+			jobmap.loginForm();
+		}
+	},
+	
 	loginForm: function() {
 		$('<div id="loginForm"></div>').dialog({
 			title: "Login with OpenID",
 			autoOpen: true,
 			dialogClass: "loginDialog",
-			//position: ["right", "top"],
 			modal: true,
 			draggable: false,
 			resizable: false,
-			height: 300,
-			width: 350,
+			height: 430,
+			width: 280,
 			buttons: {
 				Cancel: function() {
-					$( this ).dialog( "close" );
+					$(this).dialog("close");
 				}
 			},
+			close: function() {
+				$(this).remove();
+			}
 		});
 
 		$.getJSON("/rest/openid")
@@ -182,22 +201,56 @@ var jobmap = {
 			$.each(data, function(key, val) {
 				$('#loginForm').append('<img src="images/openid/'+val.name+'.png" />').click(function() {
 					window.open(val.loginUrl, "thejobmap-login",
-							"width=800,height=600,"+
-							"left="+($(window).width()/2-800/2)+",top="+($(window).height()/2-600/2)+
-							",location=yes,status=yes,resizable=yes");
+						"width=800,height=600,"+
+						"left="+($(window).width()/2-800/2)+",top="+($(window).height()/2-600/2)+
+						",location=yes,status=yes,resizable=yes");
 				});
 				jobmap.addMarker(val);
 			});
+		})
+		.fail(function(xhr,txt) {
+			printError("Getting OpenID providers failed: "+txt+".");
 		});
 	},
 	
-	checkLoggedIn: function() {
+	getUser: function() {
 		$.getJSON("/rest/user")
 		.done(function(data) {
-			printInfo("User info: ", data);
-			$('#account').prepend(data.email);
+			$('#loginForm').dialog("destroy");
+			if (data.error == "not logged in") {
+				printInfo("Not logged in.");
+				return;
+			}
+
+			printInfo("User: ", data);
+			jobmap.user = data;
+			
+			$('#username').contents().replaceWith(jobmap.user.email);
+			$('#logButton').contents().replaceWith('Logout');
+		})
+		.fail(function(xhr,txt) {
+			printError("getUser failed: "+txt+".");
+		})
+		.always(function() {
+			$('#username').contents().replaceWith(jobmap.getUsername());
+			$('#logButton').contents().replaceWith(jobmap.user.loggedIn?'Logout':'Login');
+			$('#account').fadeIn('slow');
 		});
-	}
+	},
+	
+	getUsername: function() {
+		if (!jobmap.user.loggedIn) {
+			return " ";
+		}
+		if (jobmap.user.name) {
+			return jobmap.user.name;
+		}
+		return jobmap.user.email;
+	},
+	
+	logout: function() {
+		window.location.assign(jobmap.user.logoutUrl);
+	},
 }
 
 

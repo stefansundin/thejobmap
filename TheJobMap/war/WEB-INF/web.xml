@@ -5,29 +5,39 @@
          version="2.5"
          xmlns="http://java.sun.com/xml/ns/javaee">
 
-  <!-- Servlets -->
+<!-- Servlets -->
 
 <servlet>
-  <servlet-name>markerServlet</servlet-name>
-  <servlet-class>com.appspot.thejobmap.server.MarkerServiceImpl</servlet-class>
+	<servlet-name>markerServlet</servlet-name>
+	<servlet-class>com.appspot.thejobmap.server.MarkerServlet</servlet-class>
 </servlet>
 <servlet-mapping>
-  <servlet-name>markerServlet</servlet-name>
-  <url-pattern>/thejobmap/marker</url-pattern>
+	<servlet-name>markerServlet</servlet-name>
+	<url-pattern>/rest/marker</url-pattern>
 </servlet-mapping>
-  
+
 <servlet>
-  <servlet-name>openIDServlet</servlet-name>
-  <servlet-class>com.appspot.thejobmap.server.OpenIDServiceImpl</servlet-class>
+	<servlet-name>openIDServlet</servlet-name>
+	<servlet-class>com.appspot.thejobmap.server.OpenIDServlet</servlet-class>
 </servlet>
 <servlet-mapping>
-  <servlet-name>openIDServlet</servlet-name>
-  <url-pattern>/thejobmap/openid</url-pattern>
+	<servlet-name>openIDServlet</servlet-name>
+	<url-pattern>/rest/openid</url-pattern>
 </servlet-mapping>
-  
-  <!-- Default page to serve -->
-  <welcome-file-list>
-    <welcome-file>TheJobMap.html</welcome-file>
-  </welcome-file-list>
+
+<servlet>
+	<servlet-name>userServlet</servlet-name>
+	<servlet-class>com.appspot.thejobmap.server.UserServlet</servlet-class>
+</servlet>
+<servlet-mapping>
+	<servlet-name>userServlet</servlet-name>
+	<url-pattern>/rest/user</url-pattern>
+</servlet-mapping>
+
+
+<!-- Default page to serve -->
+<welcome-file-list>
+	<welcome-file>TheJobMap.html</welcome-file>
+</welcome-file-list>
 
 </web-app>

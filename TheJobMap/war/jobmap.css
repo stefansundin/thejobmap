@@ -19,6 +19,7 @@ body {
 }
 
 #panel #account {
+	display: none;
 	float: right;
 	margin-top: -20px;
 	background-color: rgb(201,223,175);
@@ -34,13 +35,13 @@ body {
 #panel #account button {
 	margin-left: 10px;
 }
-.gwt-DialogBox#login {
+.loginDialog {
 	position: absolute !important;
 	top: 50px !important;
 	right: 15px !important;
 	left: auto !important;
 }
-.gwt-DialogBox#login img {
+.loginDialog img {
 	cursor: pointer;
 	margin: 5px 0;
 }
