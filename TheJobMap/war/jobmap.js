@@ -1,20 +1,24 @@
 
 var map = null;
-var newMarker = null;
-var markers = [];
+//var jobmap = null;
 
 function initialize() {
-	var myOptions = {
+	var mapOptions = {
 		zoom: 5,
 		center: new google.maps.LatLng(62.390369, 17.314453),
 		mapTypeId: google.maps.MapTypeId.ROADMAP,
 		streetViewControl: false,
-	    mapTypeControl: false,
+		mapTypeControl: false,
 	};
-	map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
-
+	map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+	
+	// Add controls
+	//jobmap = new JobMap(map);
+	jobmap.init(map);
+	map.controls[google.maps.ControlPosition.TOP_CENTER].push(jobmap.mapControls[0]);
+	
 	// Request markers
-	refreshMarkers();
+	jobmap.refreshMarkers();
 	
 	// Make map resize dynamically
 	window.addEventListener("resize", resizeMap, false);
@@ -32,115 +36,128 @@ function initialize() {
 	})();
 }
 
-function refreshMarkers() {
-	var marker = {
-			lat: 12.34,
-			lng: 44.56,
-			info: "hej",
-	}
+var jobmap = {
+	map: null,
+	markers: [],
+	newMarker: null,
+	mapControls: null,
 	
-	$.getJSON('/rest/marker',
-	function(data) {
-		console.log(data);
-		$.each(data,function(key, val) {
-			addMarker(val.lat, val.lng, val.info);
+	init: function(map) {
+		jobmap.map = map;
+
+		// Create buttons
+		var c = $('<div id="JobMapControls"></div>');
+		$(c).append('<button id="RefreshMarkersButton">Refresh markers</button>');
+		google.maps.event.addDomListener($("#RefreshMarkersButton",c)[0], "click", jobmap.refreshMarkers);
+		$(c).append('<button id="CreateMarkerButton">Create marker</button>');
+		google.maps.event.addDomListener($("#CreateMarkerButton",c)[0], "click", jobmap.createMarker);
+		jobmap.mapControls = c;
+		
+	},
+	
+	clearMarkers: function() {
+		if (jobmap.newMarker != null) {
+			jobmap.newMarker.setMap(null);
+			jobmap.newMarker = null;
+		}
+		for (var i=0; i < jobmap.markers.length; i++) {
+			jobmap.markers[i].setMap(null);
+		}
+		jobmap.markers = [];
+	},
+	refreshMarkers: function() {
+		jobmap.clearMarkers();
+		
+		$.getJSON("/rest/marker")
+		.done(function(data) {
+			printInfo("Received markers: ", data);
+			$.each(data, function(key, val) {
+				jobmap.addMarker(val);
+			});
 		});
-	});
+	},
+	
+	addMarker: function(m) {
+		// Define Marker properties
+		/*
+		var image = new google.maps.MarkerImage('images/markers/ltulogo.png',
+			new google.maps.Size(22, 22),
+			new google.maps.Point(0,0),
+			new google.maps.Point(10, 22)
+		);
+		*/
+		
+		var marker = new google.maps.Marker({
+			map: jobmap.map,
+			position: new google.maps.LatLng(m.lat, m.lng),
+			//icon: image,
+			//icon: "",
+		});
+		jobmap.markers.push(marker);
+
+		// Add listener for a click on the pin
+		google.maps.event.addListener(marker, 'click', function() {
+			infowindow.open(map, marker);
+		});
+
+		// Add information window
+		var infowindow = new google.maps.InfoWindow({
+			content: createInfo("Titel", m.info)
+		});
+	},
+	
+	createMarker: function() {
+		if (jobmap.newMarker != null) {
+			jobmap.newMarker.setMap(null);
+		}
+		
+		jobmap.newMarker = new google.maps.Marker({
+			map: jobmap.map,
+			position: map.getCenter(),
+			title: "Drag me!",
+			draggable: true,
+			animation: google.maps.Animation.BOUNCE,
+		});
+		google.maps.event.addListenerOnce(jobmap.newMarker, "mouseover", function() {
+			jobmap.newMarker.setAnimation(null);
+		});
+		google.maps.event.addListener(jobmap.newMarker, "click", function() {
+			infowindow.open(map, jobmap.newMarker);
+		});
+		
+		var infowindow = new google.maps.InfoWindow({
+			content: createInfo("Enter details", '<textarea id="markerInfo" placeholder="Write description here"></textarea><br/><button onclick="jobmap.storeMarker();">Store marker</button>')
+		});
+	},
+	
+	storeMarker: function() {
+		var marker = {
+			lat: jobmap.newMarker.getPosition().lat(),
+			lng: jobmap.newMarker.getPosition().lng(),
+			info: $("#markerInfo").val(),
+		};
+		printInfo("Sending marker: ", marker);
+		
+		$.ajax({
+			url: "/rest/marker",
+			type: "POST",
+			dataType: "json",
+			data: JSON.stringify(marker),
+		})
+		.done(function(data) {
+				printInfo("Reply: ", data);
+		})
+		.fail(function(xhr,txt) {
+			printError("Sending marker failed: "+txt+".");
+		});
+		
+		jobmap.newMarker.setMap(null);
+		jobmap.newMarker = null;
+		jobmap.addMarker(marker);
+	},
 }
 
-function addMarker(latitude, longitude, markersInfo) {
-	// Define Marker properties
-	/*
-	var image = new google.maps.MarkerImage('images/markers/ltulogo.png',
-		new google.maps.Size(22, 22),
-		new google.maps.Point(0,0),
-		new google.maps.Point(10, 22)
-	);
-	*/
-	
-	var marker = new google.maps.Marker({
-		map: map,
-		position: new google.maps.LatLng(latitude, longitude),
-		//icon: image,
-		//icon: "",
-	});
-	markers.push(marker);
 
-	// Add listener for a click on the pin
-	google.maps.event.addListener(marker, 'click', function() {
-		infowindow.open(map, marker);
-	});
-
-	// Add information window
-	var infowindow = new google.maps.InfoWindow({
-		content: createInfo("Titel", markersInfo)
-	});
-}
-
-function createMarker() {
-	if (newMarker != null) {
-		newMarker.setMap(null);
-	}
-	
-	newMarker = new google.maps.Marker({
-		map: map,
-		position: map.getCenter(),
-		title: "New marker",
-		draggable: true,
-	});
-	
-	google.maps.event.addListener(newMarker, 'click', function() {
-		infowindow.open(map, newMarker);
-	});
-	var infowindow = new google.maps.InfoWindow({
-		content: createInfo(newMarker.title,'<textarea id="markersInfo" placeholder="Write description here"></textarea><button onclick="storeMarker1();">Store marker</button>')
-	});
-}
-
-function storeMarker1() {
-	var marker = {
-			lat: newMarker.getPosition().lat(),
-			lng: newMarker.getPosition().lng(),
-			info: document.getElementById("markersInfo").value,
-	}
-/*
-	$.post('/rest/marker',marker,
-	function(data) {
-		console.log(data);
-	}, 'json');
-*/
-	
-	$.ajax({
-	  type: 'POST',
-	  url: '/rest/marker',
-	  data: JSON.stringify(marker),
-	  success: function(data){
-		console.log(data);
-	  },
-	  dataType: 'json',
-	  //contentType: 'application/json',
-	});
-	
-	newMarker.setMap(null);
-	newMarker = null;
-	/*
-	var split = latlng.indexOf(",");
-	var lat = latlng.substring(0, split);
-	var lng = latlng.substring(split+1);
-	addMarker(lat, lng, markerInfo);
-	*/
-}
-
-function clearMarkers() {
-	if (newMarker != null) {
-		newMarker.setMap(null);
-		newMarker = null;
-	}
-	for (var i=0; i < markers.length; i++) {
-		markers[i].setMap(null);
-	}
-	markers = [];
-}
 
 // Create information window
 function createInfo(title, content) {
@@ -149,9 +166,23 @@ function createInfo(title, content) {
 
 // Dynamically resize map
 function resizeMap() {
-    var page = document.getElementById("page");
-    var panel = document.getElementById("panel");
-    var viewportHeight = document.body.clientHeight;
-    
-    page.style.height = (viewportHeight-panel.offsetHeight)+"px";
+	var page = document.getElementById("page");
+	var panel = document.getElementById("panel");
+	var viewportHeight = document.body.clientHeight;
+	
+	page.style.height = (viewportHeight-panel.offsetHeight)+"px";
+}
+
+// Console
+function print(txt, style, json) {
+	var now = new Date();
+	var pad = function(n) { return ("0"+n).slice(-2); }
+	var timestamp = "["+pad(now.getHours())+":"+pad(now.getMinutes())+":"+pad(now.getSeconds())+"] ";
+	$("#console").prepend('<div class="'+style+'">'+timestamp+txt+(json?JSON.stringify(json):"")+'</div>');
+}
+function printInfo(txt, json) {
+	print(txt, 'info', json);
+}
+function printError(txt, json) {
+	print(txt, 'error', json);
 }

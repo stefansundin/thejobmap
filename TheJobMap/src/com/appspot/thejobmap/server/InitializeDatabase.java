@@ -9,7 +9,7 @@ import com.google.gwt.core.client.GWT;
  */
 public class InitializeDatabase {
 	
-	private final MarkerServiceImpl markerServiceImpl = GWT.create(MarkerServiceImpl.class);
+	//private final MarkerServiceImpl markerServiceImpl = GWT.create(MarkerServiceImpl.class);
 		
 	String[][] cities = {
 			{ "Luleå", "65.58572,22.159424" },
@@ -50,6 +50,7 @@ public class InitializeDatabase {
 	/**
 	 * 
 	 */
+	/*
 	public void init(){
 		for (int i=0; i<cities.length; i++){
 			String[] latlongs = cities[i][1].split(",");
@@ -58,4 +59,5 @@ public class InitializeDatabase {
 			markerServiceImpl.storeMarker(latitude, longitude, cities[i][0]);
 		}
 	}
+	*/
 }
