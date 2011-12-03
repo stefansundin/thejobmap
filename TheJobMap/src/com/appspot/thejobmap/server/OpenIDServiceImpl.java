@@ -10,42 +10,41 @@ import com.appspot.thejobmap.client.servlets.OpenIDService;
 import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
-import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 
 public class OpenIDServiceImpl extends RemoteServiceServlet implements OpenIDService {
 
 	private static final long serialVersionUID = 3410869956404931778L;
 
-    UserService userService = null;
-    User user = null;
+	UserService userService = null;
+	User user = null;
 
-    /**
-     * Return list of OpenID providers to the client.
-     */
-    public String[][] getUrls() {
-    	String providers[][] = {
-    			{ "google",    "google.com/accounts/o8/id" },
-    			{ "myopenid",  "myopenid.com" },
-    			{ "yahoo",     "yahoo.com" },
-    			//{ "wordpress", "wordpress.com" },
-    			//{ "myspace",  "myspace.com" },
-    			//{ "aol",      "aol.com" },
-    	};
-    	
-    	userService = UserServiceFactory.getUserService();
-    	user = userService.getCurrentUser();
-    	for (String[] provider : providers) {
-    		provider[1] = userService.createLoginURL("/thejobmap/openid", null, provider[1], null);
+	/**
+	 * Return list of OpenID providers to the client.
+	 */
+	public String[][] getUrls() {
+		String providers[][] = {
+				{ "google",    "google.com/accounts/o8/id" },
+				{ "myopenid",  "myopenid.com" },
+				{ "yahoo",     "yahoo.com" },
+				//{ "wordpress", "wordpress.com" },
+				//{ "myspace",  "myspace.com" },
+				//{ "aol",      "aol.com" },
+		};
+		
+		userService = UserServiceFactory.getUserService();
+		user = userService.getCurrentUser();
+		for (String[] provider : providers) {
+			provider[1] = userService.createLoginURL("/thejobmap/openid", null, provider[1], null);
 		}
-    	
-    	return providers;
-    }
-    
-    /**
-     * Check if the user is logged in, and return details like email and privileges.
-     * Used on startup and after logging in.
-     */
+		
+		return providers;
+	}
+	
+	/**
+	 * Check if the user is logged in, and return details like email and privileges.
+	 * Used on startup and after logging in.
+	 */
 	public String[] isLoggedIn() { 
 		userService = UserServiceFactory.getUserService();
 		user = userService.getCurrentUser();
@@ -59,19 +58,19 @@ public class OpenIDServiceImpl extends RemoteServiceServlet implements OpenIDSer
 		ret[2] = "user";
 		Boolean devmode = (getServletContext().getServerInfo().indexOf("Development") != -1);
 		if (devmode) {
-			ret[3] = userService.createLogoutURL("/");
+			ret[3] = userService.createLogoutURL("/TheJobMap.html?gwt.codesvr=127.0.0.1:9997");
 		}
 		else {
-			ret[3] = userService.createLogoutURL("/TheJobMap.html?gwt.codesvr=127.0.0.1:9997");
+			ret[3] = userService.createLogoutURL("/");
 		}
 		
 		return ret;
 	}
 
-    /**
-     * The user will arrive directly to this method in the popup window after logging in with OpenID.
-     * This JavaScript code will invoke a method on the main window and then close itself.
-     */
+	/**
+	 * The user will arrive directly to this method in the popup window after logging in with OpenID.
+	 * This JavaScript code will invoke a method on the main window and then close itself.
+	 */
 	public void doGet(HttpServletRequest req, HttpServletResponse resp)
 	throws IOException {
 		userService = UserServiceFactory.getUserService();
