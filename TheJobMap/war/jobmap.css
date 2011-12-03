@@ -10,6 +10,11 @@ body {
 	overflow: hidden;
 }
 
+a {
+	color: blue !important;
+	cursor: pointer;
+}
+
 #panel {
 	height: 80px;
 	background: rgb(245,245,245);
@@ -42,8 +47,9 @@ body {
 	left: auto !important;
 }
 .loginDialog img {
+	display: block;
 	cursor: pointer;
-	margin: 5px 0;
+	margin: 13px 0;
 }
 
 #page {
@@ -79,3 +85,8 @@ body {
 #console .error {
 	color: red;
 }
+
+/* jQuery ui overrides */
+div.ui-widget {font-size: 0.9em;}
+div.ui-datepicker {font-size: 70%;}
+div.ui-dialog-buttonpane {font-size: 80%;}

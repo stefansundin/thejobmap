@@ -183,8 +183,8 @@ var jobmap = {
 			modal: true,
 			draggable: false,
 			resizable: false,
-			height: 430,
-			width: 280,
+			height: 230,
+			width: 260,
 			buttons: {
 				Cancel: function() {
 					$(this).dialog("close");
@@ -198,13 +198,23 @@ var jobmap = {
 		$.getJSON("/rest/openid")
 		.done(function(data) {
 			printInfo("OpenID providers: ", data);
-			$.each(data, function(key, val) {
-				$('#loginForm').append('<img src="images/openid/'+val.name+'.png" />').click(function() {
-					window.open(val.loginUrl, "thejobmap-login",
-						"width=800,height=600,"+
-						"left="+($(window).width()/2-800/2)+",top="+($(window).height()/2-600/2)+
-						",location=yes,status=yes,resizable=yes");
-				});
+			var openLoginWindow = function(e) {
+				var width = 800;
+				var height = 600;
+				window.open(e.data.loginUrl, "thejobmap-openid",
+					"width="+width+",height="+height+","+
+					"left="+($(window).width()/2-width/2)+",top="+($(window).height()/2-height/2)+
+					",location=yes,status=yes,resizable=yes");
+			};
+			
+			$('<img src="images/openid/'+data[0].name+'.png" />').click(data[0],openLoginWindow).appendTo('#loginForm');
+			var moreProviders = $('<div id="moreProviders"></div>');
+			$('<a>+ Show more providers</a>').click(function() {
+				$(this).replaceWith(moreProviders);
+				$('#loginForm').dialog("option", "height", 400);
+			}).appendTo('#loginForm');
+			$.each(data.slice(1), function(key, val) {
+				$('<img src="images/openid/'+val.name+'.png" />').click(val,openLoginWindow).appendTo(moreProviders);
 				jobmap.addMarker(val);
 			});
 		})
