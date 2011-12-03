@@ -81,6 +81,11 @@ public class UserServlet extends HttpServlet {
 		// Get user info
 		Entity entity = pq.asSingleEntity();
 		user.name = (String) entity.getProperty("name");
+		user.age = (String) entity.getProperty("age");
+		user.sex = (String) entity.getProperty("sex");
+		user.phonenumber = (String) entity.getProperty("phonenumber");
+		user.education = (String) entity.getProperty("education");
+		user.workExperience = (String) entity.getProperty("workExperience");
 		user.privileges = (String) entity.getProperty("privileges");
 		
 		// Send to client
@@ -93,10 +98,11 @@ public class UserServlet extends HttpServlet {
 	 */
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		Gson gson = new Gson();
+		UserObj user = new UserObj();
 
 		// Parse input
 		BufferedReader reader = new BufferedReader(new InputStreamReader(req.getInputStream()));
-		UserObj user = gson.fromJson(reader, UserObj.class);
+		user = gson.fromJson(reader, UserObj.class);
 		reader.close();
 		
 		// Open output stream
@@ -111,17 +117,18 @@ public class UserServlet extends HttpServlet {
 			writer.close();
 			return;
 		}
+		user.email = u.getEmail();
 
 		// Query database
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Query q = new Query("Users");
-		q.addFilter("email", Query.FilterOperator.EQUAL, u.getEmail());
+		q.addFilter("email", Query.FilterOperator.EQUAL, user.email);
 		PreparedQuery pq = db.prepare(q);
 
 		// Does the user exist?
 		if (pq.countEntities(FetchOptions.Builder.withLimit(1)) == 0) {
-			//createUser();
-			ResultObj res = new ResultObj("fail", "not implemented");
+			createUser(user.email);
+			ResultObj res = new ResultObj("ok", "created new user");
 			writer.write(gson.toJson(res));
 			writer.close();
 			return;
@@ -129,8 +136,12 @@ public class UserServlet extends HttpServlet {
 
 		// Set new user info
 		Entity entry = pq.asSingleEntity();
-		entry.setProperty("email", user.email);
 		entry.setProperty("name", user.name);
+		entry.setProperty("age", user.age);
+		entry.setProperty("sex", user.sex);
+		entry.setProperty("phonenumber", user.phonenumber);
+		entry.setProperty("education", user.education);
+		entry.setProperty("workExperience", user.workExperience);
 		entry.setProperty("privileges", user.privileges);
 		
 		// Update database
@@ -159,6 +170,7 @@ public class UserServlet extends HttpServlet {
 		Key storeKey = KeyFactory.createKey("Users", "jobmap");
 		Date date = new Date();
 		Entity entry = new Entity("Users", storeKey);
+		entry.setProperty("creationDate", date.getTime());
 		entry.setProperty("email", email);
 		entry.setProperty("name", null);
 		entry.setProperty("age", null);
@@ -166,7 +178,6 @@ public class UserServlet extends HttpServlet {
 		entry.setProperty("phonenumber", null);
 		entry.setProperty("education", null);
 		entry.setProperty("workExperience", null);
-		entry.setProperty("creationDate", date.getTime());
 		
 		// Insert in database
 		db.put(entry);

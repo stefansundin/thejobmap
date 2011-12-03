@@ -83,8 +83,8 @@ var jobmap = {
 		});
 		
 		// User
-		$('#panel').append('<div id="account"></div>');
-		$('#account').append('<span id="username"> </span>');
+		$('<div id="account"></div>').appendTo('#panel');
+		$('<span id="username"> </span>').click(jobmap.updateUserForm).appendTo('#account');
 		$('<button id="logButton"> </button>').click(jobmap.logButton).appendTo('#account');
 		jobmap.getUser();
 	},
@@ -235,8 +235,8 @@ var jobmap = {
 	loginForm: function() {
 		$('<div id="loginForm"></div>').dialog({
 			title: "Login with OpenID",
-			autoOpen: true,
 			dialogClass: "loginDialog",
+			autoOpen: true,
 			modal: true,
 			draggable: false,
 			resizable: false,
@@ -245,11 +245,11 @@ var jobmap = {
 			buttons: {
 				Cancel: function() {
 					$(this).dialog("close");
-				}
+				},
 			},
 			close: function() {
 				$(this).remove();
-			}
+			},
 		});
 
 		$.getJSON("/rest/openid")
@@ -287,7 +287,7 @@ var jobmap = {
 		$.getJSON("/rest/user")
 		.done(function(data) {
 			$('#loginForm').dialog("destroy");
-			if (data.error == "not logged in") {
+			if (data.info == "not logged in") {
 				printInfo("Not logged in.");
 				return;
 			}
@@ -309,6 +309,13 @@ var jobmap = {
 	},
 	
 	/**
+	 * Redirects the user to the logout url.
+	 */
+	logout: function() {
+		window.location.assign(jobmap.user.logoutUrl);
+	},
+	
+	/**
 	 * Returns a nicely formatted name for the user.
 	 */
 	getUsername: function() {
@@ -322,12 +329,61 @@ var jobmap = {
 	},
 	
 	/**
-	 * Redirects the user to the logout url.
+	 * 
 	 */
-	logout: function() {
-		window.location.assign(jobmap.user.logoutUrl);
+	updateUserForm: function() {
+		if (!jobmap.user.loggedIn || $('#updateUserForm').length) return;
+		$('<div id="updateUserForm"></div>').dialog({
+			title: "Your personal information",
+			dialogClass: "userDialog",
+			autoOpen: true,
+			resizable: false,
+			height: 500,
+			width: 360,
+			buttons: {
+				Save: function() {
+					var user = {
+						name: $('#userName').val(),
+						age: $('#userAge').val(),
+						sex: $('#userSex').val(),
+						phonenumber: $('#userPhonenumber').val(),
+						education: $('#userEducation').val(),
+						workExperience: $('#userWorkExperience').val(),
+					};
+					printInfo("Sending user details: ", user);
+					
+					$.ajax({
+						url: "/rest/user",
+						type: "POST",
+						dataType: "json",
+						data: JSON.stringify(user),
+					})
+					.done(function(data) {
+						printInfo("Reply: ", data);
+						$.extend(jobmap.user, user);
+						$('#updateUserForm').dialog("close");
+					})
+					.fail(function(xhr,txt) {
+						printError("Sending user details failed: "+txt+".");
+					});
+				},
+				Cancel: function() {
+					$(this).dialog("close");
+				},
+			},
+			close: function() {
+				$(this).remove();
+			},
+		});
+		$('<p>Email: </p>').append($('<input type="text" id="userEmail" readonly />').val(jobmap.user.email)).appendTo('#updateUserForm');
+		$('<p>Name: </p>').append($('<input type="text" id="userName" placeholder="Your name" />').val(jobmap.user.name)).appendTo('#updateUserForm');
+		$('<p>Age: </p>').append($('<input type="text" id="userAge" placeholder="Your age" />').val(jobmap.user.age)).appendTo('#updateUserForm');
+		$('<p>Sex: </p>').append($('<input type="text" id="userSex" placeholder="Your sex" />').val(jobmap.user.sex)).appendTo('#updateUserForm');
+		$('<p>Phone number: </p>').append($('<input type="text" id="userPhonenumber" placeholder="Your phone number" />').val(jobmap.user.phonenumber)).appendTo('#updateUserForm');
+		$('<p>Education: </p>').append($('<input type="text" id="userEducation" placeholder="Your education" />').val(jobmap.user.education)).appendTo('#updateUserForm');
+		$('<p>Work Experience: </p>').append($('<input type="text" id="userWorkExperience" placeholder="Number of years" />').val(jobmap.user.workExperience)).appendTo('#updateUserForm');
 	},
-}
+};
 
 // Dynamically resize map
 function resizeMap() {
@@ -339,16 +395,18 @@ function resizeMap() {
 }
 
 // Console
-function print(txt, style, json) {
+function print(txt, json, style) {
+	if (!style) style = 'info';
+	if (json && json.result == 'fail') style = 'error';
 	var now = new Date();
 	var pad = function(n) { return ("0"+n).slice(-2); }
 	var timestamp = "["+pad(now.getHours())+":"+pad(now.getMinutes())+":"+pad(now.getSeconds())+"] ";
 	$("#console").prepend('<div class="'+style+'">'+timestamp+txt+(json?JSON.stringify(json):"")+'</div>');
 }
 function printInfo(txt, json) {
-	print(txt, 'info', json);
+	print(txt, json, 'info');
 }
 function printError(txt, json) {
-	print(txt, 'error', json);
+	print(txt, json, 'error');
 	$('#console').show();
 }
