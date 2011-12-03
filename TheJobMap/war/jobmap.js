@@ -1,6 +1,5 @@
 
 var map = null;
-//var jobmap = null;
 
 function initialize() {
 	var mapOptions = {
@@ -13,7 +12,6 @@ function initialize() {
 	map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
 	
 	// Add controls
-	//jobmap = new JobMap(map);
 	jobmap.init(map);
 	map.controls[google.maps.ControlPosition.TOP_CENTER].push(jobmap.mapControls[0]);
 	
@@ -53,6 +51,9 @@ var jobmap = {
 		google.maps.event.addDomListener($("#CreateMarkerButton",c)[0], "click", jobmap.createMarker);
 		jobmap.mapControls = c;
 		
+		// User
+		$('#panel').append('<div id="account">hej</div>');
+		$('#account').append('<button>Login</button>').click(jobmap.loginForm);
 	},
 	
 	clearMarkers: function() {
@@ -65,6 +66,7 @@ var jobmap = {
 		}
 		jobmap.markers = [];
 	},
+	
 	refreshMarkers: function() {
 		jobmap.clearMarkers();
 		
@@ -155,6 +157,47 @@ var jobmap = {
 		jobmap.newMarker = null;
 		jobmap.addMarker(marker);
 	},
+	
+	loginForm: function() {
+		$('<div id="loginForm"></div>').dialog({
+			title: "Login with OpenID",
+			autoOpen: true,
+			dialogClass: "loginDialog",
+			//position: ["right", "top"],
+			modal: true,
+			draggable: false,
+			resizable: false,
+			height: 300,
+			width: 350,
+			buttons: {
+				Cancel: function() {
+					$( this ).dialog( "close" );
+				}
+			},
+		});
+
+		$.getJSON("/rest/openid")
+		.done(function(data) {
+			printInfo("OpenID providers: ", data);
+			$.each(data, function(key, val) {
+				$('#loginForm').append('<img src="images/openid/'+val.name+'.png" />').click(function() {
+					window.open(val.loginUrl, "thejobmap-login",
+							"width=800,height=600,"+
+							"left="+($(window).width()/2-800/2)+",top="+($(window).height()/2-600/2)+
+							",location=yes,status=yes,resizable=yes");
+				});
+				jobmap.addMarker(val);
+			});
+		});
+	},
+	
+	checkLoggedIn: function() {
+		$.getJSON("/rest/user")
+		.done(function(data) {
+			printInfo("User info: ", data);
+			$('#account').prepend(data.email);
+		});
+	}
 }
 
 

@@ -62,11 +62,11 @@ public class UserServlet extends HttpServlet {
 		}
 
 		// Get user info
-		Entity dbret = pq.asSingleEntity();
+		Entity entity = pq.asSingleEntity();
 		UserObj user = new UserObj();
-		user.email = (String) dbret.getProperty("email");
-		user.name = (String) dbret.getProperty("name");
-		user.privileges = (String) dbret.getProperty("privileges");
+		user.email = (String) entity.getProperty("email");
+		user.name = (String) entity.getProperty("name");
+		user.privileges = (String) entity.getProperty("privileges");
 		
 		// Send to client
 		writer.write(gson.toJson(user));
