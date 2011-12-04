@@ -382,6 +382,7 @@ var jobmap = {
 		$('<p>Phone number: </p>').append($('<input type="text" id="userPhonenumber" placeholder="Your phone number" />').val(jobmap.user.phonenumber)).appendTo('#updateUserForm');
 		$('<p>Education: </p>').append($('<input type="text" id="userEducation" placeholder="Your education" />').val(jobmap.user.education)).appendTo('#updateUserForm');
 		$('<p>Work Experience: </p>').append($('<input type="text" id="userWorkExperience" placeholder="Number of years" />').val(jobmap.user.workExperience)).appendTo('#updateUserForm');
+		$('<p>Upload CV: </p>').append($('<iframe src="/upload-cv.jsp" name="iframe" width="200" height="25" scrolling="no" frameborder="0"></iframe>')).appendTo('#updateUserForm');
 	},
 };
 

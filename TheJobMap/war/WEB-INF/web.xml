@@ -31,7 +31,7 @@
 </servlet>
 <servlet-mapping>
 	<servlet-name>userServlet</servlet-name>
-	<url-pattern>/rest/user</url-pattern>
+	<url-pattern>/rest/user/*</url-pattern>
 </servlet-mapping>
 
 

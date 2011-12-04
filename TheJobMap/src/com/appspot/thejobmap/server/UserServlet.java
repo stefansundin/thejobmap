@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.Date;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -15,6 +16,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.appspot.thejobmap.shared.ResultObj;
 import com.appspot.thejobmap.shared.UserObj;
+import com.google.appengine.api.blobstore.BlobKey;
+import com.google.appengine.api.blobstore.BlobstoreService;
+import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
@@ -42,7 +46,7 @@ public class UserServlet extends HttpServlet {
 		// Open output stream
 		OutputStream out = resp.getOutputStream();
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out));
-		
+
 		// Check if logged in
 		UserService userService = UserServiceFactory.getUserService();
 		User u = userService.getCurrentUser();
@@ -54,16 +58,7 @@ public class UserServlet extends HttpServlet {
 		}
 		user.loggedIn = true;
 		user.email = u.getEmail();
-		
-		// Get logout url
-		Boolean devmode = (getServletContext().getServerInfo().indexOf("Development") != -1);
-		if (devmode) {
-			user.logoutUrl = userService.createLogoutURL("/TheJobMap.html?gwt.codesvr=127.0.0.1:9997");
-		}
-		else {
-			user.logoutUrl = userService.createLogoutURL("/");
-		}
-		
+
 		// Query database
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Query q = new Query("Users");
@@ -77,9 +72,31 @@ public class UserServlet extends HttpServlet {
 			writer.close();
 			return;
 		}
-
-		// Get user info
+		
+		// Get user entity
 		Entity entity = pq.asSingleEntity();
+
+		// Get CV
+		String path = req.getPathInfo();
+		System.out.println(req.getPathInfo());
+		if (path != null && path.matches("/cv")){
+			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
+			BlobKey blobKey = new BlobKey((String) entity.getProperty("cv"));
+	        blobstoreService.serve(blobKey, resp);
+			return;
+		}
+		
+		
+		// Get logout url
+		Boolean devmode = (getServletContext().getServerInfo().indexOf("Development") != -1);
+		if (devmode) {
+			user.logoutUrl = userService.createLogoutURL("/TheJobMap.html?gwt.codesvr=127.0.0.1:9997");
+		}
+		else {
+			user.logoutUrl = userService.createLogoutURL("/");
+		}
+		
+		// Get user info
 		user.name = (String) entity.getProperty("name");
 		user.age = (String) entity.getProperty("age");
 		user.sex = (String) entity.getProperty("sex");
@@ -100,24 +117,25 @@ public class UserServlet extends HttpServlet {
 		Gson gson = new Gson();
 		UserObj user = new UserObj();
 
-		// Parse input
+		// Open streams
 		BufferedReader reader = new BufferedReader(new InputStreamReader(req.getInputStream()));
-		user = gson.fromJson(reader, UserObj.class);
-		reader.close();
-		
-		// Open output stream
 		OutputStream out = resp.getOutputStream();
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out));
-		
+
 		// Check if logged in
 		User u = UserServiceFactory.getUserService().getCurrentUser();
 		if (u == null) {
+			user.email = "alexandra.tsampikakis@gmail.com";
+			/*
 			ResultObj res = new ResultObj("fail", "not logged in");
 			writer.write(gson.toJson(res));
 			writer.close();
 			return;
+			*/
 		}
-		user.email = u.getEmail();
+		else {
+			user.email = u.getEmail();
+		}
 
 		// Query database
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
@@ -133,9 +151,34 @@ public class UserServlet extends HttpServlet {
 			writer.close();
 			return;
 		}
-
-		// Set new user info
+		
+		// Get user entity
 		Entity entry = pq.asSingleEntity();
+
+		// CV Upload?
+		String path = req.getPathInfo();
+		System.out.println(req.getPathInfo());
+		if (path != null && path.matches("/cv")){
+			// Get blob key
+			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
+			Map<String, BlobKey> blobs = blobstoreService.getUploadedBlobs(req);
+			BlobKey blobKey = blobs.get("myFile");
+			
+			// Store cv key in user details
+			entry.setProperty("cv", blobKey.getKeyString());
+			db.put(entry);
+			
+			// Finished
+			writer.write("CV uploaded!");
+			writer.close();
+			return;
+		}
+		
+		// Parse input
+		user = gson.fromJson(reader, UserObj.class);
+		reader.close();
+		
+		
 		entry.setProperty("name", user.name);
 		entry.setProperty("age", user.age);
 		entry.setProperty("sex", user.sex);
@@ -182,5 +225,20 @@ public class UserServlet extends HttpServlet {
 		// Insert in database
 		db.put(entry);
 	}
+	/**
+	public void uploadCV(){
+		Gson gson = new Gson();
+		UserObj cv = new UserObj();
+		
+		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
+		Query q = new Query("Users");
+		q.addFilter("email", Query.FilterOperator.EQUAL, email);
+		PreparedQuery pq = db.prepare(q);
+		if (pq.countEntities(FetchOptions.Builder.withLimit(1)) != 0) {
+			throw new IllegalArgumentException("User already exists!");
+		}
+		
+		db.put(entry);
+	}*/
 
 }

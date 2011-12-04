@@ -1,7 +1,6 @@
 package com.appspot.thejobmap.client;
 
 import com.google.gwt.core.client.EntryPoint;
-import com.google.gwt.core.client.GWT;
 
 /**
  * The master class of The Job Map.
