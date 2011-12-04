@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.appspot.thejobmap.shared.ResultObj;
+import com.appspot.thejobmap.shared.UploadUrlObj;
 import com.appspot.thejobmap.shared.UserObj;
 import com.google.appengine.api.blobstore.BlobKey;
 import com.google.appengine.api.blobstore.BlobstoreService;
@@ -78,11 +79,19 @@ public class UserServlet extends HttpServlet {
 
 		// Get CV
 		String path = req.getPathInfo();
-		System.out.println(req.getPathInfo());
-		if (path != null && path.matches("/cv")){
+		path = (path==null?"":path);
+		if (path.matches("/cv")) {
 			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
 			BlobKey blobKey = new BlobKey((String) entity.getProperty("cv"));
 			blobstoreService.serve(blobKey, resp);
+			return;
+		}
+		else if (path.matches("/cv/getUploadUrl")) {
+			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
+			UploadUrlObj uploadUrl = new UploadUrlObj();
+			uploadUrl.uploadUrl = blobstoreService.createUploadUrl("/rest/user/cv");
+			writer.write(gson.toJson(uploadUrl));
+			writer.close();
 			return;
 		}
 		
