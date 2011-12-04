@@ -39,6 +39,8 @@ public class MarkerServlet extends HttpServlet {
 	 * GET - Request of markers.
 	 */
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		resp.setContentType("application/json; charset=UTF-8");
+		
 		// Query database for markers
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Query q = new Query("Markers");
