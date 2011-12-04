@@ -7,8 +7,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -30,6 +33,8 @@ public class MarkerServlet extends HttpServlet {
 	
 	private static final long serialVersionUID = -919160328227007218L;
 	
+	UserServlet userServlet = new UserServlet();
+	
 	/**
 	 * GET - Request of markers.
 	 */
@@ -39,13 +44,23 @@ public class MarkerServlet extends HttpServlet {
 		Query q = new Query("Markers");
 		List<Entity> dbret = db.prepare(q).asList(FetchOptions.Builder.withLimit(1000));
 		
+		// Get user privileges
+		String privileges = userServlet.getPrivileges();
+		
 		// Transfer markers to serializable array
 		List<MarkerObj> markers = new ArrayList<MarkerObj>();
 		for (int i=0; i < dbret.size(); i++) {
 			MarkerObj marker = new MarkerObj();
+			marker.id = (int) dbret.get(i).getKey().getId();
 			marker.lat = (Double) dbret.get(i).getProperty("lat");
 			marker.lng = (Double) dbret.get(i).getProperty("lng");
+			marker.type = (String) dbret.get(i).getProperty("type");
+			marker.near = (String) dbret.get(i).getProperty("near");
 			marker.info = (String) dbret.get(i).getProperty("info");
+			if (privileges == "admin") {
+				marker.creationDate = (Long) dbret.get(i).getProperty("creationDate");
+				marker.author = (String) dbret.get(i).getProperty("author");
+			}
 			markers.add(marker);
 		}
 		
@@ -73,6 +88,8 @@ public class MarkerServlet extends HttpServlet {
 		Entity entry = new Entity("Markers", storeKey);
 		entry.setProperty("lat", marker.lat);
 		entry.setProperty("lng", marker.lng);
+		entry.setProperty("type", marker.type);
+		entry.setProperty("near", marker.near);
 		entry.setProperty("info", marker.info);
 		entry.setProperty("creationDate", date.getTime());
 		

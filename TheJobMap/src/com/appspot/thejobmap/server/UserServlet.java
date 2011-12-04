@@ -82,7 +82,7 @@ public class UserServlet extends HttpServlet {
 		if (path != null && path.matches("/cv")){
 			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
 			BlobKey blobKey = new BlobKey((String) entity.getProperty("cv"));
-	        blobstoreService.serve(blobKey, resp);
+			blobstoreService.serve(blobKey, resp);
 			return;
 		}
 		
@@ -221,24 +221,49 @@ public class UserServlet extends HttpServlet {
 		entry.setProperty("phonenumber", null);
 		entry.setProperty("education", null);
 		entry.setProperty("workExperience", null);
+
+		if (email.matches("test@example.com")
+		 || email.matches("alexandra.tsampikakis@gmail.com")
+		 || email.matches("recover89@gmail.com")) {
+			entry.setProperty("privileges", "admin");
+		}
+		else {
+			entry.setProperty("privileges", null);
+		}
 		
 		// Insert in database
 		db.put(entry);
 	}
+	
 	/**
-	public void uploadCV(){
-		Gson gson = new Gson();
-		UserObj cv = new UserObj();
-		
+	 * Get privileges for user.
+	 */
+	public String getPrivileges(String email) {
+		// Query the database
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Query q = new Query("Users");
 		q.addFilter("email", Query.FilterOperator.EQUAL, email);
 		PreparedQuery pq = db.prepare(q);
-		if (pq.countEntities(FetchOptions.Builder.withLimit(1)) != 0) {
-			throw new IllegalArgumentException("User already exists!");
+		if (pq.countEntities(FetchOptions.Builder.withLimit(1)) == 0) {
+			throw new IllegalArgumentException("User does not exist!");
 		}
 		
-		db.put(entry);
-	}*/
+		// Return privileges
+		Entity entry = pq.asSingleEntity();
+		String privileges = (String) entry.getProperty("privileges");
+		return privileges;
+	}
+	
+	/**
+	 * Get privileges for current user.
+	 */
+	public String getPrivileges() {
+		User u = UserServiceFactory.getUserService().getCurrentUser();
+		if (u == null) { //Not logged in
+			return "random";
+		}
+		String email = u.getEmail();
+		return getPrivileges(email);
+	}
 
 }

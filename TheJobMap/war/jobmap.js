@@ -16,7 +16,7 @@ function initialize() {
 		streetViewControl: false,
 		mapTypeControl: false,
 	};
-	var map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+	var map = new google.maps.Map(document.getElementById('map_canvas'), mapOptions);
 	
 	// Add controls
 	jobmap.init(map);
@@ -26,7 +26,7 @@ function initialize() {
 	jobmap.refreshMarkers();
 	
 	// Make map resize dynamically
-	window.addEventListener("resize", resizeMap, false);
+	window.addEventListener('resize', resizeMap, false);
 	resizeMap();
 	
 	// Google analytics
@@ -45,6 +45,7 @@ var jobmap = {
 	/** Variables */
 	map: null,
 	markers: [],
+	mapMarkers: [],
 	newMarker: null,
 	mapControls: null,
 	infoWindow: null,
@@ -73,8 +74,8 @@ var jobmap = {
 		jobmap.mapControls = c[0];
 		$('<button id="refreshMarkersButton">Refresh markers</button>').appendTo(c);
 		$('<button id="createMarkerButton">Create marker</button>').appendTo(c);
-		google.maps.event.addDomListener($("#refreshMarkersButton",c)[0], "click", jobmap.refreshMarkers);
-		google.maps.event.addDomListener($("#createMarkerButton",c)[0], "click", jobmap.createMarker);
+		google.maps.event.addDomListener($('#refreshMarkersButton',c)[0], 'click', jobmap.refreshMarkers);
+		google.maps.event.addDomListener($('#createMarkerButton',c)[0], 'click', jobmap.createMarker);
 		
 		// Info Window
 		jobmap.infoWindow = new google.maps.InfoWindow({});
@@ -99,10 +100,10 @@ var jobmap = {
 			jobmap.newMarker.setMap(null);
 			jobmap.newMarker = null;
 		}
-		for (var i=0; i < jobmap.markers.length; i++) {
-			jobmap.markers[i].setMap(null);
+		for (var i=0; i < jobmap.mapMarkers.length; i++) {
+			jobmap.mapMarkers[i].setMap(null);
 		}
-		jobmap.markers = [];
+		jobmap.mapMarkers = [];
 	},
 	
 	/**
@@ -111,9 +112,9 @@ var jobmap = {
 	refreshMarkers: function() {
 		jobmap.clearMarkers();
 		
-		$.getJSON("/rest/marker")
+		$.getJSON('/rest/marker')
 		.done(function(data) {
-			printInfo("Received markers: ", data);
+			printInfo('Received markers: ', data);
 			$.each(data, function(key, val) {
 				jobmap.addMarker(val);
 			});
@@ -123,28 +124,41 @@ var jobmap = {
 	/**
 	 * Add a marker to the map.
 	 */
-	addMarker: function(m) {
-		// Define Marker properties
-		/*
-		var image = new google.maps.MarkerImage('images/markers/ltulogo.png',
-			new google.maps.Size(22, 22),
-			new google.maps.Point(0,0),
-			new google.maps.Point(10, 22)
-		);
-		*/
-		
-		var marker = new google.maps.Marker({
+	addMarker: function(marker) {
+		// Construct mapMarker
+		var mapMarker = new google.maps.Marker({
 			map: jobmap.map,
-			position: new google.maps.LatLng(m.lat, m.lng),
-			//icon: image,
-			//icon: "",
+			position: new google.maps.LatLng(marker.lat, marker.lng),
+			draggable: jobmap.isAdmin(),
 		});
-		jobmap.markers.push(marker);
+		
+		/*
+		// Check if we already have the marker
+		$.each(jobmap.markers, function(i, m) {
+			if (m.id == marker.id) {
+				var oldMapMarker = jobmap.markers[i].mapMarker;
+				oldMapMarker.setPosition(mapMarker.position);
+				jobmap.markers[i] = marker;
+				mapMarker = oldMapMarker;
+				return false;
+			}
+			else if (i == jobmap.markers.length-1) {
+				marker.mapMarker = mapMarker;
+				jobmap.markers.push(marker);
+				jobmap.mapMarkers.push(mapMarker);
+				mapMarker.setMap(jobmap.map);
+			}
+		});
+		*/
 
+		marker.mapMarker = mapMarker;
+		jobmap.markers.push(marker);
+		jobmap.mapMarkers.push(mapMarker);
+		
 		// Add listener for a click on the pin
-		google.maps.event.addListener(marker, 'click', function() {
-			jobmap.infoWindow.setContent(jobmap.createInfo(m));
-			jobmap.infoWindow.open(jobmap.map, marker);
+		google.maps.event.addListener(mapMarker, 'click', function() {
+			jobmap.infoWindow.setContent(jobmap.createInfo(marker));
+			jobmap.infoWindow.open(jobmap.map, mapMarker);
 		});
 	},
 	
@@ -159,21 +173,17 @@ var jobmap = {
 		jobmap.newMarker = new google.maps.Marker({
 			map: jobmap.map,
 			position: jobmap.map.getCenter(),
-			title: "Drag me!",
+			title: 'Drag me!',
 			draggable: true,
 			animation: google.maps.Animation.BOUNCE,
 		});
-		google.maps.event.addListenerOnce(jobmap.newMarker, "mouseover", function() {
+		google.maps.event.addListenerOnce(jobmap.newMarker, 'mouseover', function() {
 			jobmap.newMarker.setAnimation(null);
 		});
-		google.maps.event.addListener(jobmap.newMarker, "click", function() {
+		google.maps.event.addListener(jobmap.newMarker, 'click', function() {
 			jobmap.infoWindow.setContent(jobmap.createInfo(jobmap.newMarker));
 			jobmap.infoWindow.open(jobmap.map, jobmap.newMarker);
 		});
-		/*
-		var infowindow = new google.maps.InfoWindow({
-			content: createInfo("Enter details", '<textarea id="markerInfo" placeholder="Write description here"></textarea><br/><button onclick="jobmap.storeMarker();">Store marker</button>')
-		});*/
 	},
 	
 	/**
@@ -183,21 +193,21 @@ var jobmap = {
 		var marker = {
 			lat: jobmap.newMarker.getPosition().lat(),
 			lng: jobmap.newMarker.getPosition().lng(),
-			info: $("#markerInfo").val(),
+			info: $('#markerInfo').val(),
 		};
-		printInfo("Sending marker: ", marker);
+		printInfo('Sending marker: ', marker);
 		
 		$.ajax({
-			url: "/rest/marker",
-			type: "POST",
-			dataType: "json",
+			url: '/rest/marker',
+			type: 'POST',
+			dataType: 'json',
 			data: JSON.stringify(marker),
 		})
 		.done(function(data) {
-			printInfo("Reply: ", data);
+			printInfo('Reply: ', data);
 		})
 		.fail(function(xhr,txt) {
-			printError("Sending marker failed: "+txt+".");
+			printError('Sending marker failed: '+txt+'.');
 		});
 		
 		jobmap.newMarker.setMap(null);
@@ -234,8 +244,8 @@ var jobmap = {
 	 */
 	loginForm: function() {
 		$('<div id="loginForm"></div>').dialog({
-			title: "Login with OpenID",
-			dialogClass: "loginDialog",
+			title: 'Login with OpenID',
+			dialogClass: 'loginDialog',
 			autoOpen: true,
 			modal: true,
 			draggable: false,
@@ -244,7 +254,7 @@ var jobmap = {
 			width: 260,
 			buttons: {
 				Cancel: function() {
-					$(this).dialog("close");
+					$(this).dialog('close');
 				},
 			},
 			close: function() {
@@ -252,23 +262,23 @@ var jobmap = {
 			},
 		});
 
-		$.getJSON("/rest/openid")
+		$.getJSON('/rest/openid')
 		.done(function(data) {
-			printInfo("OpenID providers: ", data);
+			printInfo('OpenID providers: ', data);
 			var openLoginWindow = function(e) {
 				var width = 800;
 				var height = 600;
-				window.open(e.data.loginUrl, "thejobmap-openid",
-					"width="+width+",height="+height+","+
-					"left="+($(window).width()/2-width/2)+",top="+($(window).height()/2-height/2)+
-					",location=yes,status=yes,resizable=yes");
+				window.open(e.data.loginUrl, 'thejobmap-openid',
+					'width='+width+',height='+height+','+
+					'left='+($(window).width()/2-width/2)+',top='+($(window).height()/2-height/2)+
+					',location=yes,status=yes,resizable=yes');
 			};
 			
 			$('<img src="images/openid/'+data[0].name+'.png" />').click(data[0],openLoginWindow).appendTo('#loginForm');
 			var moreProviders = $('<div id="moreProviders"></div>');
 			$('<a>+ Show more providers</a>').click(function() {
 				$(this).replaceWith(moreProviders);
-				$('#loginForm').dialog("option", "height", 400);
+				$('#loginForm').dialog('option', 'height', 400);
 			}).appendTo('#loginForm');
 			$.each(data.slice(1), function(key, val) {
 				$('<img src="images/openid/'+val.name+'.png" />').click(val,openLoginWindow).appendTo(moreProviders);
@@ -276,7 +286,7 @@ var jobmap = {
 			});
 		})
 		.fail(function(xhr,txt) {
-			printError("Getting OpenID providers failed: "+txt+".");
+			printError('Getting OpenID providers failed: '+txt+'.');
 		});
 	},
 	
@@ -284,22 +294,22 @@ var jobmap = {
 	 * Gets user info from the server.
 	 */
 	getUser: function() {
-		$.getJSON("/rest/user")
+		$.getJSON('/rest/user')
 		.done(function(data) {
-			$('#loginForm').dialog("destroy");
-			if (data.info == "not logged in") {
-				printInfo("Not logged in.");
+			$('#loginForm').dialog('destroy');
+			if (data.info == 'not logged in') {
+				printInfo('Not logged in.');
 				return;
 			}
 
-			printInfo("User: ", data);
+			printInfo('User: ', data);
 			jobmap.user = data;
 			
 			$('#username').contents().replaceWith(jobmap.user.email);
 			$('#logButton').contents().replaceWith('Logout');
 		})
 		.fail(function(xhr,txt) {
-			printError("getUser failed: "+txt+".");
+			printError('getUser failed: '+txt+'.');
 		})
 		.always(function() {
 			$('#username').contents().replaceWith(jobmap.getUsername());
@@ -314,13 +324,20 @@ var jobmap = {
 	logout: function() {
 		window.location.assign(jobmap.user.logoutUrl);
 	},
+
+	/**
+	 * Returns true if user is admin, false otherwise.
+	 */
+	isAdmin: function() {
+		return (jobmap.user.privileges == 'admin');
+	},
 	
 	/**
 	 * Returns a nicely formatted name for the user.
 	 */
 	getUsername: function() {
 		if (!jobmap.user.loggedIn) {
-			return " ";
+			return ' ';
 		}
 		if (jobmap.user.name) {
 			return jobmap.user.name;
@@ -334,8 +351,8 @@ var jobmap = {
 	updateUserForm: function() {
 		if (!jobmap.user.loggedIn || $('#updateUserForm').length) return;
 		$('<div id="updateUserForm"></div>').dialog({
-			title: "Your personal information",
-			dialogClass: "userDialog",
+			title: 'Your personal information',
+			dialogClass: 'userDialog',
 			autoOpen: true,
 			resizable: false,
 			height: 500,
@@ -350,25 +367,25 @@ var jobmap = {
 						education: $('#userEducation').val(),
 						workExperience: $('#userWorkExperience').val(),
 					};
-					printInfo("Sending user details: ", user);
+					printInfo('Sending user details: ', user);
 					
 					$.ajax({
-						url: "/rest/user",
-						type: "POST",
-						dataType: "json",
+						url: '/rest/user',
+						type: 'POST',
+						dataType: 'json',
 						data: JSON.stringify(user),
 					})
 					.done(function(data) {
-						printInfo("Reply: ", data);
+						printInfo('Reply: ', data);
 						$.extend(jobmap.user, user);
-						$('#updateUserForm').dialog("close");
+						$('#updateUserForm').dialog('close');
 					})
 					.fail(function(xhr,txt) {
-						printError("Sending user details failed: "+txt+".");
+						printError('Sending user details failed: '+txt+'.');
 					});
 				},
 				Cancel: function() {
-					$(this).dialog("close");
+					$(this).dialog('close');
 				},
 			},
 			close: function() {
@@ -388,11 +405,11 @@ var jobmap = {
 
 // Dynamically resize map
 function resizeMap() {
-	var page = document.getElementById("page");
-	var panel = document.getElementById("panel");
+	var page = document.getElementById('page');
+	var panel = document.getElementById('panel');
 	var viewportHeight = document.body.clientHeight;
 	
-	page.style.height = (viewportHeight-panel.offsetHeight)+"px";
+	page.style.height = (viewportHeight-panel.offsetHeight)+'px';
 }
 
 // Console
@@ -400,9 +417,9 @@ function print(txt, json, style) {
 	if (!style) style = 'info';
 	if (json && json.result == 'fail') style = 'error';
 	var now = new Date();
-	var pad = function(n) { return ("0"+n).slice(-2); }
-	var timestamp = "["+pad(now.getHours())+":"+pad(now.getMinutes())+":"+pad(now.getSeconds())+"] ";
-	$("#console").prepend('<div class="'+style+'">'+timestamp+txt+(json?JSON.stringify(json):"")+'</div>');
+	var pad = function(n) { return ('0'+n).slice(-2); }
+	var timestamp = '['+pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds())+'] ';
+	$('#console').prepend('<div class="'+style+'">'+timestamp+txt+(json?JSON.stringify(json):'')+'</div>');
 }
 function printInfo(txt, json) {
 	print(txt, json, 'info');
