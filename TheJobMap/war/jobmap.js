@@ -399,26 +399,32 @@ var jobmap = {
 		$('<p>Phone number: </p>').append($('<input type="text" id="userPhonenumber" placeholder="Your phone number" />').val(jobmap.user.phonenumber)).appendTo('#updateUserForm');
 		$('<p>Education: </p>').append($('<input type="text" id="userEducation" placeholder="Your education" />').val(jobmap.user.education)).appendTo('#updateUserForm');
 		$('<p>Work Experience: </p>').append($('<input type="text" id="userWorkExperience" placeholder="Number of years" />').val(jobmap.user.workExperience)).appendTo('#updateUserForm');
-		$('<p>Upload CV: </p>').append($('<iframe src="/upload-cv.html" id="cvIframe" width="200" height="25" scrolling="no" frameborder="0"></iframe>')).appendTo('#updateUserForm');
-		setTimeout(jobmap.getCVUploadUrl, 2000); //FIXME: FULHACK OF DOOM! :)
+		$('<p>Upload CV: </p>').append($('<iframe src="/upload-cv.html" id="cvIframe" width="200" height="25" scrolling="no" frameborder="0" onload="jobmap.cvFrameOnload();"></iframe>')).appendTo('#updateUserForm');
+		
+		jobmap.cvFrameLoaded = false;
+		jobmap.cvUploadUrl = false;
+		// Get CV upload url
+		$.getJSON('/rest/user/cv/getUploadUrl')
+		.done(function(data) {
+			printInfo('CV upload url: ', data);
+			jobmap.cvUploadUrl = data.uploadUrl;
+			if (jobmap.cvFrameLoaded) {
+				$('#cvIframe').contents().find('#form').attr('action', jobmap.cvUploadUrl);
+			}
+		})
+		.fail(function(xhr,txt) {
+			printError('Getting CV upload url failed: '+txt+'.');
+		});
 	},
 	
 	/**
-	 * Get upload url for CV.
+	 * Called when the iframe loads to insert the uploadUrl to the upload form.
 	 */
-	getCVUploadUrl: function() {
-		$.getJSON('/rest/user/cv/getUploadUrl')
-		.done(function(data) {
-			if (data.info == 'not logged in') {
-				printInfo('Not logged in.');
-				return;
-			}
-			printInfo('Upload url: ', data);
-			$('#cvIframe').contents().find('#cv').attr('action', data.uploadUrl);
-		})
-		.fail(function(xhr,txt) {
-			printError('getCVUploadUrl failed: '+txt+'.');
-		});
+	cvFrameOnload: function() {
+		jobmap.cvFrameLoaded = true;
+		if (jobmap.cvUploadUrl) {
+			$('#cvIframe').contents().find('#form').attr('action', jobmap.cvUploadUrl);
+		}
 	},
 };
 

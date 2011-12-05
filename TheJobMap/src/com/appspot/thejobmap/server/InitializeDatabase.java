@@ -1,7 +1,5 @@
 package com.appspot.thejobmap.server;
 
-import com.google.gwt.core.client.GWT;
-
 /**
  * Admininterface
  * @author Administrator
