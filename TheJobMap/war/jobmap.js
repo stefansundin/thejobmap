@@ -400,6 +400,7 @@ var jobmap = {
 		$('<p>Education: </p>').append($('<input type="text" id="userEducation" placeholder="Your education" />').val(jobmap.user.education)).appendTo('#updateUserForm');
 		$('<p>Work Experience: </p>').append($('<input type="text" id="userWorkExperience" placeholder="Number of years" />').val(jobmap.user.workExperience)).appendTo('#updateUserForm');
 		$('<p>Upload CV: </p>').append($('<iframe src="/upload-cv.html" id="cvIframe" width="200" height="25" scrolling="no" frameborder="0"></iframe>')).appendTo('#updateUserForm');
+		$('<p></p>').append($('<a href="/rest/user/cv" target="_blank">My CV</a>')).appendTo('#updateUserForm');
 		setTimeout(jobmap.getCVUploadUrl, 2000); //FIXME: FULHACK OF DOOM! :)
 	},
 	
