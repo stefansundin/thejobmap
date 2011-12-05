@@ -399,7 +399,8 @@ var jobmap = {
 		$('<p>Phone number: </p>').append($('<input type="text" id="userPhonenumber" placeholder="Your phone number" />').val(jobmap.user.phonenumber)).appendTo('#updateUserForm');
 		$('<p>Education: </p>').append($('<input type="text" id="userEducation" placeholder="Your education" />').val(jobmap.user.education)).appendTo('#updateUserForm');
 		$('<p>Work Experience: </p>').append($('<input type="text" id="userWorkExperience" placeholder="Number of years" />').val(jobmap.user.workExperience)).appendTo('#updateUserForm');
-		$('<p>Upload CV: </p>').append($('<iframe src="/upload-cv.html" id="cvIframe" width="200" height="25" scrolling="no" frameborder="0" onload="jobmap.cvFrameOnload();"></iframe>')).appendTo('#updateUserForm');
+		$('<p>Upload CV (only pdf, maximum size is 1 MB): </p>').appendTo('#updateUserForm');
+		$('<p><iframe src="/upload-cv.html" id="cvIframe" width="200" height="25" scrolling="no" frameborder="0" onload="jobmap.cvFrameOnload();"></iframe></p>').append($('<a href="/rest/user/cv" target="_blank">My CV</a>')).appendTo('#updateUserForm');
 		
 		jobmap.cvFrameLoaded = false;
 		jobmap.cvUploadUrl = false;

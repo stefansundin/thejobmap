@@ -83,6 +83,7 @@ public class UserServlet extends HttpServlet {
 		String path = req.getPathInfo();
 		path = (path==null?"":path);
 		if (path.matches("/cv")) {
+			resp.setContentType("application/pdf");
 			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
 			BlobKey blobKey = new BlobKey((String) entity.getProperty("cv"));
 			blobstoreService.serve(blobKey, resp);
