@@ -34,6 +34,15 @@
 	<url-pattern>/rest/user/*</url-pattern>
 </servlet-mapping>
 
+<servlet>
+	<servlet-name>specialServlet</servlet-name>
+	<servlet-class>com.appspot.thejobmap.server.SpecialServlet</servlet-class>
+</servlet>
+<servlet-mapping>
+	<servlet-name>specialServlet</servlet-name>
+	<url-pattern>/special/*</url-pattern>
+</servlet-mapping>
+
 
 <!-- Default page to serve -->
 <welcome-file-list>

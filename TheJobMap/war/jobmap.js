@@ -65,10 +65,10 @@ var jobmap = {
 		// Console
 		$('body').keypress(function(e) {
 			if (e.which == 167) { // '§'
-				$('#console').toggle();
+				$('#console').removeClass('big').toggle();
 			}
 			else if (e.which == 189) {
-				$('#console').toggleClass('big').show();
+				$('#console').addClass('big').show();
 			}
 		})
 		
@@ -410,16 +410,19 @@ var jobmap = {
 		$('<p>Education: </p>').append($('<input type="text" id="userEducation" placeholder="Your education" />').val(jobmap.user.education)).appendTo('#updateUserForm');
 		$('<p>Work Experience: </p>').append($('<input type="text" id="userWorkExperience" placeholder="Number of years" />').val(jobmap.user.workExperience)).appendTo('#updateUserForm');
 		$('<p>Upload CV (only pdf, maximum size is 1 MB): </p>').appendTo('#updateUserForm');
-		$('<p><iframe src="/upload-cv.html" id="cvIframe" width="200" height="25" scrolling="no" frameborder="0" onload="jobmap.cvFrameOnload();"></iframe></p>').append($('<a href="/rest/user/cv" target="_blank">My CV</a>')).appendTo('#updateUserForm');
+		$('<p><iframe src="/upload-cv.html" id="cvIframe" width="200" height="25" scrolling="no" frameborder="0" onload="jobmap.cvFrameOnload();"></iframe></p>').appendTo('#updateUserForm');
+		$('<p><a href="/rest/user/cv" target="_blank">My CV</a></p>').appendTo('#updateUserForm');
 		
 		jobmap.cvFrameLoaded = false;
 		jobmap.cvUploadUrl = false;
+		jobmap.cvUrlReplaced = false;
 		// Get CV upload url
 		$.getJSON('/rest/user/cv/getUploadUrl')
 		.done(function(data) {
 			printInfo('CV upload url: ', data);
 			jobmap.cvUploadUrl = data.uploadUrl;
-			if (jobmap.cvFrameLoaded) {
+			if (jobmap.cvFrameLoaded && !jobmap.cvUrlReplaced) {
+				jobmap.cvUrlReplaced = true;
 				$('#cvIframe').contents().find('#form').attr('action', jobmap.cvUploadUrl);
 			}
 		})
@@ -433,7 +436,9 @@ var jobmap = {
 	 */
 	cvFrameOnload: function() {
 		jobmap.cvFrameLoaded = true;
-		if (jobmap.cvUploadUrl) {
+		printInfo('src: '+$('#cvIframe').attr('src'));
+		if (jobmap.cvUploadUrl && !jobmap.cvUrlReplaced) {
+			jobmap.cvUrlReplaced = true;
 			$('#cvIframe').contents().find('#form').attr('action', jobmap.cvUploadUrl);
 		}
 	},

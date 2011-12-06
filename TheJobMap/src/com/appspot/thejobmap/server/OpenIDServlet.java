@@ -2,7 +2,6 @@ package com.appspot.thejobmap.server;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,8 +32,13 @@ public class OpenIDServlet extends HttpServlet {
 	/**
 	 * GET - Request of supported OpenID providers.
 	 */
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+	protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+		// Initialize stuff like streams
+		res.setContentType("application/json; charset=UTF-8");
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
+		//DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
+		
 		
 		// Enumerate providers
 		UserService userService = UserServiceFactory.getUserService();
@@ -42,13 +46,11 @@ public class OpenIDServlet extends HttpServlet {
 		for (String[] provider : providers) {
 			OpenIDProviderObj prov = new OpenIDProviderObj();
 			prov.name = provider[0];
-			prov.loginUrl = userService.createLoginURL("/openid-return.html", null, provider[1], null);
+			prov.loginUrl = userService.createLoginURL("/special/login", null, provider[1], null);
 			provs.add(prov);
 		}
 
-		// Send markers to client
-		OutputStream out = resp.getOutputStream();
-		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out));
+		// Send providers to client
 		writer.write(gson.toJson(provs));
 		writer.close();
 	}

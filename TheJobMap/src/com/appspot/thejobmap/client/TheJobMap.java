@@ -3,7 +3,7 @@ package com.appspot.thejobmap.client;
 import com.google.gwt.core.client.EntryPoint;
 
 /**
- * The master class of The Job Map.
+ * The (previous) master class of The Job Map.
  * @author Stefan Sundin
  * @author Alexandra Tsampikakis
  */
@@ -13,6 +13,5 @@ public class TheJobMap implements EntryPoint {
 	 */
 	public void onModuleLoad() {
 		// Initialize
-		Console.init();
 	}
 }
