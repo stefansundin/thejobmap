@@ -13,7 +13,7 @@
 </servlet>
 <servlet-mapping>
 	<servlet-name>markerServlet</servlet-name>
-	<url-pattern>/rest/marker</url-pattern>
+	<url-pattern>/rest/marker/*</url-pattern>
 </servlet-mapping>
 
 <servlet>

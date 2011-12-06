@@ -22,9 +22,6 @@ function initialize() {
 	jobmap.init(map);
 	map.controls[google.maps.ControlPosition.TOP_CENTER].push(jobmap.mapControls);
 	
-	// Request markers
-	jobmap.refreshMarkers();
-	
 	// Make map resize dynamically
 	window.addEventListener('resize', resizeMap, false);
 	resizeMap();
@@ -47,6 +44,7 @@ var jobmap = {
 	markers: [],
 	mapMarkers: [],
 	newMarker: null,
+	updatedMarkers: [],
 	mapControls: null,
 	infoWindow: null,
 	user: {
@@ -76,9 +74,11 @@ var jobmap = {
 		var c = $('<div id="JobMapControls"></div>');
 		jobmap.mapControls = c[0];
 		$('<button id="refreshMarkersButton">Refresh markers</button>').appendTo(c);
-		$('<button id="createMarkerButton">Create marker</button>').appendTo(c);
+		$('<button id="createMarkerButton">Create marker</button>').attr('disabled',true).appendTo(c);
+		$('<button id="saveMarkerButton">Save markers</button>').attr('disabled',true).appendTo(c);
 		google.maps.event.addDomListener($('#refreshMarkersButton',c)[0], 'click', jobmap.refreshMarkers);
 		google.maps.event.addDomListener($('#createMarkerButton',c)[0], 'click', jobmap.createMarker);
+		google.maps.event.addDomListener($('#saveMarkerButton',c)[0], 'click', jobmap.saveMarkers);
 		
 		// Info Window
 		jobmap.infoWindow = new google.maps.InfoWindow({});
@@ -91,6 +91,9 @@ var jobmap = {
 		$('<span id="username"> </span>').click(jobmap.updateUserForm).appendTo('#account');
 		$('<button id="logButton"> </button>').click(jobmap.logButton).appendTo('#account');
 		jobmap.getUser();
+		
+		// Markers
+		jobmap.refreshMarkers();
 	},
 	
 	/** Markers */
@@ -161,8 +164,20 @@ var jobmap = {
 			jobmap.infoWindow.open(jobmap.map, mapMarker);
 		});
 		
-		google.maps.event.addListener(marker, 'dragend', function() {
-			jobmap.updateMarkerPosition(marker);
+		google.maps.event.addListener(mapMarker, 'dragend', function() {
+			$('#saveMarkerButton',jobmap.mapControls).attr('disabled', false);
+			
+			// Push marker to updatedMarkers if not already there
+			var alreadyAdded = false;
+			for (var i=0; i < jobmap.updatedMarkers.length; i++) {
+				if (marker == jobmap.updatedMarkers[i]) {
+					alreadyAdded = true;
+					break;
+				}
+			}
+			if (!alreadyAdded) {
+				jobmap.updatedMarkers.push(marker);
+			}
 		});
 	},
 	
@@ -193,19 +208,36 @@ var jobmap = {
 	/**
 	 * Send a marker to the server.
 	 */
-	storeMarker: function() {
-		var marker = {
-			lat: jobmap.newMarker.getPosition().lat(),
-			lng: jobmap.newMarker.getPosition().lng(),
-			info: $('#markerInfo').val(),
-		};
-		printInfo('Sending marker: ', marker);
+	postMarker: function(marker) {
+		var id;
+		var json;
+		if (marker) {
+			id = marker.id;
+			var mapMarker = marker.mapMarker;
+			marker.lat = mapMarker.getPosition().lat();
+			marker.lng = mapMarker.getPosition().lng();
+			marker.mapMarker = null;
+			json = JSON.stringify(marker);
+			marker.mapMarker = mapMarker;
+		}
+		else {
+			marker = {
+				lat: jobmap.newMarker.getPosition().lat(),
+				lng: jobmap.newMarker.getPosition().lng(),
+				info: $('#markerInfo').val(),
+			};
+			json = JSON.stringify(marker);
+			jobmap.newMarker.setMap(null);
+			jobmap.newMarker = null;
+			jobmap.addMarker(marker);
+		}
+		printInfo('Sending marker: '+json);
 		
 		$.ajax({
-			url: '/rest/marker',
+			url: '/rest/marker/'+(id?id:''),
 			type: 'POST',
 			dataType: 'json',
-			data: JSON.stringify(marker),
+			data: json,
 		})
 		.done(function(data) {
 			printInfo('Reply: ', data);
@@ -213,16 +245,17 @@ var jobmap = {
 		.fail(function(xhr,txt) {
 			printError('Sending marker failed: '+txt+'.');
 		});
-		
-		jobmap.newMarker.setMap(null);
-		jobmap.newMarker = null;
-		jobmap.addMarker(marker);
 	},
 	
 	/**
-	 * Update position of marker.
+	 * Send all updated markers to postMarker().
 	 */
-	updateMarkerPosition: function(marker) {
+	saveMarkers: function() {
+		$('#saveMarkerButton',jobmap.mapControls).attr('disabled', true);
+		for (var i=0; i < jobmap.updatedMarkers.length; i++) {
+			jobmap.postMarker(jobmap.updatedMarkers[i]);
+		}
+		jobmap.updatedMarker = [];
 	},
 	
 	/**
@@ -230,7 +263,7 @@ var jobmap = {
 	 */
 	createInfo: function(marker) {
 		if (marker == jobmap.newMarker) {
-			return '<b>Enter details</b><p><textarea id="markerInfo" placeholder="Write description here"></textarea><br/><button onclick="jobmap.storeMarker();">Store marker</button></p>';
+			return '<b>Enter details</b><p><textarea id="markerInfo" placeholder="Write description here"></textarea><br/><button onclick="jobmap.postMarker();">Store marker</button></p>';
 		}
 		return marker.info;
 	},
@@ -311,12 +344,19 @@ var jobmap = {
 				printInfo('Not logged in.');
 				return;
 			}
-
+			
 			printInfo('User: ', data);
 			jobmap.user = data;
 			
+			$('#createMarkerButton',jobmap.mapControls).attr('disabled', false);
 			$('#username').contents().replaceWith(jobmap.user.email);
 			$('#logButton').contents().replaceWith('Logout');
+			
+			if (jobmap.user.privileges == 'admin') {
+				$.each(jobmap.mapMarkers, function(i, mapMarker) {
+					mapMarker.setDraggable(true);
+				})
+			}
 		})
 		.fail(function(xhr,txt) {
 			printError('getUser failed: '+txt+'.');
