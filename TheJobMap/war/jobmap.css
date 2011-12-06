@@ -88,6 +88,10 @@ a {
 	width: 100%;
 	overflow: auto;
 }
+#console.big {
+	width: 100%;
+	height: 400px;
+}
 #console .error {
 	color: red;
 }

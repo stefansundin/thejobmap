@@ -108,6 +108,7 @@ public class MarkerServlet extends HttpServlet {
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		db.put(entry);
 		
+		// Send response
 		ResultObj res = new ResultObj("ok");
 		writer.write(gson.toJson(res));
 		writer.close();

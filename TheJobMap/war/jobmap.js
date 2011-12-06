@@ -61,11 +61,14 @@ var jobmap = {
 	 */
 	init: function(map) {
 		jobmap.map = map;
-
+		
 		// Console
 		$('body').keypress(function(e) {
 			if (e.which == 167) { // '§'
 				$('#console').toggle();
+			}
+			else if (e.which == 189) {
+				$('#console').toggleClass('big').show();
 			}
 		})
 		
@@ -110,7 +113,7 @@ var jobmap = {
 	 * Fetch markers from server.
 	 */
 	refreshMarkers: function() {
-		jobmap.clearMarkers();
+		//jobmap.clearMarkers();
 		
 		$.getJSON('/rest/marker')
 		.done(function(data) {
@@ -127,38 +130,39 @@ var jobmap = {
 	addMarker: function(marker) {
 		// Construct mapMarker
 		var mapMarker = new google.maps.Marker({
-			map: jobmap.map,
+			//map: jobmap.map,
 			position: new google.maps.LatLng(marker.lat, marker.lng),
 			draggable: jobmap.isAdmin(),
 		});
-		
-		/*
+
 		// Check if we already have the marker
-		$.each(jobmap.markers, function(i, m) {
-			if (m.id == marker.id) {
+		var alreadyAdded = false;
+		for (var i=0; i < jobmap.markers.length; i++) {
+			if (jobmap.markers[i].id == marker.id) {
+				alreadyAdded = true;
 				var oldMapMarker = jobmap.markers[i].mapMarker;
 				oldMapMarker.setPosition(mapMarker.position);
+				marker.mapMarker = mapMarker = oldMapMarker;
 				jobmap.markers[i] = marker;
-				mapMarker = oldMapMarker;
-				return false;
+				break;
 			}
-			else if (i == jobmap.markers.length-1) {
-				marker.mapMarker = mapMarker;
-				jobmap.markers.push(marker);
-				jobmap.mapMarkers.push(mapMarker);
-				mapMarker.setMap(jobmap.map);
-			}
-		});
-		*/
-
-		marker.mapMarker = mapMarker;
-		jobmap.markers.push(marker);
-		jobmap.mapMarkers.push(mapMarker);
+		}
+		if (!alreadyAdded) {
+			// This is a new marker, add it
+			mapMarker.setMap(jobmap.map);
+			marker.mapMarker = mapMarker;
+			jobmap.markers.push(marker);
+			jobmap.mapMarkers.push(mapMarker);
+		}
 		
-		// Add listener for a click on the pin
+		// Add listeners
 		google.maps.event.addListener(mapMarker, 'click', function() {
 			jobmap.infoWindow.setContent(jobmap.createInfo(marker));
 			jobmap.infoWindow.open(jobmap.map, mapMarker);
+		});
+		
+		google.maps.event.addListener(marker, 'dragend', function() {
+			jobmap.updateMarkerPosition(marker);
 		});
 	},
 	
@@ -213,6 +217,12 @@ var jobmap = {
 		jobmap.newMarker.setMap(null);
 		jobmap.newMarker = null;
 		jobmap.addMarker(marker);
+	},
+	
+	/**
+	 * Update position of marker.
+	 */
+	updateMarkerPosition: function(marker) {
 	},
 	
 	/**
