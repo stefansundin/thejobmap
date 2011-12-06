@@ -57,6 +57,7 @@ public class UserServlet extends HttpServlet {
 			writer.close();
 			return;
 		}
+		user.loggedIn = true;
 		user.email = u.getEmail();
 
 		// Query database
@@ -64,21 +65,18 @@ public class UserServlet extends HttpServlet {
 		Query q = new Query("Users");
 		q.addFilter("email", Query.FilterOperator.EQUAL, u.getEmail());
 		PreparedQuery pq = db.prepare(q);
-
-		// Get user entity
-		Entity entity;
-
+		
 		// Does the user exist?
 		if (pq.countEntities(FetchOptions.Builder.withLimit(1)) == 0) {
-			entity = createUser(user.email);
-		}
-		else {
-			entity = pq.asSingleEntity();
+			createUser(user.email);
+			writer.write(gson.toJson(user));
+			writer.close();
+			return;
 		}
 		
-		// Logged in
-		user.loggedIn = true;
-		
+		// Get user entity
+		Entity entity = pq.asSingleEntity();
+
 		// Get CV
 		String path = req.getPathInfo();
 		path = (path==null?"":path);
@@ -92,7 +90,7 @@ public class UserServlet extends HttpServlet {
 		else if (path.matches("/cv/getUploadUrl")) {
 			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
 			UploadUrlObj uploadUrl = new UploadUrlObj();
-			uploadUrl.uploadUrl = blobstoreService.createUploadUrl("/rest/user/"+user.email+"/cv");
+			uploadUrl.uploadUrl = blobstoreService.createUploadUrl("/rest/user/cv");
 			writer.write(gson.toJson(uploadUrl));
 			writer.close();
 			return;
@@ -134,37 +132,6 @@ public class UserServlet extends HttpServlet {
 		OutputStream out = resp.getOutputStream();
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out));
 
-		// CV Upload?
-		// This is a special case since this is done through a file upload
-		// Apparently since this is used as a callback after the file upload, it can not access the User session object
-		// This is why the email is passed through the url instead. We trust this value since it was generated for this user.
-		// This is safe since we will get an exception at getUploadedBlobs if nothing was uploaded
-		String path = req.getPathInfo();
-		path = (path==null?"":path);
-		if (path.endsWith("/cv")) {
-			String email = path.substring(1, path.indexOf("/cv"));
-			
-			// Get blob key
-			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
-			Map<String,BlobKey> blobs = blobstoreService.getUploadedBlobs(req);
-			BlobKey blobKey = blobs.get("cv");
-
-			// Add blob key to user
-			DatastoreService db = DatastoreServiceFactory.getDatastoreService();
-			Query q = new Query("Users");
-			q.addFilter("email", Query.FilterOperator.EQUAL, email);
-			PreparedQuery pq = db.prepare(q);
-			Entity entity = pq.asSingleEntity();
-			entity.setProperty("cv", blobKey.getKeyString());
-			db.put(entity);
-			
-			// Finished
-			writer.write("CV uploaded!");
-			writer.close();
-			return;
-			
-		}
-		
 		// Check if logged in
 		User u = UserServiceFactory.getUserService().getCurrentUser();
 		if (u == null) {
@@ -175,44 +142,62 @@ public class UserServlet extends HttpServlet {
 			writer.close();
 			return;
 			*/
-			
 		}
 		else {
 			user.email = u.getEmail();
 		}
-		System.out.println(user.email);
 
 		// Query database
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Query q = new Query("Users");
 		q.addFilter("email", Query.FilterOperator.EQUAL, user.email);
 		PreparedQuery pq = db.prepare(q);
-		Entity entity;
 
 		// Does the user exist?
 		if (pq.countEntities(FetchOptions.Builder.withLimit(1)) == 0) {
-			entity = createUser(user.email);
+			createUser(user.email);
+			ResultObj res = new ResultObj("ok", "created new user");
+			writer.write(gson.toJson(res));
+			writer.close();
+			return;
 		}
-		else {
-			// Get user entity
-			entity = pq.asSingleEntity();
-		}
+		
+		// Get user entity
+		Entity entry = pq.asSingleEntity();
 
+		// CV Upload?
+		String path = req.getPathInfo();
+		System.out.println(req.getPathInfo());
+		if (path != null && path.matches("/cv")){
+			// Get blob key
+			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
+			Map<String, BlobKey> blobs = blobstoreService.getUploadedBlobs(req);
+			BlobKey blobKey = blobs.get("myFile");
+			
+			// Store cv key in user details
+			entry.setProperty("cv", blobKey.getKeyString());
+			db.put(entry);
+			
+			// Finished
+			writer.write("CV uploaded!");
+			writer.close();
+			return;
+		}
+		
 		// Parse input
 		user = gson.fromJson(reader, UserObj.class);
 		reader.close();
-		
-		
-		entity.setProperty("name", user.name);
-		entity.setProperty("age", user.age);
-		entity.setProperty("sex", user.sex);
-		entity.setProperty("phonenumber", user.phonenumber);
-		entity.setProperty("education", user.education);
-		entity.setProperty("workExperience", user.workExperience);
-		entity.setProperty("privileges", user.privileges);
+				
+		entry.setProperty("name", user.name);
+		entry.setProperty("age", user.age);
+		entry.setProperty("sex", user.sex);
+		entry.setProperty("phonenumber", user.phonenumber);
+		entry.setProperty("education", user.education);
+		entry.setProperty("workExperience", user.workExperience);
+		entry.setProperty("privileges", user.privileges);
 		
 		// Update database
-		db.put(entity);
+		db.put(entry);
 		
 		// Send response
 		ResultObj res = new ResultObj("ok");
@@ -223,8 +208,7 @@ public class UserServlet extends HttpServlet {
 	/**
 	 * Insert new user into database.
 	 */
-	private Entity createUser(String email) {
-		System.out.println("Creating user "+email);
+	private void createUser(String email) {
 		// Does the user already exist?
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Query q = new Query("Users");
@@ -258,7 +242,6 @@ public class UserServlet extends HttpServlet {
 		
 		// Insert in database
 		db.put(entry);
-		return entry;
 	}
 	
 	/**
@@ -271,9 +254,7 @@ public class UserServlet extends HttpServlet {
 		q.addFilter("email", Query.FilterOperator.EQUAL, email);
 		PreparedQuery pq = db.prepare(q);
 		if (pq.countEntities(FetchOptions.Builder.withLimit(1)) == 0) {
-			//throw new IllegalArgumentException("User does not exist!");
-			System.out.println("Error: User does not exist!");
-			return "random";
+			throw new IllegalArgumentException("User does not exist!");
 		}
 		
 		// Return privileges
@@ -290,8 +271,30 @@ public class UserServlet extends HttpServlet {
 		if (u == null) { //Not logged in
 			return "random";
 		}
-		String email = u.getEmail();
-		return getPrivileges(email);
+		return getPrivileges(u.getEmail());
 	}
-
+	
+	/**
+	 * Get user when placing a marker.
+	 */
+	public Entity getUser() {
+		User u = UserServiceFactory.getUserService().getCurrentUser();
+		if (u == null) { //Not logged in
+			return null;
+		}
+		
+		// Query the database
+		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
+		Query q = new Query("Users");
+		q.addFilter("email", Query.FilterOperator.EQUAL, u.getEmail());
+		PreparedQuery pq = db.prepare(q);
+		if (pq.countEntities(FetchOptions.Builder.withLimit(1)) == 0) {
+			//throw new IllegalArgumentException("User does not exist!");
+			return null;
+		}
+		
+		// Return user entity
+		Entity entity = pq.asSingleEntity();
+		return entity;
+	}
 }

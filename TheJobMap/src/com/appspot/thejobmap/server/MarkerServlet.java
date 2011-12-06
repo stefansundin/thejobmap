@@ -74,11 +74,23 @@ public class MarkerServlet extends HttpServlet {
 	 * POST - Addition of marker.
 	 */
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		// Parse input
+		// Open streams
+		OutputStream output = resp.getOutputStream();
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(output));
+
 		BufferedReader reader = new BufferedReader(new InputStreamReader(req.getInputStream()));
 		Gson gson = new Gson();
 		MarkerObj marker = gson.fromJson(reader, MarkerObj.class);
 		reader.close();
+		
+		//Check user
+		Entity user = userServlet.getUser();
+		if (user == null) {
+			ResultObj res = new ResultObj("fail", "not logged in");
+			writer.write(gson.toJson(res));
+			writer.close();
+			return;
+		}
 		
 		// Put in an entry
 		Key storeKey = KeyFactory.createKey("Markers", "jobmap");
@@ -90,14 +102,11 @@ public class MarkerServlet extends HttpServlet {
 		entry.setProperty("near", marker.near);
 		entry.setProperty("info", marker.info);
 		entry.setProperty("creationDate", date.getTime());
+		entry.setProperty("author", user.getProperty("email"));
 		
 		// Insert in database
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		db.put(entry);
-		
-		// Send response
-		OutputStream output = resp.getOutputStream();
-		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(output));
 		
 		ResultObj res = new ResultObj("ok");
 		writer.write(gson.toJson(res));
