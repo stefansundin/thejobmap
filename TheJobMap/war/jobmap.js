@@ -452,6 +452,7 @@ var jobmap = {
 		$('<p>Upload CV (only pdf, maximum size is 1 MB): </p>').appendTo('#updateUserForm');
 		$('<p><iframe src="/upload-cv.html" id="cvIframe" width="200" height="25" scrolling="no" frameborder="0" onload="jobmap.cvFrameOnload();"></iframe></p>').appendTo('#updateUserForm');
 		$('<p><a href="/rest/user/cv" target="_blank">My CV</a></p>').appendTo('#updateUserForm');
+		$('<p></p>').append($('<button id="deletecvButton">Delete CV</button>').click(jobmap.cvDelete)).appendTo('#updateUserForm');
 		
 		jobmap.cvFrameLoaded = false;
 		jobmap.cvUploadUrl = false;
@@ -481,6 +482,24 @@ var jobmap = {
 			jobmap.cvUrlReplaced = true;
 			$('#cvIframe').contents().find('#form').attr('action', jobmap.cvUploadUrl);
 		}
+	},
+	
+	/**
+	 * Delete cv.
+	 */
+	cvDelete: function() {
+		$.getJSON('/rest/user/cv/delete')
+		.done(function(data) {
+			printInfo('CV upload url: ', data);
+			jobmap.cvUploadUrl = data.uploadUrl;
+			if (jobmap.cvFrameLoaded && !jobmap.cvUrlReplaced) {
+				jobmap.cvUrlReplaced = true;
+				$('#cvIframe').contents().find('#form').attr('action', jobmap.cvUploadUrl);
+			}
+		})
+		.fail(function(xhr,txt) {
+			printError('Delete CV failed: '+txt+'.');
+		});
 	},
 };
 

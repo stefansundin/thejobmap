@@ -20,6 +20,7 @@ import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
@@ -41,7 +42,7 @@ public class UserServlet extends HttpServlet {
 		// Initialize stuff like streams
 		res.setContentType("application/json; charset=UTF-8");
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
-		//DatastoreService db = DatastoreServiceFactory.getDatastoreService();
+		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
 		UserObj user = new UserObj();
 		
@@ -94,6 +95,19 @@ public class UserServlet extends HttpServlet {
 			UploadUrlObj uploadUrl = new UploadUrlObj();
 			uploadUrl.uploadUrl = blobstoreService.createUploadUrl("/special/cvUpload?email="+user.email);
 			writer.write(gson.toJson(uploadUrl));
+			writer.close();
+			return;
+		}
+		else if (path.matches("/cv/delete")) {
+			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
+			BlobKey blobKey = new BlobKey((String) entity.getProperty("cv"));
+			blobstoreService.delete(blobKey);
+			entity.setProperty("cv", null);
+			db.put(entity);
+			
+			// Send response
+			ResultObj result = new ResultObj("ok");
+			writer.write(gson.toJson(result));
 			writer.close();
 			return;
 		}
