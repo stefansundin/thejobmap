@@ -120,8 +120,8 @@ public class MarkerServlet extends HttpServlet {
 			entity.setProperty("creationDate", date.getTime());
 		}
 		else {
-			int id = Integer.parseInt(path);
-
+			long id = Long.parseLong(path);
+			
 			// Query the database
 			Key dbKey = KeyFactory.createKey("Markers", "jobmap");
 			Key markerKey = KeyFactory.createKey(dbKey, "Markers", id);

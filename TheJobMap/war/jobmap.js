@@ -47,12 +47,7 @@ var jobmap = {
 	updatedMarkers: [],
 	mapControls: null,
 	infoWindow: null,
-	user: {
-		loggedIn: false,
-		email: null,
-		name: null,
-		privileges: null,
-	},
+	user: null,
 	
 	/**
 	 * Initialize The Job Map.
@@ -274,7 +269,7 @@ var jobmap = {
 	 * Handler for the login/logout button.
 	 */
 	logButton: function() {
-		if (jobmap.user.loggedIn) {
+		if (jobmap.user) {
 			jobmap.logout();
 		}
 		else {
@@ -337,7 +332,7 @@ var jobmap = {
 	 * Gets user info from the server.
 	 */
 	getUser: function() {
-		$.getJSON('/rest/user')
+		$.getJSON('/rest/user/me')
 		.done(function(data) {
 			$('#loginForm').dialog('destroy');
 			if (data.info == 'not logged in') {
@@ -363,7 +358,7 @@ var jobmap = {
 		})
 		.always(function() {
 			$('#username').contents().replaceWith(jobmap.getUsername());
-			$('#logButton').contents().replaceWith(jobmap.user.loggedIn?'Logout':'Login');
+			$('#logButton').contents().replaceWith(jobmap.user?'Logout':'Login');
 			$('#account').fadeIn('slow');
 		});
 	},
@@ -386,7 +381,7 @@ var jobmap = {
 	 * Returns a nicely formatted name for the user.
 	 */
 	getUsername: function() {
-		if (!jobmap.user.loggedIn) {
+		if (!jobmap.user) {
 			return ' ';
 		}
 		if (jobmap.user.name) {
@@ -399,7 +394,7 @@ var jobmap = {
 	 * 
 	 */
 	updateUserForm: function() {
-		if (!jobmap.user.loggedIn || $('#updateUserForm').length) return;
+		if (!jobmap.user || $('#updateUserForm').length) return;
 		$('<div id="updateUserForm"></div>').dialog({
 			title: 'Your personal information',
 			dialogClass: 'userDialog',
@@ -420,7 +415,7 @@ var jobmap = {
 					printInfo('Sending user details: ', user);
 					
 					$.ajax({
-						url: '/rest/user',
+						url: '/rest/user/me',
 						type: 'POST',
 						dataType: 'json',
 						data: JSON.stringify(user),
@@ -433,6 +428,19 @@ var jobmap = {
 					.fail(function(xhr,txt) {
 						printError('Sending user details failed: '+txt+'.');
 					});
+					
+					// Delete CV?
+					if ($('#userDeleteCv').attr('checked')) {
+						printInfo('Deleting CV');
+						$.getJSON('/rest/user/me/cv/delete')
+						.done(function(data) {
+							printInfo('Reply: ', data);
+						})
+						.fail(function(xhr,txt) {
+							printError('Delete CV failed: '+txt+'.');
+						});
+						jobmap.user.cvUploaded = false;
+					}
 				},
 				Cancel: function() {
 					$(this).dialog('close');
@@ -449,27 +457,33 @@ var jobmap = {
 		$('<p>Phone number: </p>').append($('<input type="text" id="userPhonenumber" placeholder="Your phone number" />').val(jobmap.user.phonenumber)).appendTo('#updateUserForm');
 		$('<p>Education: </p>').append($('<input type="text" id="userEducation" placeholder="Your education" />').val(jobmap.user.education)).appendTo('#updateUserForm');
 		$('<p>Work Experience: </p>').append($('<input type="text" id="userWorkExperience" placeholder="Number of years" />').val(jobmap.user.workExperience)).appendTo('#updateUserForm');
-		$('<p>Upload CV (only pdf, maximum size is 1 MB): </p>').appendTo('#updateUserForm');
-		$('<p><iframe src="/upload-cv.html" id="cvIframe" width="200" height="25" scrolling="no" frameborder="0" onload="jobmap.cvFrameOnload();"></iframe></p>').appendTo('#updateUserForm');
-		$('<p><a href="/rest/user/cv" target="_blank">My CV</a></p>').appendTo('#updateUserForm');
-		$('<p></p>').append($('<button id="deletecvButton">Delete CV</button>').click(jobmap.cvDelete)).appendTo('#updateUserForm');
 		
-		jobmap.cvFrameLoaded = false;
-		jobmap.cvUploadUrl = false;
-		jobmap.cvUrlReplaced = false;
-		// Get CV upload url
-		$.getJSON('/rest/user/cv/getUploadUrl')
-		.done(function(data) {
-			printInfo('CV upload url: ', data);
-			jobmap.cvUploadUrl = data.uploadUrl;
-			if (jobmap.cvFrameLoaded && !jobmap.cvUrlReplaced) {
-				jobmap.cvUrlReplaced = true;
-				$('#cvIframe').contents().find('#form').attr('action', jobmap.cvUploadUrl);
-			}
-		})
-		.fail(function(xhr,txt) {
-			printError('Getting CV upload url failed: '+txt+'.');
-		});
+		// CV
+		if (jobmap.user.cvUploaded) {
+			$('<p><a href="/rest/user/me/cv" target="_blank">View my CV</a></p>').appendTo('#updateUserForm');
+			$('<p><label><input type="checkbox" id="userDeleteCv" />Delete CV</label></p>').appendTo('#updateUserForm');
+		}
+		else {
+			$('<p>Upload CV (only pdf, maximum size is 1 MB): </p>').add('<p><iframe src="/upload-cv.html" id="cvIframe" width="200" height="25" scrolling="no" frameborder="0" onload="jobmap.cvFrameOnload();"></iframe></p>').appendTo('#updateUserForm');
+
+			// Get upload url for CV
+			jobmap.cvFrameLoaded = false;
+			jobmap.cvUploadUrl = false;
+			jobmap.cvUrlReplaced = false;
+			$.getJSON('/rest/user/me/cv/uploadUrl')
+			.done(function(data) {
+				printInfo('CV upload url: ', data);
+				jobmap.cvUploadUrl = data.uploadUrl;
+				if (jobmap.cvFrameLoaded && !jobmap.cvUrlReplaced) {
+					jobmap.cvUrlReplaced = true;
+					$('#cvIframe').contents().find('#form').attr('action', jobmap.cvUploadUrl);
+				}
+			})
+			.fail(function(xhr,txt) {
+				printError('Getting CV upload url failed: '+txt+'.');
+			});
+		}
+		
 	},
 	
 	/**
@@ -477,29 +491,10 @@ var jobmap = {
 	 */
 	cvFrameOnload: function() {
 		jobmap.cvFrameLoaded = true;
-		printInfo('src: '+$('#cvIframe').attr('src'));
 		if (jobmap.cvUploadUrl && !jobmap.cvUrlReplaced) {
 			jobmap.cvUrlReplaced = true;
 			$('#cvIframe').contents().find('#form').attr('action', jobmap.cvUploadUrl);
 		}
-	},
-	
-	/**
-	 * Delete cv.
-	 */
-	cvDelete: function() {
-		$.getJSON('/rest/user/cv/delete')
-		.done(function(data) {
-			printInfo('CV upload url: ', data);
-			jobmap.cvUploadUrl = data.uploadUrl;
-			if (jobmap.cvFrameLoaded && !jobmap.cvUrlReplaced) {
-				jobmap.cvUrlReplaced = true;
-				$('#cvIframe').contents().find('#form').attr('action', jobmap.cvUploadUrl);
-			}
-		})
-		.fail(function(xhr,txt) {
-			printError('Delete CV failed: '+txt+'.');
-		});
 	},
 };
 

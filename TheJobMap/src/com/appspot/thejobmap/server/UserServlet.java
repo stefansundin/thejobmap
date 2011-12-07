@@ -5,7 +5,10 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -20,7 +23,6 @@ import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
@@ -41,88 +43,138 @@ public class UserServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
 		// Initialize stuff like streams
 		res.setContentType("application/json; charset=UTF-8");
-		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
+		//BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
+		BufferedWriter writer = null;
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
-		UserObj user = new UserObj();
+		UserObj me = new UserObj();
 		
 		// Check if logged in
 		UserService userService = UserServiceFactory.getUserService();
 		User u = userService.getCurrentUser();
 		if (u == null) {
 			ResultObj result = new ResultObj("fail", "not logged in");
+			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 			writer.write(gson.toJson(result));
 			writer.close();
 			return;
 		}
 		
 		// Logged in
-		user.loggedIn = true;
-		user.email = u.getEmail();
+		me.email = u.getEmail();
 		
 		// Get logout url
 		Boolean devmode = (getServletContext().getServerInfo().indexOf("Development") != -1);
 		if (devmode) {
 			// This isn't needed anymore since we no longer use GWT
-			user.logoutUrl = userService.createLogoutURL("/TheJobMap.html?gwt.codesvr=127.0.0.1:9997");
+			me.logoutUrl = userService.createLogoutURL("/TheJobMap.html?gwt.codesvr=127.0.0.1:9997");
 		}
 		else {
-			user.logoutUrl = userService.createLogoutURL("/");
+			me.logoutUrl = userService.createLogoutURL("/");
 		}
 		
 		// Fetch user details
-		Entity entity = getUser();
-		if (entity == null) {
+		Entity entityMe = getUser();
+		if (entityMe == null) {
 			// User is logged in but does not exist in database (due to delays)
 			// Return stub
-			writer.write(gson.toJson(user));
-			writer.close();
-			return;
-		}
-
-		// Get CV
-		String path = req.getPathInfo();
-		path = (path==null?"":path);
-		if (path.matches("/cv")) {
-			res.setContentType("application/pdf");
-			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
-			BlobKey blobKey = new BlobKey((String) entity.getProperty("cv"));
-			blobstoreService.serve(blobKey, res);
-			return;
-		}
-		else if (path.matches("/cv/getUploadUrl")) {
-			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
-			UploadUrlObj uploadUrl = new UploadUrlObj();
-			uploadUrl.uploadUrl = blobstoreService.createUploadUrl("/special/cvUpload?email="+user.email);
-			writer.write(gson.toJson(uploadUrl));
-			writer.close();
-			return;
-		}
-		else if (path.matches("/cv/delete")) {
-			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
-			BlobKey blobKey = new BlobKey((String) entity.getProperty("cv"));
-			blobstoreService.delete(blobKey);
-			entity.setProperty("cv", null);
-			db.put(entity);
-			
-			// Send response
-			ResultObj result = new ResultObj("ok");
-			writer.write(gson.toJson(result));
+			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
+			writer.write(gson.toJson(me));
 			writer.close();
 			return;
 		}
 		
 		// Get user info
-		user.name = (String) entity.getProperty("name");
-		user.age = (String) entity.getProperty("age");
-		user.sex = (String) entity.getProperty("sex");
-		user.phonenumber = (String) entity.getProperty("phonenumber");
-		user.education = (String) entity.getProperty("education");
-		user.workExperience = (String) entity.getProperty("workExperience");
-		user.privileges = (String) entity.getProperty("privileges");
+		me.convertFromEntity(entityMe);
 		
-		// Send to client
-		writer.write(gson.toJson(user));
+		// Parse path
+		String path = req.getPathInfo();
+		path = (path==null?"/":path);
+		System.out.println("/user"+path);
+		String[] resource = path.split("/");
+		
+		// Handle "me"
+		if (resource.length >= 2 && resource[1].matches("me")) {
+			resource[1] = me.email;
+		}
+		
+		// Check privileges
+		if ((resource.length == 1 || !resource[1].matches(me.email)) && !me.privileges.matches("admin")) {
+			ResultObj result = new ResultObj("fail", "not enough privileges");
+			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
+			writer.write(gson.toJson(result));
+			writer.close();
+			return;
+		}
+		
+		// Fetch user object if not me
+		UserObj user = new UserObj();
+		Entity entityUser = entityMe;
+		if (resource.length >= 3 && !resource[1].matches(me.email)) {
+			entityUser = getUser(resource[1]);
+		}
+		user.convertFromEntity(entityUser);
+		
+		if (resource.length == 1) {
+			// GET /user/
+			// Return list of all users
+			Query q = new Query("Users");
+			List<Entity> dbList = db.prepare(q).asList(FetchOptions.Builder.withLimit(1000));
+			List<UserObj> users = new ArrayList<UserObj>();
+			for (int i=0; i < dbList.size(); i++) {
+				UserObj aUser = new UserObj();
+				aUser.convertFromEntity(dbList.get(i));
+				users.add(aUser);
+			}
+			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
+			writer.write(gson.toJson(users));
+		}
+		else if (resource.length == 2) {
+			// GET /user/<email>
+			// Return user details
+			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
+			writer.write(gson.toJson(user));
+		}
+		else if (resource.length == 3
+				&& resource[2].matches("cv")) {
+			// GET /user/<email>/cv
+			// Return CV
+			res.setContentType("application/pdf");
+			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
+			BlobKey blobKey = new BlobKey((String) entityUser.getProperty("cv"));
+			blobstoreService.serve(blobKey, res);
+			return;
+		}
+		else if (resource.length == 4
+				&& resource[2].matches("cv")
+				&& resource[3].matches("uploadUrl")) {
+			// GET /user/<email>/cv/uploadUrl
+			// Return upload url for CV
+			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
+			UploadUrlObj uploadUrl = new UploadUrlObj();
+			uploadUrl.uploadUrl = blobstoreService.createUploadUrl("/special/cvUpload?email="+me.email);
+			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
+			writer.write(gson.toJson(uploadUrl));
+		}
+		else if (resource.length == 4
+				&& resource[2].matches("cv")
+				&& resource[3].matches("delete")) {
+			// GET /user/<email>/cv/delete
+			// Delete CV
+			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
+			BlobKey blobKey = new BlobKey((String) entityUser.getProperty("cv"));
+			blobstoreService.delete(blobKey);
+			entityUser.removeProperty("cv");
+			db.put(entityUser);
+			
+			// Send response
+			ResultObj result = new ResultObj("ok");
+			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
+			writer.write(gson.toJson(result));
+		}
+		else {
+			throw new ServletException("Unimplemented request.");
+		}
 		writer.close();
 	}
 
@@ -151,6 +203,7 @@ public class UserServlet extends HttpServlet {
 		user = gson.fromJson(reader, UserObj.class);
 		reader.close();
 		
+		// Set entity properties
 		entity.setProperty("name", user.name);
 		entity.setProperty("age", user.age);
 		entity.setProperty("sex", user.sex);
@@ -169,18 +222,13 @@ public class UserServlet extends HttpServlet {
 	}
 
 	/**
-	 * Get user when placing a marker.
+	 * Get details of user.
 	 */
-	public Entity getUser() {
-		User u = UserServiceFactory.getUserService().getCurrentUser();
-		if (u == null) { //Not logged in
-			return null;
-		}
-		
+	public Entity getUser(String email) {
 		// Query the database
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Query q = new Query("Users");
-		q.addFilter("email", Query.FilterOperator.EQUAL, u.getEmail());
+		q.addFilter("email", Query.FilterOperator.EQUAL, email);
 		PreparedQuery pq = db.prepare(q);
 		if (pq.countEntities(FetchOptions.Builder.withLimit(1)) == 0) {
 			//throw new IllegalArgumentException("User does not exist!");
@@ -190,6 +238,18 @@ public class UserServlet extends HttpServlet {
 		// Return user entity
 		Entity entity = pq.asSingleEntity();
 		return entity;
+	}
+
+	/**
+	 * Get details for me.
+	 * Used pretty much everywhere.
+	 */
+	public Entity getUser() {
+		User u = UserServiceFactory.getUserService().getCurrentUser();
+		if (u == null) { //Not logged in
+			return null;
+		}
+		return getUser(u.getEmail());
 	}
 	
 	/**
