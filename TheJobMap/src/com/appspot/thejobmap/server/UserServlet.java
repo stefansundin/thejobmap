@@ -90,7 +90,7 @@ public class UserServlet extends HttpServlet {
 		// Parse path
 		String path = req.getPathInfo();
 		path = (path==null?"/":path);
-		System.out.println("/user"+path);
+		System.out.println("GET /user"+path);
 		String[] resource = path.split("/");
 		
 		// Handle "me"
@@ -156,22 +156,6 @@ public class UserServlet extends HttpServlet {
 			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 			writer.write(gson.toJson(uploadUrl));
 		}
-		else if (resource.length == 4
-				&& resource[2].matches("cv")
-				&& resource[3].matches("delete")) {
-			// GET /user/<email>/cv/delete
-			// Delete CV
-			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
-			BlobKey blobKey = new BlobKey((String) entityUser.getProperty("cv"));
-			blobstoreService.delete(blobKey);
-			entityUser.removeProperty("cv");
-			db.put(entityUser);
-			
-			// Send response
-			ResultObj result = new ResultObj("ok");
-			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
-			writer.write(gson.toJson(result));
-		}
 		else {
 			throw new ServletException("Unimplemented request.");
 		}
@@ -218,6 +202,85 @@ public class UserServlet extends HttpServlet {
 		// Send response
 		ResultObj result = new ResultObj("ok");
 		writer.write(gson.toJson(result));
+		writer.close();
+	}
+	
+	/**
+	 * DELETE - Delete user details.
+	 */
+	protected void doDelete(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+		// Initialize stuff like streams
+		res.setContentType("application/json; charset=UTF-8");
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
+		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
+		Gson gson = new Gson();
+		UserObj me = new UserObj();
+		
+		// Check if logged in
+		Entity entityMe = getUser();
+		if (entityMe == null) {
+			ResultObj result = new ResultObj("fail", "not logged in");
+			writer.write(gson.toJson(result));
+			writer.close();
+			return;
+		}
+		
+		// Get user info
+		me.convertFromEntity(entityMe);
+		
+		// Parse path
+		String path = req.getPathInfo();
+		path = (path==null?"/":path);
+		System.out.println("DELETE /user"+path);
+		String[] resource = path.split("/");
+		
+		// Handle "me"
+		if (resource.length >= 2 && resource[1].matches("me")) {
+			resource[1] = me.email;
+		}
+		
+		// Check privileges
+		if ((resource.length == 1 || !resource[1].matches(me.email)) && !me.privileges.matches("admin")) {
+			ResultObj result = new ResultObj("fail", "not enough privileges");
+			writer.write(gson.toJson(result));
+			writer.close();
+			return;
+		}
+		
+		// Fetch user object if not me
+		UserObj user = new UserObj();
+		Entity entityUser = entityMe;
+		if (resource.length >= 3 && !resource[1].matches(me.email)) {
+			entityUser = getUser(resource[1]);
+		}
+		user.convertFromEntity(entityUser);
+		
+		if (resource.length == 1) {
+			// DELETE /user/
+			// This would be a bad idea.
+			throw new ServletException("Unimplemented request.");
+		}
+		else if (resource.length == 2) {
+			// DELETE /user/<email>
+			// Delete user
+		}
+		else if (resource.length == 3
+				&& resource[2].matches("cv")) {
+			// DELETE /user/<email>/cv
+			// Delete CV
+			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
+			BlobKey blobKey = new BlobKey((String) entityUser.getProperty("cv"));
+			blobstoreService.delete(blobKey);
+			entityUser.removeProperty("cv");
+			db.put(entityUser);
+			
+			// Send response
+			ResultObj result = new ResultObj("ok");
+			writer.write(gson.toJson(result));
+		}
+		else {
+			throw new ServletException("Unimplemented request.");
+		}
 		writer.close();
 	}
 
