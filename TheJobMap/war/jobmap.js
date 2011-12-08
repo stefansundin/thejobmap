@@ -130,7 +130,7 @@ var jobmap = {
 		var mapMarker = new google.maps.Marker({
 			//map: jobmap.map,
 			position: new google.maps.LatLng(marker.lat, marker.lng),
-			draggable: jobmap.isAdmin(),
+			draggable: (jobmap.isAdmin() && marker.id),
 		});
 
 		// Check if we already have the marker
@@ -211,7 +211,7 @@ var jobmap = {
 			var mapMarker = marker.mapMarker;
 			marker.lat = mapMarker.getPosition().lat();
 			marker.lng = mapMarker.getPosition().lng();
-			marker.mapMarker = null;
+			delete marker.mapMarker;
 			json = JSON.stringify(marker);
 			marker.mapMarker = mapMarker;
 		}
@@ -374,7 +374,7 @@ var jobmap = {
 	 * Returns true if user is admin, false otherwise.
 	 */
 	isAdmin: function() {
-		return (jobmap.user.privileges == 'admin');
+		return (jobmap.user && jobmap.user.privileges == 'admin');
 	},
 	
 	/**
@@ -498,6 +498,10 @@ var jobmap = {
 		if (jobmap.cvUploadUrl && !jobmap.cvUrlReplaced) {
 			jobmap.cvUrlReplaced = true;
 			$('#cvIframe').contents().find('#form').attr('action', jobmap.cvUploadUrl);
+		}
+		else {
+			// Another onload. CV was probably uploaded successfully.
+			jobmap.user.cvUploaded = true;
 		}
 	},
 };

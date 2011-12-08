@@ -3,6 +3,7 @@ package com.appspot.thejobmap.server;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.util.Iterator;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -10,6 +11,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.appengine.api.blobstore.BlobInfo;
+import com.google.appengine.api.blobstore.BlobInfoFactory;
 import com.google.appengine.api.blobstore.BlobKey;
 import com.google.appengine.api.blobstore.BlobstoreService;
 import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
@@ -41,7 +44,12 @@ public class SpecialServlet extends HttpServlet {
 		res.setContentType("text/html; charset=UTF-8");
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 		//Gson gson = new Gson();
-
+		
+		// Parse path
+		String path = req.getPathInfo();
+		path = (path==null?"/":path);
+		System.out.println("GET /special"+path);
+		
 		// Check if logged in
 		User u = UserServiceFactory.getUserService().getCurrentUser();
 		String email = null;
@@ -49,9 +57,7 @@ public class SpecialServlet extends HttpServlet {
 			email = u.getEmail();
 		}
 
-		// Check path
-		String path = req.getPathInfo();
-		path = (path==null?"":path);
+		// Login?
 		if (path.matches("/login")) {
 			// Do not proceed if not logged in
 			if (u == null) {
@@ -91,17 +97,20 @@ public class SpecialServlet extends HttpServlet {
 		res.setContentType("text/html; charset=UTF-8");
 		//BufferedReader reader = new BufferedReader(new InputStreamReader(req.getInputStream()));
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
+		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		//Gson gson = new Gson();
 		//UserObj user = new UserObj();
-
+		
+		// Parse path
+		String path = req.getPathInfo();
+		path = (path==null?"/":path);
+		System.out.println("POST /special"+path);
+		
 		// CV Upload?
 		// This is a special case since this is done through a file upload
 		// Apparently since this is used as a callback after the file upload, it can not access the User session object
-		// This is why the email is passed through the url instead. We trust this value since it was generated for this user.
+		// This is why the email is passed through the url instead. We trust this value since it the upload url was generated for this user.
 		// This is safe since we will get an exception at getUploadedBlobs if nothing was uploaded
-		String path = req.getPathInfo();
-		path = (path==null?"":path);
-		System.out.println(path);
 		if (path.matches("/cvUpload") && req.getParameter("email") != null) {
 			String email = req.getParameter("email");
 			
@@ -109,9 +118,38 @@ public class SpecialServlet extends HttpServlet {
 			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
 			Map<String,BlobKey> blobs = blobstoreService.getUploadedBlobs(req);
 			BlobKey blobKey = blobs.get("cv");
-
+			
+			// User tried to upload multiple files, or file with wrong name
+			if (blobs.size() > 1 || blobKey == null) {
+				// Delete all blobs
+				for (BlobKey blob : blobs.values()) {
+					blobstoreService.delete(blob);
+				}
+				
+				// Send response
+				writer.write("<html>"+
+						"<body style=\"margin:0;\">Stop trying to hax plz.</body>"+
+						"</html>");
+				writer.close();
+				return;
+			}
+			
+			// Make sure it's a pdf
+			BlobInfoFactory blobInfoFactory = new BlobInfoFactory(db);
+			BlobInfo blobInfo = blobInfoFactory.loadBlobInfo(blobKey);
+			if (!blobInfo.getContentType().matches("application/pdf")) {
+				// Not a pdf, delete.
+				blobstoreService.delete(blobKey);
+				
+				// Send response
+				writer.write("<html>"+
+						"<body style=\"margin:0;\">We only accept pdf files.</body>"+
+						"</html>");
+				writer.close();
+				return;
+			}
+			
 			// Add blob key to user
-			DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 			Query q = new Query("Users");
 			q.addFilter("email", Query.FilterOperator.EQUAL, email);
 			PreparedQuery pq = db.prepare(q);

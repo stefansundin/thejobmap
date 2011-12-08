@@ -29,4 +29,15 @@ public class UserObj {
 		this.privileges = (String) entityUser.getProperty("privileges");
 		this.cvUploaded = (Boolean) entityUser.hasProperty("cv");
 	}
+	
+	public void updateEntity(Entity entityUser) {
+		// Set entity properties
+		entityUser.setProperty("name", this.name);
+		entityUser.setProperty("age", this.age);
+		entityUser.setProperty("sex", this.sex);
+		entityUser.setProperty("phonenumber", this.phonenumber);
+		entityUser.setProperty("education", this.education);
+		entityUser.setProperty("workExperience", this.workExperience);
+		if (this.privileges != null) entityUser.setProperty("privileges", this.privileges);
+	}
 }

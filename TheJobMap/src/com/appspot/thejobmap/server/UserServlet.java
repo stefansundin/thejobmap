@@ -17,6 +17,8 @@ import javax.servlet.http.HttpServletResponse;
 import com.appspot.thejobmap.shared.ResultObj;
 import com.appspot.thejobmap.shared.UploadUrlObj;
 import com.appspot.thejobmap.shared.UserObj;
+import com.google.appengine.api.blobstore.BlobInfo;
+import com.google.appengine.api.blobstore.BlobInfoFactory;
 import com.google.appengine.api.blobstore.BlobKey;
 import com.google.appengine.api.blobstore.BlobstoreService;
 import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
@@ -44,17 +46,27 @@ public class UserServlet extends HttpServlet {
 		// Initialize stuff like streams
 		res.setContentType("application/json; charset=UTF-8");
 		//BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
-		BufferedWriter writer = null;
+		BufferedWriter writer = null; //We can't initialize this here since serving CV through blobstore does not like it
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
 		UserObj me = new UserObj();
+
+		// Parse path
+		String path = req.getPathInfo();
+		path = (path==null?"/":path);
+		System.out.println("GET /user"+path);
+		String[] resource = path.split("/");
+		
+		// Initialize writer if not /cv
+		if (!path.endsWith("/cv")) {
+			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
+		}
 		
 		// Check if logged in
 		UserService userService = UserServiceFactory.getUserService();
 		User u = userService.getCurrentUser();
 		if (u == null) {
 			ResultObj result = new ResultObj("fail", "not logged in");
-			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 			writer.write(gson.toJson(result));
 			writer.close();
 			return;
@@ -66,7 +78,7 @@ public class UserServlet extends HttpServlet {
 		// Get logout url
 		Boolean devmode = (getServletContext().getServerInfo().indexOf("Development") != -1);
 		if (devmode) {
-			// This isn't needed anymore since we no longer use GWT
+			// This isn't needed anymore since we no longer use GWT on client side
 			me.logoutUrl = userService.createLogoutURL("/TheJobMap.html?gwt.codesvr=127.0.0.1:9997");
 		}
 		else {
@@ -76,22 +88,13 @@ public class UserServlet extends HttpServlet {
 		// Fetch user details
 		Entity entityMe = getUser();
 		if (entityMe == null) {
-			// User is logged in but does not exist in database (due to delays)
+			// User is logged in but does not exist in database yet (due to delays)
 			// Return stub
-			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 			writer.write(gson.toJson(me));
 			writer.close();
 			return;
 		}
-		
-		// Get user info
 		me.convertFromEntity(entityMe);
-		
-		// Parse path
-		String path = req.getPathInfo();
-		path = (path==null?"/":path);
-		System.out.println("GET /user"+path);
-		String[] resource = path.split("/");
 		
 		// Handle "me"
 		if (resource.length >= 2 && resource[1].matches("me")) {
@@ -101,7 +104,6 @@ public class UserServlet extends HttpServlet {
 		// Check privileges
 		if ((resource.length == 1 || !resource[1].matches(me.email)) && !me.privileges.matches("admin")) {
 			ResultObj result = new ResultObj("fail", "not enough privileges");
-			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 			writer.write(gson.toJson(result));
 			writer.close();
 			return;
@@ -110,10 +112,11 @@ public class UserServlet extends HttpServlet {
 		// Fetch user object if not me
 		UserObj user = new UserObj();
 		Entity entityUser = entityMe;
-		if (resource.length >= 3 && !resource[1].matches(me.email)) {
+		if (resource.length > 1 && !resource[1].matches(me.email)) {
 			entityUser = getUser(resource[1]);
 		}
 		user.convertFromEntity(entityUser);
+		user.logoutUrl = me.logoutUrl;
 		
 		if (resource.length == 1) {
 			// GET /user/
@@ -126,13 +129,11 @@ public class UserServlet extends HttpServlet {
 				aUser.convertFromEntity(dbList.get(i));
 				users.add(aUser);
 			}
-			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 			writer.write(gson.toJson(users));
 		}
 		else if (resource.length == 2) {
 			// GET /user/<email>
 			// Return user details
-			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 			writer.write(gson.toJson(user));
 		}
 		else if (resource.length == 3
@@ -142,6 +143,11 @@ public class UserServlet extends HttpServlet {
 			res.setContentType("application/pdf");
 			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
 			BlobKey blobKey = new BlobKey((String) entityUser.getProperty("cv"));
+			
+			BlobInfoFactory blobInfoFactory = new BlobInfoFactory(db);
+			BlobInfo blobInfo = blobInfoFactory.loadBlobInfo(blobKey);
+			res.setHeader("Content-disposition", "inline; filename="+blobInfo.getFilename());
+			
 			blobstoreService.serve(blobKey, res);
 			return;
 		}
@@ -153,7 +159,6 @@ public class UserServlet extends HttpServlet {
 			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
 			UploadUrlObj uploadUrl = new UploadUrlObj();
 			uploadUrl.uploadUrl = blobstoreService.createUploadUrl("/special/cvUpload?email="+me.email);
-			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 			writer.write(gson.toJson(uploadUrl));
 		}
 		else {
@@ -175,8 +180,8 @@ public class UserServlet extends HttpServlet {
 		UserObj user = new UserObj();
 
 		// Check if logged in
-		Entity entity = getUser();
-		if (entity == null) {
+		Entity entityMe = getUser();
+		if (entityMe == null) {
 			ResultObj result = new ResultObj("fail", "not logged in");
 			writer.write(gson.toJson(result));
 			writer.close();
@@ -187,17 +192,11 @@ public class UserServlet extends HttpServlet {
 		user = gson.fromJson(reader, UserObj.class);
 		reader.close();
 		
-		// Set entity properties
-		entity.setProperty("name", user.name);
-		entity.setProperty("age", user.age);
-		entity.setProperty("sex", user.sex);
-		entity.setProperty("phonenumber", user.phonenumber);
-		entity.setProperty("education", user.education);
-		entity.setProperty("workExperience", user.workExperience);
-		entity.setProperty("privileges", user.privileges);
+		// Update entity properties
+		user.updateEntity(entityMe);
 		
 		// Update database
-		db.put(entity);
+		db.put(entityMe);
 		
 		// Send response
 		ResultObj result = new ResultObj("ok");
