@@ -20,8 +20,6 @@ function initialize() {
 	
 	// Add controls
 	jobmap.init(map);
-	$('<div class="centerButtons"></div>').appendTo('#panel');
-	$('#panel .centerButtons').append(jobmap.mapControls);
 	
 	// Make map resize dynamically
 	window.addEventListener('resize', resizeMap, false);
@@ -55,16 +53,14 @@ var jobmap = {
 			}
 		});
 		
-		// Create buttons
-		var mapControls = $('<span id="MapControls"></span>').hide();
-		jobmap.mapControls = mapControls[0];
+		// Create map controls
+		var mapControls = $('<div id="MapControls"></div>').hide();
+		var mapControlsContainer = $('<div id="MapControlsContainer"></div>').append(mapControls);
 		$('<button id="refreshMarkersButton">Refresh markers</button>').click(jobmap.refreshMarkers).appendTo(mapControls);
 		$('<button id="createMarkerButton">Create marker</button>').click(jobmap.createMarker).attr('disabled',true).appendTo(mapControls);
-		
-		// Create admin buttons
-		var adminControls = $('<div id="AdminControls"></div>');
-		$('<button id="saveMarkerButton">Save markers</button>').click(jobmap.saveMarkers).attr('disabled',true).appendTo(adminControls);
-		map.controls[google.maps.ControlPosition.TOP_CENTER].push(adminControls[0]);
+		$('<button id="saveMarkerButton">Save markers</button>').click(jobmap.saveMarkers).attr('disabled',true).appendTo(mapControls);
+		map.controls[google.maps.ControlPosition.TOP_CENTER].push(mapControlsContainer[0]);
+		jobmap.mapControls = mapControls;
 		
 		// Info Window
 		jobmap.infoWindow = new google.maps.InfoWindow({});
@@ -386,14 +382,16 @@ var jobmap = {
 			
 			$('#createMarkerButton',jobmap.mapControls).attr('disabled', false);
 			$('#accname').empty().append(jobmap.getUsername()).removeClass('hidden');
-			$('#MapControls').fadeIn('slow');
+			$(jobmap.mapControls).fadeIn('slow');
 			
-			if (jobmap.user.privileges == 'admin') {
+			if (jobmap.isAdmin()) {
 				$('<button id="adminButton">Admin</button>').click(jobmap.admin).appendTo('#account');
-				$.each(jobmap.mapMarkers, function(i, mapMarker) {
-					mapMarker.setDraggable(true);
-				});
 			}
+			$.each(jobmap.markers, function(i, marker) {
+				if (jobmap.isOwner(marker)) {
+					marker.mapMarker.setDraggable(true);
+				}
+			});
 		})
 		.fail(function(xhr,txt) {
 			printError('getUser failed: '+txt+'.');
