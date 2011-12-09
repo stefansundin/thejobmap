@@ -91,6 +91,7 @@ a {
 #console.big {
 	width: 100%;
 	height: 400px;
+	white-space: normal;
 }
 #console .error {
 	color: red;

@@ -115,7 +115,7 @@ var jobmap = {
 		
 		$.getJSON('/rest/marker')
 		.done(function(data) {
-			printInfo('Received markers: ', data);
+			printInfo('Received '+data.length+' markers: ', data);
 			$.each(data, function(key, val) {
 				jobmap.addMarker(val);
 			});
@@ -130,7 +130,7 @@ var jobmap = {
 		var mapMarker = new google.maps.Marker({
 			//map: jobmap.map,
 			position: new google.maps.LatLng(marker.lat, marker.lng),
-			draggable: (jobmap.isAdmin() && marker.id),
+			draggable: (jobmap.isAdmin() && !isNaN(marker.id)),
 		});
 
 		// Check if we already have the marker

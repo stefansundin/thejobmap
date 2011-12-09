@@ -25,10 +25,9 @@ import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
-import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserService;
@@ -289,17 +288,12 @@ public class UserServlet extends HttpServlet {
 	public Entity getUser(String email) {
 		// Query the database
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
-		Query q = new Query("Users");
-		q.addFilter("email", Query.FilterOperator.EQUAL, email);
-		PreparedQuery pq = db.prepare(q);
-		if (pq.countEntities(FetchOptions.Builder.withLimit(1)) == 0) {
-			//throw new IllegalArgumentException("User does not exist!");
+		try {
+			Entity entityUser = db.get(KeyFactory.createKey("Users", email));
+			return entityUser;
+		} catch (EntityNotFoundException e) {
 			return null;
 		}
-		
-		// Return user entity
-		Entity entity = pq.asSingleEntity();
-		return entity;
 	}
 
 	/**
@@ -319,39 +313,31 @@ public class UserServlet extends HttpServlet {
 	 */
 	void createUser(String email) {
 		System.out.println("Creating user "+email);
-		// Does the user already exist?
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
-		Query q = new Query("Users");
-		q.addFilter("email", Query.FilterOperator.EQUAL, email);
-		PreparedQuery pq = db.prepare(q);
-		if (pq.countEntities(FetchOptions.Builder.withLimit(1)) != 0) {
-			throw new IllegalArgumentException("User already exists!");
-		}
-
-		// Create an entry
-		Key storeKey = KeyFactory.createKey("Users", "jobmap");
+		
+		// Create an entity
+		Entity entityUser = new Entity("Users", email);
 		Date date = new Date();
-		Entity entry = new Entity("Users", storeKey);
-		entry.setProperty("creationDate", date.getTime());
-		entry.setProperty("email", email);
-		entry.setProperty("name", null);
-		entry.setProperty("age", null);
-		entry.setProperty("sex", null);
-		entry.setProperty("phonenumber", null);
-		entry.setProperty("education", null);
-		entry.setProperty("workExperience", null);
+		entityUser.setProperty("creationDate", date.getTime());
+		//entityUser.setProperty("email", email);
+		entityUser.setProperty("name", null);
+		entityUser.setProperty("age", null);
+		entityUser.setProperty("sex", null);
+		entityUser.setProperty("phonenumber", null);
+		entityUser.setProperty("education", null);
+		entityUser.setProperty("workExperience", null);
 
 		if (email.matches("test@example.com")
 		 || email.matches("alexandra.tsampikakis@gmail.com")
 		 || email.matches("recover89@gmail.com")) {
-			entry.setProperty("privileges", "admin");
+			entityUser.setProperty("privileges", "admin");
 		}
 		else {
-			entry.setProperty("privileges", null);
+			entityUser.setProperty("privileges", "random");
 		}
 		
 		// Insert in database
-		db.put(entry);
+		db.put(entityUser);
 	}
 	
 	/**
@@ -360,19 +346,15 @@ public class UserServlet extends HttpServlet {
 	public String getPrivileges(String email) {
 		// Query the database
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
-		Query q = new Query("Users");
-		q.addFilter("email", Query.FilterOperator.EQUAL, email);
-		PreparedQuery pq = db.prepare(q);
-		if (pq.countEntities(FetchOptions.Builder.withLimit(1)) == 0) {
+		try {
+			Entity entityUser = db.get(KeyFactory.createKey("Users", email));
+			String privileges = (String) entityUser.getProperty("privileges");
+			return privileges;
+		} catch (EntityNotFoundException e) {
 			//throw new IllegalArgumentException("User does not exist!");
-			System.out.println("Error: User does not exist!");
+			System.out.println("Error: getPrivileges("+email+"): User does not exist!");
 			return "random";
 		}
-		
-		// Return privileges
-		Entity entry = pq.asSingleEntity();
-		String privileges = (String) entry.getProperty("privileges");
-		return privileges;
 	}
 	
 	/**

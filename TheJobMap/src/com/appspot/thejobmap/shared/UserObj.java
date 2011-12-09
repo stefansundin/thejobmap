@@ -19,7 +19,8 @@ public class UserObj {
 	public UserObj() {}
 	
 	public void convertFromEntity(Entity entityUser) {
-		this.email = (String) entityUser.getProperty("email");
+		//this.email = (String) entityUser.getProperty("email");
+		this.email = entityUser.getKey().getName();
 		this.name = (String) entityUser.getProperty("name");
 		this.age = (String) entityUser.getProperty("age");
 		this.sex = (String) entityUser.getProperty("sex");
