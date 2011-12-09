@@ -52,7 +52,7 @@ h1,h2,h3,h4 {
 	margin-left: 10px;
 }
 #panel #account #accname {
-	text-decoration: underline;
+	text-decoration: underline !important;
 }
 #panel #account #accname:after{
 	content: " ▼";
@@ -70,10 +70,14 @@ h1,h2,h3,h4 {
 .updateUserForm {
 	margin-right: 90px;
 }
+#cvIframe {
+	width: 100%;
+	height: 32px;
+}
 
 #adminDialog a {
 	display: block;
-	margin-bottom: 4px;
+	margin-top: 4px;
 }
 .adminDialog {
 	margin-right: 50px;

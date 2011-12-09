@@ -23,7 +23,10 @@ public class UserObj {
 	 * Convenience function to convert database entity to UserObj.
 	 */
 	public void convertFromEntity(Entity entityUser) {
-		//this.email = (String) entityUser.getProperty("email");
+		if (entityUser == null) {
+			this.privileges = "random";
+			return;
+		}
 		this.email = entityUser.getKey().getName();
 		this.name = (String) entityUser.getProperty("name");
 		this.age = (String) entityUser.getProperty("age");
@@ -56,7 +59,7 @@ public class UserObj {
 	 * Validate object.
 	 */
 	public Boolean validate() {
-		List<String> sex = Arrays.asList("Not saying", "Male", "Female", "Other");
+		List<String> sex = Arrays.asList("Not telling", "Male", "Female", "Other");
 		List<String> privileges = Arrays.asList("random", "company", "admin");
 		
 		if (!sex.contains(this.sex) || !privileges.contains(this.privileges) /*|| Integer.parseInt(this.age) < 0*/) {

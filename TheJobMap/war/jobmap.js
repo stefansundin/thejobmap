@@ -168,7 +168,7 @@ var jobmap = {
 		
 		// Add listeners
 		google.maps.event.addListener(mapMarker, 'click', function() {
-			jobmap.infoWindow.setContent(jobmap.createInfo(marker));
+			jobmap.setInfoWindow(marker);
 			jobmap.infoWindow.open(jobmap.map, mapMarker);
 		});
 		
@@ -208,7 +208,7 @@ var jobmap = {
 			jobmap.newMarker.setAnimation(null);
 		});
 		google.maps.event.addListener(jobmap.newMarker, 'click', function() {
-			jobmap.infoWindow.setContent(jobmap.createInfo(jobmap.newMarker));
+			jobmap.setInfoWindow(jobmap.newMarker);
 			jobmap.infoWindow.open(jobmap.map, jobmap.newMarker);
 		});
 	},
@@ -269,11 +269,31 @@ var jobmap = {
 	/**
 	 * Create the contents of an info window for a marker.
 	 */
-	createInfo: function(marker) {
+	setInfoWindow: function(marker, mode) {
+		if (!mode) mode='view';
+		
 		if (marker == jobmap.newMarker) {
-			return '<b>Enter details</b><p><textarea id="markerInfo" placeholder="Write description here"></textarea><br/><button onclick="jobmap.postMarker();">Store marker</button></p>';
+			jobmap.infoWindow.setContent(
+				$('<div><b>Enter details</b>'+
+				'<p><textarea id="markerInfo" placeholder="Write description here"></textarea><br/>'+
+				'<button onclick="jobmap.postMarker();">Store marker</button></p></div>')[0]);
 		}
-		return marker.info;
+		else if (mode == 'edit') {
+			jobmap.infoWindow.setContent($('<div></div>').append('<br/>')
+			.append($('<p></p>').append($('<textarea id="markerInfo" placeholder="Write description here"></textarea>').val(marker.info)))
+			.append($('<p></p>').append($('<button>Save</button>').click(function() {
+				printInfo('Save!');
+			})))[0]);
+		}
+		else if (jobmap.isAdmin() || marker.author == jobmap.user.email) {
+			jobmap.infoWindow.setContent($('<div></div>').text(marker.info).append('<br/>')
+			.append($('<button>Edit marker</button>').click(function() {
+				jobmap.setInfoWindow(marker, 'edit');
+			}))[0]);
+		}
+		else {
+			jobmap.infoWindow.setContent(marker.info);
+		}
 	},
 	
 	/** User */
@@ -521,7 +541,7 @@ var jobmap = {
 		$('<p>Name: </p>').add($('<input type="text" id="userName" placeholder="Your name" />').val(user.name)).appendTo('#updateUserForm');
 		$('<p>Age: </p>').add($('<input type="number" id="userAge" placeholder="Your age" />').val(user.age)).appendTo('#updateUserForm');
 		$('<p>Sex: </p>').add(($('<select id="userSex"></select>')
-				.append($('<option>Not saying</option>'))
+				.append($('<option>Not telling</option>'))
 				.append($('<option>Male</option>'))
 				.append($('<option>Female</option>'))
 				.append($('<option>Other</option>'))
@@ -543,7 +563,7 @@ var jobmap = {
 		}
 		else {
 			jobmap.cvFrameLoaded = false;
-			$('<p>Upload CV (pdf only, maximum size is 1 MB): </p>').add('<p><iframe src="/upload-cv.html" id="cvIframe" width="100%" height="25" scrolling="no" frameborder="0" onload="jobmap.cvFrameOnload();"></iframe></p>').appendTo('#updateUserForm');
+			$('<p>Upload CV (pdf only, maximum size is 1 MB): </p>').add('<p><iframe src="/upload-cv.html" id="cvIframe" scrolling="no" frameborder="0" onload="jobmap.cvFrameOnload();"></iframe></p>').appendTo('#updateUserForm');
 		}
 		
 	},
@@ -558,9 +578,8 @@ var jobmap = {
 			if (jobmap.who == 'me') {
 				jobmap.user.cvUploaded = true;
 			}
-			
+			return;
 		}
-		else {
 		jobmap.cvFrameLoaded = true;
 		
 		$.getJSON('/rest/user/'+jobmap.who+'/cv/uploadUrl')
@@ -571,7 +590,6 @@ var jobmap = {
 		.fail(function(xhr,txt) {
 			printError('Getting CV upload url failed: '+txt+'.');
 		});
-		}
 	},
 };
 

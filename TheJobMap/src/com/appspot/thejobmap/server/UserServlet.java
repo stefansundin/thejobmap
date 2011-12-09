@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -22,6 +23,7 @@ import com.google.appengine.api.blobstore.BlobInfoFactory;
 import com.google.appengine.api.blobstore.BlobKey;
 import com.google.appengine.api.blobstore.BlobstoreService;
 import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
+import com.google.appengine.api.blobstore.UploadOptions;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
@@ -44,12 +46,11 @@ public class UserServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
 		// Initialize stuff like streams
 		res.setContentType("application/json; charset=UTF-8");
-		//BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
-		BufferedWriter writer = null; //We can't initialize this here since serving CV through blobstore does not like it
+		BufferedWriter writer = null; //We can't initialize this yet since serving CV through blobstore does not like it
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
 		UserObj me = new UserObj();
-
+		
 		// Parse path
 		String path = req.getPathInfo();
 		path = (path==null?"/":path);
@@ -87,12 +88,12 @@ public class UserServlet extends HttpServlet {
 		me.convertFromEntity(entityMe);
 		
 		// Handle "me"
-		if (resource.length >= 2 && resource[1].matches("me")) {
+		if (resource.length >= 2 && "me".equals(resource[1])) {
 			resource[1] = me.email;
 		}
 		
 		// Check privileges
-		if ((resource.length <= 1 || !resource[1].matches(me.email)) && !me.privileges.matches("admin")) {
+		if ((resource.length <= 1 || !me.email.equals(resource[1])) && !"admin".equals(me.privileges)) {
 			ResultObj result = new ResultObj("fail", "not enough privileges");
 			writer.write(gson.toJson(result));
 			writer.close();
@@ -102,7 +103,7 @@ public class UserServlet extends HttpServlet {
 		// Fetch user object if not me
 		UserObj user = new UserObj();
 		Entity entityUser = entityMe;
-		if (resource.length > 1 && !resource[1].matches(me.email)) {
+		if (resource.length > 1 && !me.email.equals(resource[1])) {
 			entityUser = getUser(resource[1]);
 		}
 		user.convertFromEntity(entityUser);
@@ -127,7 +128,7 @@ public class UserServlet extends HttpServlet {
 			writer.write(gson.toJson(user));
 		}
 		else if (resource.length == 3
-				&& resource[2].matches("cv")) {
+				&& "cv".equals(resource[2])) {
 			// GET /user/<email>/cv
 			// Return CV
 			
@@ -155,13 +156,13 @@ public class UserServlet extends HttpServlet {
 			return;
 		}
 		else if (resource.length == 4
-				&& resource[2].matches("cv")
-				&& resource[3].matches("uploadUrl")) {
+				&& "cv".equals(resource[2])
+				&& "uploadUrl".equals(resource[3])) {
 			// GET /user/<email>/cv/uploadUrl
 			// Return upload url for CV
 			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
 			UploadUrlObj uploadUrl = new UploadUrlObj();
-			uploadUrl.uploadUrl = blobstoreService.createUploadUrl("/special/cvUpload?email="+user.email);
+			uploadUrl.uploadUrl = blobstoreService.createUploadUrl("/special/cvUpload?email="+user.email, UploadOptions.Builder.withMaxUploadSizeBytes(1000000));
 			writer.write(gson.toJson(uploadUrl));
 		}
 		else {
@@ -191,21 +192,20 @@ public class UserServlet extends HttpServlet {
 		// Fetch user details
 		Entity entityMe = getUser();
 		if (entityMe == null) {
-			// User is logged in but does not exist in database yet (due to delays)
-			// Return stub
-			writer.write(gson.toJson(me));
+			ResultObj result = new ResultObj("fail", "not enough privileges");
+			writer.write(gson.toJson(result));
 			writer.close();
 			return;
 		}
 		me.convertFromEntity(entityMe);
 		
 		// Handle "me"
-		if (resource.length >= 2 && resource[1].matches("me")) {
+		if (resource.length >= 2 && "me".equals(resource[1])) {
 			resource[1] = me.email;
 		}
 		
 		// Check privileges
-		if ((resource.length <= 1 || !resource[1].matches(me.email)) && !me.privileges.matches("admin")) {
+		if ((resource.length <= 1 || !me.email.equals(resource[1])) && !"admin".equals(me.privileges)) {
 			ResultObj result = new ResultObj("fail", "not enough privileges");
 			writer.write(gson.toJson(result));
 			writer.close();
@@ -215,7 +215,7 @@ public class UserServlet extends HttpServlet {
 		// Fetch user object if not me
 		UserObj user = new UserObj();
 		Entity entityUser = entityMe;
-		if (resource.length > 1 && !resource[1].matches(me.email)) {
+		if (resource.length > 1 && !me.email.equals(resource[1])) {
 			entityUser = getUser(resource[1]);
 		}
 		user.convertFromEntity(entityUser);
@@ -275,12 +275,12 @@ public class UserServlet extends HttpServlet {
 		String[] resource = path.split("/");
 		
 		// Handle "me"
-		if (resource.length >= 2 && resource[1].matches("me")) {
+		if (resource.length >= 2 && "me".equals(resource[1])) {
 			resource[1] = me.email;
 		}
 		
 		// Check privileges
-		if ((resource.length == 1 || !resource[1].matches(me.email)) && !me.privileges.matches("admin")) {
+		if ((resource.length == 1 || !me.email.equals(resource[1])) && !"admin".equals(me.privileges)) {
 			ResultObj result = new ResultObj("fail", "not enough privileges");
 			writer.write(gson.toJson(result));
 			writer.close();
@@ -290,7 +290,7 @@ public class UserServlet extends HttpServlet {
 		// Fetch user object if not me
 		UserObj user = new UserObj();
 		Entity entityUser = entityMe;
-		if (resource.length >= 3 && !resource[1].matches(me.email)) {
+		if (resource.length >= 3 && !me.email.equals(resource[1])) {
 			entityUser = getUser(resource[1]);
 		}
 		user.convertFromEntity(entityUser);
@@ -305,9 +305,19 @@ public class UserServlet extends HttpServlet {
 			// Delete user
 		}
 		else if (resource.length == 3
-				&& resource[2].matches("cv")) {
+				&& "cv".equals(resource[2])) {
 			// DELETE /user/<email>/cv
 			// Delete CV
+			
+			// Make sure CV exists
+			if (!entityUser.hasProperty("cv")) {
+				ResultObj result = new ResultObj("fail", "user cv does not exist");
+				writer.write(gson.toJson(result));
+				writer.close();
+				return;
+			}
+			
+			// Delete
 			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
 			BlobKey blobKey = new BlobKey((String) entityUser.getProperty("cv"));
 			blobstoreService.delete(blobKey);
@@ -361,19 +371,16 @@ public class UserServlet extends HttpServlet {
 		Entity entityUser = new Entity("Users", email);
 		Date date = new Date();
 		entityUser.setProperty("creationDate", date.getTime());
-		//entityUser.setProperty("email", email);
 		entityUser.setProperty("name", null);
 		entityUser.setProperty("age", null);
-		entityUser.setProperty("sex", null);
+		entityUser.setProperty("sex", "Not telling");
 		entityUser.setProperty("phonenumber", null);
-
-		if (email.matches("test@example.com")
-		 || email.matches("alexandra.tsampikakis@gmail.com")
-		 || email.matches("recover89@gmail.com")) {
+		entityUser.setProperty("privileges", "random");
+		
+		// These guys are admins!
+		List<String> realAwesomeGuys = Arrays.asList("test@example.com", "alexandra.tsampikakis@gmail.com", "stefan@stefansundin.com");
+		if (realAwesomeGuys.contains(email)) {
 			entityUser.setProperty("privileges", "admin");
-		}
-		else {
-			entityUser.setProperty("privileges", "random");
 		}
 		
 		// Insert in database

@@ -39,7 +39,6 @@ public class OpenIDServlet extends HttpServlet {
 		//DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
 		
-		
 		// Enumerate providers
 		UserService userService = UserServiceFactory.getUserService();
 		List<OpenIDProviderObj> provs = new ArrayList<OpenIDProviderObj>();

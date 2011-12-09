@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.appspot.thejobmap.shared.MarkerObj;
 import com.appspot.thejobmap.shared.ResultObj;
+import com.appspot.thejobmap.shared.UserObj;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
@@ -40,39 +41,39 @@ public class MarkerServlet extends HttpServlet {
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
-		//UserObj user = new UserObj();
-
-		// Get marker id
+		UserObj me = new UserObj();
+		
+		// Parse path
 		String path = req.getPathInfo();
-		path = (path==null?"/":path).substring(1);
-		if (path.matches("")) {
+		path = (path==null?"/":path);
+		System.out.println("GET /marker"+path);
+		String[] resource = path.split("/");
+
+		// Fetch user details
+		Entity entityMe = userServlet.getUser();
+		me.convertFromEntity(entityMe);
+		
+		// Get marker id
+		if (path.equals("")) {
 			//FIXME
 		}
 		else {
-			int id = Integer.parseInt(path);
+			//long id = Long.parseLong(path);
 			//FIXME
 		}
 		
 		// Query database for markers
 		Query q = new Query("Markers");
-		List<Entity> dbret = db.prepare(q).asList(FetchOptions.Builder.withLimit(1000));
-		
-		// Get user privileges
-		String privileges = userServlet.getPrivileges();
+		List<Entity> dbList = db.prepare(q).asList(FetchOptions.Builder.withLimit(1000));
 		
 		// Transfer markers to serializable array
 		List<MarkerObj> markers = new ArrayList<MarkerObj>();
-		for (int i=0; i < dbret.size(); i++) {
+		for (int i=0; i < dbList.size(); i++) {
 			MarkerObj marker = new MarkerObj();
-			marker.id = (int) dbret.get(i).getKey().getId();
-			marker.lat = (Double) dbret.get(i).getProperty("lat");
-			marker.lng = (Double) dbret.get(i).getProperty("lng");
-			marker.type = (String) dbret.get(i).getProperty("type");
-			marker.near = (String) dbret.get(i).getProperty("near");
-			marker.info = (String) dbret.get(i).getProperty("info");
-			if (privileges == "admin") {
-				marker.creationDate = (Long) dbret.get(i).getProperty("creationDate");
-				marker.author = (String) dbret.get(i).getProperty("author");
+			marker.convertFromEntity(dbList.get(i));
+			if (!"admin".equals(me.privileges) && !marker.author.equals(me.email)) {
+				marker.creationDate = null;
+				marker.author = null;
 			}
 			markers.add(marker);
 		}
@@ -92,28 +93,30 @@ public class MarkerServlet extends HttpServlet {
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
+		UserObj me = new UserObj();
 		
 		// Parse input
 		MarkerObj marker = gson.fromJson(reader, MarkerObj.class);
 		reader.close();
 		
 		// Check user
-		Entity user = userServlet.getUser();
-		if (user == null) {
+		Entity entityMe = userServlet.getUser();
+		if (entityMe == null) {
 			ResultObj result = new ResultObj("fail", "not logged in");
 			writer.write(gson.toJson(result));
 			writer.close();
 			return;
 		}
+		me.convertFromEntity(entityMe);
 		
 		// Some stuff
 		Entity entity;
 		Date date = new Date();
 		
-		// Get marker id (null if new marker)
+		// Get marker id
 		String path = req.getPathInfo();
 		path = (path==null?"/":path).substring(1);
-		if (path.matches("")) {
+		if (path.equals("")) {
 			// This is a new marker
 			Key dbKey = KeyFactory.createKey("Markers", "jobmap");
 			entity = new Entity("Markers", dbKey);
@@ -138,7 +141,7 @@ public class MarkerServlet extends HttpServlet {
 		entity.setProperty("type", marker.type);
 		entity.setProperty("near", marker.near);
 		entity.setProperty("info", marker.info);
-		entity.setProperty("author", user.getProperty("email"));
+		entity.setProperty("author", me.email);
 		entity.setProperty("updatedDate", date.getTime());
 		
 		// Insert/update in database
