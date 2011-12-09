@@ -516,8 +516,9 @@ var jobmap = {
 					})
 					.done(function(data) {
 						printInfo('Reply: ', data);
-						$.extend(user, userObj);
 						$('#updateUserForm').dialog('close');
+						$.extend(user, userObj);
+						$('#accname').empty().append(jobmap.getUsername());
 					})
 					.fail(function(xhr,txt) {
 						printError('Sending user details failed: '+txt+'.');
@@ -547,6 +548,11 @@ var jobmap = {
 			close: function() {
 				$(this).remove();
 			},
+		})
+		.keypress(function(e) {
+			if(e.which == 13) {
+				$("#updateUserForm").parents('.ui-dialog').first().find('.ui-button').first().click();
+			}
 		});
 		$('<p>Email: </p>').add($('<input type="text" id="userEmail" readonly />').val(user.email)).appendTo('#updateUserForm');
 		$('<p>Name: </p>').add($('<input type="text" id="userName" placeholder="Your name" />').val(user.name)).appendTo('#updateUserForm');
