@@ -104,6 +104,7 @@ var jobmap = {
 		for (var i=0; i < jobmap.mapMarkers.length; i++) {
 			jobmap.mapMarkers[i].setMap(null);
 		}
+		jobmap.markers = [];
 		jobmap.mapMarkers = [];
 	},
 	
@@ -111,7 +112,7 @@ var jobmap = {
 	 * Fetch markers from server.
 	 */
 	refreshMarkers: function() {
-		//jobmap.clearMarkers();
+		jobmap.clearMarkers();
 		
 		$.getJSON('/rest/marker')
 		.done(function(data) {
