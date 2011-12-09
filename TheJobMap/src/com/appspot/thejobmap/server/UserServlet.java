@@ -73,16 +73,7 @@ public class UserServlet extends HttpServlet {
 		
 		// Logged in
 		me.email = u.getEmail();
-		
-		// Get logout url
-		Boolean devmode = (getServletContext().getServerInfo().indexOf("Development") != -1);
-		if (devmode) {
-			// This isn't needed anymore since we no longer use GWT on client side
-			me.logoutUrl = userService.createLogoutURL("/TheJobMap.html?gwt.codesvr=127.0.0.1:9997");
-		}
-		else {
-			me.logoutUrl = userService.createLogoutURL("/");
-		}
+		me.logoutUrl = userService.createLogoutURL("/");
 		
 		// Fetch user details
 		Entity entityMe = getUser();

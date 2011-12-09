@@ -20,6 +20,12 @@ p {
 	margin: 0;
 	margin-top: 8px;
 }
+h1,h2,h3,h4 {
+	margin: 0;
+}
+.hidden {
+	display: none;
+}
 
 #panel {
 	height: 80px;
@@ -53,10 +59,7 @@ p {
 	font-size: x-small;
 }
 .loginDialog {
-	position: absolute !important;
-	top: 50px !important;
-	right: 15px !important;
-	left: auto !important;
+	margin-right: 15px;
 }
 .loginDialog img {
 	display: block;
@@ -64,8 +67,16 @@ p {
 	margin: 13px 0;
 }
 
+.updateUserForm {
+	margin-right: 90px;
+}
+
 #adminDialog a {
 	display: block;
+	margin-bottom: 4px;
+}
+.adminDialog {
+	margin-right: 50px;
 }
 
 #page {

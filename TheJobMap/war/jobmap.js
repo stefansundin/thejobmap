@@ -74,7 +74,7 @@ var jobmap = {
 		$('<div id="account"></div>').appendTo('#panel');
 		$('<a id="accname"></a>').click(function() {
 			jobmap.updateUserForm();
-		}).hide().appendTo('#account');
+		}).addClass('hidden').appendTo('#account');
 		$('<button id="logButton"></button>').click(jobmap.logButton).appendTo('#account');
 		jobmap.getUser();
 		
@@ -145,7 +145,7 @@ var jobmap = {
 			position: new google.maps.LatLng(marker.lat, marker.lng),
 			draggable: (jobmap.isAdmin() && !isNaN(marker.id)),
 		});
-
+		
 		// Check if we already have the marker
 		var alreadyAdded = false;
 		for (var i=0; i < jobmap.markers.length; i++) {
@@ -297,12 +297,13 @@ var jobmap = {
 		$('<div id="loginForm"></div>').dialog({
 			title: 'Login with OpenID',
 			dialogClass: 'loginDialog',
-			autoOpen: true,
-			modal: true,
-			draggable: false,
-			resizable: false,
+			position: ['right', 50],
 			height: 230,
 			width: 260,
+			modal: true,
+			autoOpen: true,
+			draggable: false,
+			resizable: false,
 			buttons: {
 				Cancel: function() {
 					$(this).dialog('close');
@@ -333,7 +334,6 @@ var jobmap = {
 			}).appendTo('#loginForm');
 			$.each(data.slice(1), function(key, val) {
 				$('<img src="images/openid/'+val.name+'.png" />').click(val,openLoginWindow).appendTo(moreProviders);
-				jobmap.addMarker(val);
 			});
 		})
 		.fail(function(xhr,txt) {
@@ -355,11 +355,11 @@ var jobmap = {
 				return;
 			}
 			
-			printInfo('User: ', data);
+			printInfo('User ('+who+'): ', data);
 			jobmap.user = data;
 			
 			$('#createMarkerButton',jobmap.mapControls).attr('disabled', false);
-			$('#accname').empty().append(jobmap.getUsername()).css('display', 'inline');
+			$('#accname').empty().append(jobmap.getUsername()).removeClass('hidden');
 			
 			if (jobmap.user.privileges == 'admin') {
 				$('<button id="adminButton">Admin</button>').click(jobmap.admin).appendTo('#account');
@@ -388,11 +388,15 @@ var jobmap = {
 	 * Open the admin dialog.
 	 */
 	admin: function() {
+		if ($('#adminDialog').length) return;
+		
 		$('<div id="adminDialog"></div>').dialog({
 			title: 'Admin',
-			autoOpen: true,
+			dialogClass: 'adminDialog',
+			position: ['right', 40],
 			height: 500,
 			width: 360,
+			autoOpen: true,
 			buttons: {
 				Done: function() {
 					$(this).dialog('close');
@@ -402,7 +406,8 @@ var jobmap = {
 				$(this).remove();
 			},
 		});
-
+		
+		$('<h4>List of users:</h4>').appendTo('#adminDialog');
 		$.getJSON('/rest/user')
 		.done(function(data) {
 			if (data.result == 'fail') {
@@ -453,7 +458,8 @@ var jobmap = {
 		
 		$('<div id="updateUserForm"></div>').dialog({
 			title: (who=='me'?'Your personal information':who),
-			autoOpen: true,
+			dialogClass: 'updateUserForm',
+			position: ['right', 70],
 			height: 530,
 			width: 380,
 			buttons: {

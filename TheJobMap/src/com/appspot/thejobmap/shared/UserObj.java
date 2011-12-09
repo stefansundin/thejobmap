@@ -59,7 +59,7 @@ public class UserObj {
 		List<String> sex = Arrays.asList("Not saying", "Male", "Female", "Other");
 		List<String> privileges = Arrays.asList("random", "company", "admin");
 		
-		if (!sex.contains(this.sex) || !privileges.contains(this.privileges)) {
+		if (!sex.contains(this.sex) || !privileges.contains(this.privileges) /*|| Integer.parseInt(this.age) < 0*/) {
 			return false;
 		}
 		return true;
