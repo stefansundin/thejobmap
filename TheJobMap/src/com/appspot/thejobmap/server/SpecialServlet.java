@@ -3,7 +3,6 @@ package com.appspot.thejobmap.server;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.util.Iterator;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -19,9 +18,6 @@ import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.FetchOptions;
-import com.google.appengine.api.datastore.PreparedQuery;
-import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserServiceFactory;
 
@@ -64,15 +60,10 @@ public class SpecialServlet extends HttpServlet {
 				writer.write("Not logged in");
 				writer.close();
 			}
-			
-			// Query database
-			DatastoreService db = DatastoreServiceFactory.getDatastoreService();
-			Query q = new Query("Users");
-			q.addFilter("email", Query.FilterOperator.EQUAL, email);
-			PreparedQuery pq = db.prepare(q);
 
 			// Create user if it does not exist
-			if (pq.countEntities(FetchOptions.Builder.withLimit(1)) == 0) {
+			Entity entityUser = userServlet.getUser(email);
+			if (entityUser == null) {
 				userServlet.createUser(email);
 			}
 			
@@ -148,14 +139,11 @@ public class SpecialServlet extends HttpServlet {
 				writer.close();
 				return;
 			}
-			
+
 			// Add blob key to user
-			Query q = new Query("Users");
-			q.addFilter("email", Query.FilterOperator.EQUAL, email);
-			PreparedQuery pq = db.prepare(q);
-			Entity entity = pq.asSingleEntity();
-			entity.setProperty("cv", blobKey.getKeyString());
-			db.put(entity);
+			Entity entityUser = userServlet.getUser(email);
+			entityUser.setProperty("cv", blobKey.getKeyString());
+			db.put(entityUser);
 			
 			// Finished
 			writer.write("<html>"+

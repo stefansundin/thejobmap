@@ -139,14 +139,27 @@ public class UserServlet extends HttpServlet {
 				&& resource[2].matches("cv")) {
 			// GET /user/<email>/cv
 			// Return CV
+			
+			// Make sure CV exists
+			if (!entityUser.hasProperty("cv")) {
+				res.setContentType("text/plain");
+				writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
+				writer.write("Could not find CV. Try again soon.");
+				writer.close();
+				return;
+			}
+			
+			// Get blob
 			res.setContentType("application/pdf");
 			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
 			BlobKey blobKey = new BlobKey((String) entityUser.getProperty("cv"));
 			
+			// Serve metadata
 			BlobInfoFactory blobInfoFactory = new BlobInfoFactory(db);
 			BlobInfo blobInfo = blobInfoFactory.loadBlobInfo(blobKey);
 			res.setHeader("Content-disposition", "inline; filename="+blobInfo.getFilename());
 			
+			// Serve CV
 			blobstoreService.serve(blobKey, res);
 			return;
 		}

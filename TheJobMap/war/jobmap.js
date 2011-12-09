@@ -83,8 +83,8 @@ var jobmap = {
 		
 		// User
 		$('<div id="account"></div>').appendTo('#panel');
-		$('<span id="username"> </span>').click(jobmap.updateUserForm).appendTo('#account');
-		$('<button id="logButton"> </button>').click(jobmap.logButton).appendTo('#account');
+		$('<span id="accname"></span>').click(jobmap.updateUserForm).hide().appendTo('#account');
+		$('<button id="logButton"></button>').click(jobmap.logButton).appendTo('#account');
 		jobmap.getUser();
 		
 		// Markers
@@ -344,8 +344,7 @@ var jobmap = {
 			jobmap.user = data;
 			
 			$('#createMarkerButton',jobmap.mapControls).attr('disabled', false);
-			$('#username').contents().replaceWith(jobmap.user.email);
-			$('#logButton').contents().replaceWith('Logout');
+			$('#accname').empty().append(jobmap.getUsername()).css('display', 'inline');
 			
 			if (jobmap.user.privileges == 'admin') {
 				$.each(jobmap.mapMarkers, function(i, mapMarker) {
@@ -357,8 +356,7 @@ var jobmap = {
 			printError('getUser failed: '+txt+'.');
 		})
 		.always(function() {
-			$('#username').contents().replaceWith(jobmap.getUsername());
-			$('#logButton').contents().replaceWith(jobmap.user?'Logout':'Login');
+			$('#logButton').empty().append(jobmap.user?'Logout':'Login');
 			$('#account').fadeIn('slow');
 		});
 	},

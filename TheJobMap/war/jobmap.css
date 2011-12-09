@@ -2,17 +2,19 @@
 html {
 	height: 100%;
 }
-
 body {
 	height: 100%;
 	margin: 0;
 	padding: 0;
 	overflow: hidden;
 }
-
 a {
 	color: blue !important;
 	cursor: pointer;
+}
+input[readonly] {
+	background: buttonface;
+	font-size: small !important;
 }
 
 #panel {
@@ -22,7 +24,6 @@ a {
 	padding-left: 20px;
 	padding-top: 20px;
 }
-
 #panel #account {
 	display: none;
 	float: right;
@@ -39,6 +40,13 @@ a {
 }
 #panel #account button {
 	margin-left: 10px;
+}
+#panel #account #accname {
+	text-decoration: underline;
+	cursor: pointer;
+}
+#panel #account #accname:after{
+	content: "▼";
 }
 .loginDialog {
 	position: absolute !important;
