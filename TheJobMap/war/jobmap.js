@@ -25,17 +25,6 @@ function initialize() {
 	// Make map resize dynamically
 	window.addEventListener('resize', resizeMap, false);
 	resizeMap();
-	
-	// Google analytics
-	var _gaq = _gaq || [];
-	_gaq.push(['_setAccount', 'UA-27056070-2']);
-	_gaq.push(['_trackPageview']);
-	
-	(function() {
-		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-	})();
 }
 
 var jobmap = {
@@ -83,7 +72,9 @@ var jobmap = {
 		
 		// User
 		$('<div id="account"></div>').appendTo('#panel');
-		$('<span id="accname"></span>').click(jobmap.updateUserForm).hide().appendTo('#account');
+		$('<a id="accname"></a>').click(function() {
+			jobmap.updateUserForm();
+		}).hide().appendTo('#account');
 		$('<button id="logButton"></button>').click(jobmap.logButton).appendTo('#account');
 		jobmap.getUser();
 		
@@ -272,7 +263,7 @@ var jobmap = {
 		for (var i=0; i < jobmap.updatedMarkers.length; i++) {
 			jobmap.postMarker(jobmap.updatedMarkers[i]);
 		}
-		jobmap.updatedMarker = [];
+		jobmap.updatedMarkers = [];
 	},
 	
 	/**
@@ -353,8 +344,10 @@ var jobmap = {
 	/**
 	 * Gets user info from the server.
 	 */
-	getUser: function() {
-		$.getJSON('/rest/user/me')
+	getUser: function(who) {
+		if (!who) who='me';
+		
+		$.getJSON('/rest/user/'+who)
 		.done(function(data) {
 			$('#loginForm').dialog('destroy');
 			if (data.info == 'not logged in') {
@@ -369,9 +362,10 @@ var jobmap = {
 			$('#accname').empty().append(jobmap.getUsername()).css('display', 'inline');
 			
 			if (jobmap.user.privileges == 'admin') {
+				$('<button id="adminButton">Admin</button>').click(jobmap.admin).appendTo('#account');
 				$.each(jobmap.mapMarkers, function(i, mapMarker) {
 					mapMarker.setDraggable(true);
-				})
+				});
 			}
 		})
 		.fail(function(xhr,txt) {
@@ -390,6 +384,45 @@ var jobmap = {
 		window.location.assign(jobmap.user.logoutUrl);
 	},
 
+	/**
+	 * Open the admin dialog.
+	 */
+	admin: function() {
+		$('<div id="adminDialog"></div>').dialog({
+			title: 'Admin',
+			autoOpen: true,
+			height: 500,
+			width: 360,
+			buttons: {
+				Done: function() {
+					$(this).dialog('close');
+				},
+			},
+			close: function() {
+				$(this).remove();
+			},
+		});
+
+		$.getJSON('/rest/user')
+		.done(function(data) {
+			if (data.result == 'fail') {
+				printError('Fail: '+data.info+'.');
+				return;
+			}
+			printInfo('Users: ', data);
+			
+			$.each(data, function(key, val) {
+				$('<a></a>').append(val.email).click(function() {
+					jobmap.updateUserForm(val);
+				}).appendTo('#adminDialog');
+			});
+			
+		})
+		.fail(function(xhr,txt) {
+			printError('getUsers failed: '+txt+'.');
+		});
+	},
+	
 	/**
 	 * Returns true if user is admin, false otherwise.
 	 */
@@ -413,36 +446,40 @@ var jobmap = {
 	/**
 	 * 
 	 */
-	updateUserForm: function() {
-		if (!jobmap.user || $('#updateUserForm').length) return;
+	updateUserForm: function(user) {
+		if (!user) user=jobmap.user;
+		var who = jobmap.who = (user==jobmap.user?'me':user.email);
+		if ($('#updateUserForm').length) return;
+		
 		$('<div id="updateUserForm"></div>').dialog({
-			title: 'Your personal information',
-			dialogClass: 'userDialog',
+			title: (who=='me'?'Your personal information':who),
 			autoOpen: true,
-			resizable: false,
-			height: 500,
-			width: 360,
+			height: 530,
+			width: 380,
 			buttons: {
 				Save: function() {
-					var user = {
+					var userObj = {
 						name: $('#userName').val(),
 						age: $('#userAge').val(),
 						sex: $('#userSex').val(),
 						phonenumber: $('#userPhonenumber').val(),
-						education: $('#userEducation').val(),
-						workExperience: $('#userWorkExperience').val(),
 					};
-					printInfo('Sending user details: ', user);
+					if (jobmap.isAdmin()) {
+						$.extend(userObj, {
+							privileges: $('#userPrivileges').val(),
+						});
+					}
+					printInfo('Sending '+who+' user details: ', userObj);
 					
 					$.ajax({
-						url: '/rest/user/me',
+						url: '/rest/user/'+who,
 						type: 'POST',
 						dataType: 'json',
-						data: JSON.stringify(user),
+						data: JSON.stringify(userObj),
 					})
 					.done(function(data) {
 						printInfo('Reply: ', data);
-						$.extend(jobmap.user, user);
+						$.extend(user, userObj);
 						$('#updateUserForm').dialog('close');
 					})
 					.fail(function(xhr,txt) {
@@ -454,12 +491,12 @@ var jobmap = {
 						printInfo('Deleting CV');
 
 						$.ajax({
-							url: '/rest/user/me/cv',
+							url: '/rest/user/'+who+'/cv',
 							type: 'DELETE',
 						})
 						.done(function(data) {
 							printInfo('Reply: ', data);
-							jobmap.user.cvUploaded = false;
+							user.cvUploaded = false;
 						})
 						.fail(function(xhr,txt) {
 							printError('Delete CV failed: '+txt+'.');
@@ -474,38 +511,33 @@ var jobmap = {
 				$(this).remove();
 			},
 		});
-		$('<p>Email: </p>').append($('<input type="text" id="userEmail" readonly />').val(jobmap.user.email)).appendTo('#updateUserForm');
-		$('<p>Name: </p>').append($('<input type="text" id="userName" placeholder="Your name" />').val(jobmap.user.name)).appendTo('#updateUserForm');
-		$('<p>Age: </p>').append($('<input type="text" id="userAge" placeholder="Your age" />').val(jobmap.user.age)).appendTo('#updateUserForm');
-		$('<p>Sex: </p>').append($('<input type="text" id="userSex" placeholder="Your sex" />').val(jobmap.user.sex)).appendTo('#updateUserForm');
-		$('<p>Phone number: </p>').append($('<input type="text" id="userPhonenumber" placeholder="Your phone number" />').val(jobmap.user.phonenumber)).appendTo('#updateUserForm');
-		$('<p>Education: </p>').append($('<input type="text" id="userEducation" placeholder="Your education" />').val(jobmap.user.education)).appendTo('#updateUserForm');
-		$('<p>Work Experience: </p>').append($('<input type="text" id="userWorkExperience" placeholder="Number of years" />').val(jobmap.user.workExperience)).appendTo('#updateUserForm');
+		$('<p>Email: </p>').add($('<input type="text" id="userEmail" readonly />').val(user.email)).appendTo('#updateUserForm');
+		$('<p>Name: </p>').add($('<input type="text" id="userName" placeholder="Your name" />').val(user.name)).appendTo('#updateUserForm');
+		$('<p>Age: </p>').add($('<input type="number" id="userAge" placeholder="Your age" />').val(user.age)).appendTo('#updateUserForm');
+		$('<p>Sex: </p>').add(($('<select id="userSex"></select>')
+				.append($('<option>Not saying</option>'))
+				.append($('<option>Male</option>'))
+				.append($('<option>Female</option>'))
+				.append($('<option>Other</option>'))
+			).val(user.sex)).appendTo('#updateUserForm');
+		$('<p>Phone number: </p>').add($('<input type="tel" id="userPhonenumber" placeholder="Your phone number" />').val(user.phonenumber)).appendTo('#updateUserForm');
+		if (jobmap.isAdmin()) {
+			$('<p>Privileges: </p>').add(($('<select id="userPrivileges"></select>')
+				.append($('<option>random</option>'))
+				.append($('<option>company</option>'))
+				.append($('<option>admin</option>'))
+			).val(user.privileges)).appendTo('#updateUserForm');
+		}
+		$('<hr/>').appendTo('#updateUserForm');
 		
 		// CV
-		if (jobmap.user.cvUploaded) {
-			$('<p><a href="/rest/user/me/cv" target="_blank">View my CV</a></p>').appendTo('#updateUserForm');
+		if (user.cvUploaded) {
+			$('<p><a href="/rest/user/'+who+'/cv" target="_blank">View my CV</a></p>').appendTo('#updateUserForm');
 			$('<p><label><input type="checkbox" id="userDeleteCv" />Delete CV</label></p>').appendTo('#updateUserForm');
 		}
 		else {
-			$('<p>Upload CV (pdf only, maximum size is 1 MB): </p>').add('<p><iframe src="/upload-cv.html" id="cvIframe" width="200" height="25" scrolling="no" frameborder="0" onload="jobmap.cvFrameOnload();"></iframe></p>').appendTo('#updateUserForm');
-
-			// Get upload url for CV
 			jobmap.cvFrameLoaded = false;
-			jobmap.cvUploadUrl = false;
-			jobmap.cvUrlReplaced = false;
-			$.getJSON('/rest/user/me/cv/uploadUrl')
-			.done(function(data) {
-				printInfo('CV upload url: ', data);
-				jobmap.cvUploadUrl = data.uploadUrl;
-				if (jobmap.cvFrameLoaded && !jobmap.cvUrlReplaced) {
-					jobmap.cvUrlReplaced = true;
-					$('#cvIframe').contents().find('#form').attr('action', jobmap.cvUploadUrl);
-				}
-			})
-			.fail(function(xhr,txt) {
-				printError('Getting CV upload url failed: '+txt+'.');
-			});
+			$('<p>Upload CV (pdf only, maximum size is 1 MB): </p>').add('<p><iframe src="/upload-cv.html" id="cvIframe" width="100%" height="25" scrolling="no" frameborder="0" onload="jobmap.cvFrameOnload();"></iframe></p>').appendTo('#updateUserForm');
 		}
 		
 	},
@@ -514,14 +546,25 @@ var jobmap = {
 	 * Called when the iframe loads to insert the uploadUrl to the upload form.
 	 */
 	cvFrameOnload: function() {
-		jobmap.cvFrameLoaded = true;
-		if (jobmap.cvUploadUrl && !jobmap.cvUrlReplaced) {
-			jobmap.cvUrlReplaced = true;
-			$('#cvIframe').contents().find('#form').attr('action', jobmap.cvUploadUrl);
+		if (jobmap.cvFrameLoaded) {
+			// Second onload. CV was probably uploaded successfully.
+			printInfo('cvUploaded!!');
+			if (jobmap.who == 'me') {
+				jobmap.user.cvUploaded = true;
+			}
+			
 		}
 		else {
-			// Another onload. CV was probably uploaded successfully.
-			jobmap.user.cvUploaded = true;
+		jobmap.cvFrameLoaded = true;
+		
+		$.getJSON('/rest/user/'+jobmap.who+'/cv/uploadUrl')
+		.done(function(data) {
+			printInfo('CV upload url: ', data);
+			$('#cvIframe').contents().find('#form').attr('action', data.uploadUrl);
+		})
+		.fail(function(xhr,txt) {
+			printError('Getting CV upload url failed: '+txt+'.');
+		});
 		}
 	},
 };
@@ -551,3 +594,14 @@ function printError(txt, json) {
 	print(txt, json, 'error');
 	$('#console').show();
 }
+
+// Google Analytics
+var _gaq = _gaq || [];
+_gaq.push(['_setAccount', 'UA-27056070-2']);
+_gaq.push(['_trackPageview']);
+
+(function() {
+	var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+	ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+})();

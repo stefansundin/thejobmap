@@ -101,7 +101,7 @@ public class UserServlet extends HttpServlet {
 		}
 		
 		// Check privileges
-		if ((resource.length == 1 || !resource[1].matches(me.email)) && !me.privileges.matches("admin")) {
+		if ((resource.length <= 1 || !resource[1].matches(me.email)) && !me.privileges.matches("admin")) {
 			ResultObj result = new ResultObj("fail", "not enough privileges");
 			writer.write(gson.toJson(result));
 			writer.close();
@@ -117,7 +117,7 @@ public class UserServlet extends HttpServlet {
 		user.convertFromEntity(entityUser);
 		user.logoutUrl = me.logoutUrl;
 		
-		if (resource.length == 1) {
+		if (resource.length <= 1) {
 			// GET /user/
 			// Return list of all users
 			Query q = new Query("Users");
@@ -170,7 +170,7 @@ public class UserServlet extends HttpServlet {
 			// Return upload url for CV
 			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
 			UploadUrlObj uploadUrl = new UploadUrlObj();
-			uploadUrl.uploadUrl = blobstoreService.createUploadUrl("/special/cvUpload?email="+me.email);
+			uploadUrl.uploadUrl = blobstoreService.createUploadUrl("/special/cvUpload?email="+user.email);
 			writer.write(gson.toJson(uploadUrl));
 		}
 		else {
@@ -189,30 +189,68 @@ public class UserServlet extends HttpServlet {
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
-		UserObj user = new UserObj();
-
-		// Check if logged in
+		UserObj me = new UserObj();
+		
+		// Parse path
+		String path = req.getPathInfo();
+		path = (path==null?"/":path);
+		System.out.println("POST /user"+path);
+		String[] resource = path.split("/");
+		
+		// Fetch user details
 		Entity entityMe = getUser();
 		if (entityMe == null) {
-			ResultObj result = new ResultObj("fail", "not logged in");
+			// User is logged in but does not exist in database yet (due to delays)
+			// Return stub
+			writer.write(gson.toJson(me));
+			writer.close();
+			return;
+		}
+		me.convertFromEntity(entityMe);
+		
+		// Handle "me"
+		if (resource.length >= 2 && resource[1].matches("me")) {
+			resource[1] = me.email;
+		}
+		
+		// Check privileges
+		if ((resource.length <= 1 || !resource[1].matches(me.email)) && !me.privileges.matches("admin")) {
+			ResultObj result = new ResultObj("fail", "not enough privileges");
 			writer.write(gson.toJson(result));
 			writer.close();
 			return;
 		}
 		
-		// Parse input
-		user = gson.fromJson(reader, UserObj.class);
-		reader.close();
+		// Fetch user object if not me
+		UserObj user = new UserObj();
+		Entity entityUser = entityMe;
+		if (resource.length > 1 && !resource[1].matches(me.email)) {
+			entityUser = getUser(resource[1]);
+		}
+		user.convertFromEntity(entityUser);
 		
-		// Update entity properties
-		user.updateEntity(entityMe);
-		
-		// Update database
-		db.put(entityMe);
-		
-		// Send response
-		ResultObj result = new ResultObj("ok");
-		writer.write(gson.toJson(result));
+		if (resource.length == 2) {
+			// POST /user/<email>
+			// Return user details
+			user = gson.fromJson(reader, UserObj.class);
+			reader.close();
+			
+			// Update entity properties
+			user.updateEntity(entityUser, entityMe);
+			if (!user.validate()) {
+				throw new ServletException("Invalid entry.");
+			}
+			
+			// Update database
+			db.put(entityUser);
+			
+			// Send response
+			ResultObj result = new ResultObj("ok");
+			writer.write(gson.toJson(result));
+		}
+		else {
+			throw new ServletException("Unimplemented request.");
+		}
 		writer.close();
 	}
 	
@@ -337,8 +375,6 @@ public class UserServlet extends HttpServlet {
 		entityUser.setProperty("age", null);
 		entityUser.setProperty("sex", null);
 		entityUser.setProperty("phonenumber", null);
-		entityUser.setProperty("education", null);
-		entityUser.setProperty("workExperience", null);
 
 		if (email.matches("test@example.com")
 		 || email.matches("alexandra.tsampikakis@gmail.com")
