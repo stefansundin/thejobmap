@@ -18,7 +18,7 @@ function initialize() {
 	};
 	var map = new google.maps.Map(document.getElementById('map_canvas'), mapOptions);
 	
-	// Add controls
+	// Initialize The Job Map
 	jobmap.init(map);
 	
 	// Make map resize dynamically
@@ -54,16 +54,15 @@ var jobmap = {
 		});
 		
 		// Create map controls
-		var mapControls = $('<div id="MapControls"></div>').hide();
-		var mapControlsContainer = $('<div id="MapControlsContainer"></div>').append(mapControls);
+		var mapControls = $('<div id="MapControls"></div>').css('opacity','0');
 		$('<button id="refreshMarkersButton">Refresh markers</button>').click(jobmap.refreshMarkers).appendTo(mapControls);
 		$('<button id="createMarkerButton">Create marker</button>').click(jobmap.createMarker).attr('disabled',true).appendTo(mapControls);
 		$('<button id="saveMarkerButton">Save markers</button>').click(jobmap.saveMarkers).attr('disabled',true).appendTo(mapControls);
-		map.controls[google.maps.ControlPosition.TOP_CENTER].push(mapControlsContainer[0]);
 		jobmap.mapControls = mapControls;
+		map.controls[google.maps.ControlPosition.TOP_CENTER].push(mapControls[0]);
 		
 		// Info Window
-		jobmap.infoWindow = new google.maps.InfoWindow({});
+		jobmap.infoWindow = new google.maps.InfoWindow();
 		google.maps.event.addListener(jobmap.map, 'click', function() {
 			jobmap.infoWindow.close();
 		});
@@ -382,7 +381,7 @@ var jobmap = {
 			
 			$('#createMarkerButton',jobmap.mapControls).attr('disabled', false);
 			$('#accname').empty().append(jobmap.getUsername()).removeClass('hidden');
-			$(jobmap.mapControls).fadeIn('slow');
+			$(jobmap.mapControls).animate({opacity:1}, 'slow');
 			
 			if (jobmap.isAdmin()) {
 				$('<button id="adminButton">Admin</button>').click(jobmap.admin).appendTo('#account');
