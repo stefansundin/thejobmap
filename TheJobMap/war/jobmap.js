@@ -143,7 +143,7 @@ var jobmap = {
 		var mapMarker = new google.maps.Marker({
 			//map: jobmap.map,
 			position: new google.maps.LatLng(marker.lat, marker.lng),
-			draggable: (jobmap.isAdmin() && !isNaN(marker.id)),
+			draggable: jobmap.isOwner(marker),
 		});
 		
 		// Check if we already have the marker
@@ -173,19 +173,7 @@ var jobmap = {
 		});
 		
 		google.maps.event.addListener(mapMarker, 'dragend', function() {
-			$('#saveMarkerButton',jobmap.mapControls).attr('disabled', false);
-			
-			// Push marker to updatedMarkers if not already there
-			var alreadyAdded = false;
-			for (var i=0; i < jobmap.updatedMarkers.length; i++) {
-				if (marker == jobmap.updatedMarkers[i]) {
-					alreadyAdded = true;
-					break;
-				}
-			}
-			if (!alreadyAdded) {
-				jobmap.updatedMarkers.push(marker);
-			}
+			jobmap.updatedMarkersPush(marker);
 		});
 	},
 	
@@ -239,7 +227,7 @@ var jobmap = {
 			jobmap.newMarker = null;
 			jobmap.addMarker(marker);
 		}
-		printInfo('Sending marker: '+json);
+		printInfo('Sending marker: ', json);
 		
 		$.ajax({
 			url: '/rest/marker/'+(id?id:''),
@@ -253,6 +241,20 @@ var jobmap = {
 		.fail(function(xhr,txt) {
 			printError('Sending marker failed: '+txt+'.');
 		});
+	},
+
+	/**
+	 * Pushes marker to updatedMarkers, but makes sure there are no duplicates.
+	 */
+	updatedMarkersPush: function(marker) {
+		for (var i=0; i < jobmap.updatedMarkers.length; i++) {
+			if (marker == jobmap.updatedMarkers[i]) {
+				return;
+			}
+		}
+		
+		jobmap.updatedMarkers.push(marker);
+		$('#saveMarkerButton',jobmap.mapControls).attr('disabled', false);
 	},
 	
 	/**
@@ -282,10 +284,12 @@ var jobmap = {
 			jobmap.infoWindow.setContent($('<div></div>').append('<br/>')
 			.append($('<p></p>').append($('<textarea id="markerInfo" placeholder="Write description here"></textarea>').val(marker.info)))
 			.append($('<p></p>').append($('<button>Save</button>').click(function() {
-				printInfo('Save!');
+				marker.info = $('#markerInfo').val();
+				jobmap.updatedMarkersPush(marker);
+				jobmap.infoWindow.close();
 			})))[0]);
 		}
-		else if (jobmap.isAdmin() || marker.author == jobmap.user.email) {
+		else if (jobmap.isOwner(marker)) {
 			jobmap.infoWindow.setContent($('<div></div>').text(marker.info).append('<br/>')
 			.append($('<button>Edit marker</button>').click(function() {
 				jobmap.setInfoWindow(marker, 'edit');
@@ -456,6 +460,13 @@ var jobmap = {
 	},
 	
 	/**
+	 * Returns true if user has capabilities to edit marker.
+	 */
+	isOwner: function(marker) {
+		return !isNaN(marker.id) && (jobmap.isAdmin() || (jobmap.user && jobmap.user.email == marker.author));
+	},
+	
+	/**
 	 * Returns a nicely formatted name for the user.
 	 */
 	getUsername: function() {
@@ -495,7 +506,7 @@ var jobmap = {
 							privileges: $('#userPrivileges').val(),
 						});
 					}
-					printInfo('Sending '+who+' user details: ', userObj);
+					printInfo('Sending user ('+who+') details: ', userObj);
 					
 					$.ajax({
 						url: '/rest/user/'+who,
@@ -609,7 +620,12 @@ function print(txt, json, style) {
 	var now = new Date();
 	var pad = function(n) { return ('0'+n).slice(-2); }
 	var timestamp = '['+pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds())+'] ';
-	$('#console').prepend('<div class="'+style+'">'+timestamp+txt+(json?JSON.stringify(json):'')+'</div>');
+	var line = $('<div class="'+style+'">'+timestamp+txt+'</div>');
+	if (json) {
+		if (typeof json != 'string') json=JSON.stringify(json);
+		line = line.append('<tt>'+json+'</tt>');
+	}
+	$('#console').prepend(line);
 }
 function printInfo(txt, json) {
 	print(txt, json, 'info');
