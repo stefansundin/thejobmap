@@ -63,7 +63,7 @@ var jobmap = {
 			else if (e.which == 189) {
 				$('#console').addClass('big').show();
 			}
-		})
+		});
 		
 		// Create buttons
 		var c = $('<div id="JobMapControls"></div>');
@@ -89,6 +89,27 @@ var jobmap = {
 		
 		// Markers
 		jobmap.refreshMarkers();
+		
+		// Side menu
+		jobmap.sideMenu();
+	},
+	
+	//The side menu
+	sideMenu: function(){
+		$('<div id="accordion"><h3><a href="#">1. Find a job</a></h3><div><p>'+
+		'Click on a city on the map to see all available jobs.</p></div>'+
+		'<h3><a href="#">2. Log in</a></h3><div><p>'+
+		'The first time you log in, you can either update your profile with personal information or just view all the markers in the map.</p></div>'+
+		'<h3><a href="#">3. Log in</a></h3><div><p>'+
+		'</p></div>'+
+		'<h3><a href="#">4. Log in</a></h3><div><p>'+
+		'</p></div>'+
+		'<h3><a href="#">Information for company</a></h3><div><p>'+
+		'If you want to sign in as a company, just send us an email with your request and we will create an account for you please.</p></div>'+
+		'<h3><a href="#">About TheJobMap</a></h3><div><p>'+
+		'</p></div>').appendTo('#sidebar');
+		
+		$( "#accordion" ).accordion();
 	},
 	
 	/** Markers */

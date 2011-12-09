@@ -71,6 +71,10 @@ input[readonly] {
 	border-right: 1px solid rgb(229,229,229);
 }
 
+#accordion {
+	
+}
+
 #map_canvas {
 	height: 100%;
 }
