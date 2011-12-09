@@ -20,7 +20,8 @@ function initialize() {
 	
 	// Add controls
 	jobmap.init(map);
-	map.controls[google.maps.ControlPosition.TOP_CENTER].push(jobmap.mapControls);
+	$('<div class="centerButtons"></div>').appendTo('#panel');
+	$('#panel .centerButtons').append(jobmap.mapControls);
 	
 	// Make map resize dynamically
 	window.addEventListener('resize', resizeMap, false);
@@ -49,20 +50,21 @@ var jobmap = {
 			if (e.which == 167) { // '§'
 				$('#console').removeClass('big').toggle();
 			}
-			else if (e.which == 189) {
+			else if (e.which == 189) { // shift+'§'
 				$('#console').addClass('big').show();
 			}
 		});
 		
 		// Create buttons
-		var c = $('<div id="JobMapControls"></div>');
-		jobmap.mapControls = c[0];
-		$('<button id="refreshMarkersButton">Refresh markers</button>').appendTo(c);
-		$('<button id="createMarkerButton">Create marker</button>').attr('disabled',true).appendTo(c);
-		$('<button id="saveMarkerButton">Save markers</button>').attr('disabled',true).appendTo(c);
-		google.maps.event.addDomListener($('#refreshMarkersButton',c)[0], 'click', jobmap.refreshMarkers);
-		google.maps.event.addDomListener($('#createMarkerButton',c)[0], 'click', jobmap.createMarker);
-		google.maps.event.addDomListener($('#saveMarkerButton',c)[0], 'click', jobmap.saveMarkers);
+		var mapControls = $('<span id="MapControls"></span>').hide();
+		jobmap.mapControls = mapControls[0];
+		$('<button id="refreshMarkersButton">Refresh markers</button>').click(jobmap.refreshMarkers).appendTo(mapControls);
+		$('<button id="createMarkerButton">Create marker</button>').click(jobmap.createMarker).attr('disabled',true).appendTo(mapControls);
+		
+		// Create admin buttons
+		var adminControls = $('<div id="AdminControls"></div>');
+		$('<button id="saveMarkerButton">Save markers</button>').click(jobmap.saveMarkers).attr('disabled',true).appendTo(adminControls);
+		map.controls[google.maps.ControlPosition.TOP_CENTER].push(adminControls[0]);
 		
 		// Info Window
 		jobmap.infoWindow = new google.maps.InfoWindow({});
@@ -254,14 +256,14 @@ var jobmap = {
 		}
 		
 		jobmap.updatedMarkers.push(marker);
-		$('#saveMarkerButton',jobmap.mapControls).attr('disabled', false);
+		$('#saveMarkerButton',jobmap.adminControls).attr('disabled', false);
 	},
 	
 	/**
 	 * Send all updated markers to postMarker().
 	 */
 	saveMarkers: function() {
-		$('#saveMarkerButton',jobmap.mapControls).attr('disabled', true);
+		$('#saveMarkerButton',jobmap.adminControls).attr('disabled', true);
 		for (var i=0; i < jobmap.updatedMarkers.length; i++) {
 			jobmap.postMarker(jobmap.updatedMarkers[i]);
 		}
@@ -384,6 +386,7 @@ var jobmap = {
 			
 			$('#createMarkerButton',jobmap.mapControls).attr('disabled', false);
 			$('#accname').empty().append(jobmap.getUsername()).removeClass('hidden');
+			$('#MapControls').fadeIn('slow');
 			
 			if (jobmap.user.privileges == 'admin') {
 				$('<button id="adminButton">Admin</button>').click(jobmap.admin).appendTo('#account');
