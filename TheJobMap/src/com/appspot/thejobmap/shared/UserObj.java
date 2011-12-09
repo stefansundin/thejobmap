@@ -1,5 +1,8 @@
 package com.appspot.thejobmap.shared;
 
+import java.util.Arrays;
+import java.util.List;
+
 import com.google.appengine.api.datastore.Entity;
 
 public class UserObj {
@@ -8,8 +11,6 @@ public class UserObj {
 	public String age;
 	public String sex;
 	public String phonenumber;
-	public String education;
-	public String workExperience;
 	public Boolean cvUploaded;
 	
 	public String privileges;
@@ -18,6 +19,9 @@ public class UserObj {
 
 	public UserObj() {}
 	
+	/**
+	 * Convenience function to convert database entity to UserObj.
+	 */
 	public void convertFromEntity(Entity entityUser) {
 		//this.email = (String) entityUser.getProperty("email");
 		this.email = entityUser.getKey().getName();
@@ -25,20 +29,39 @@ public class UserObj {
 		this.age = (String) entityUser.getProperty("age");
 		this.sex = (String) entityUser.getProperty("sex");
 		this.phonenumber = (String) entityUser.getProperty("phonenumber");
-		this.education = (String) entityUser.getProperty("education");
-		this.workExperience = (String) entityUser.getProperty("workExperience");
 		this.privileges = (String) entityUser.getProperty("privileges");
 		this.cvUploaded = (Boolean) entityUser.hasProperty("cv");
 	}
-	
-	public void updateEntity(Entity entityUser) {
+
+	/**
+	 * Convenience function update and entity with data from this UserObj.
+	 * Privileges param makes sure that we have permission to update some entries.
+	 */
+	public void updateEntity(Entity entityUser, Entity entityMe) {
+		String myPrivileges = (String) entityMe.getProperty("privileges");
+		if (!entityMe.equals(entityUser) && !myPrivileges.equals("admin")) {
+			return;
+		}
 		// Set entity properties
 		entityUser.setProperty("name", this.name);
 		entityUser.setProperty("age", this.age);
 		entityUser.setProperty("sex", this.sex);
 		entityUser.setProperty("phonenumber", this.phonenumber);
-		entityUser.setProperty("education", this.education);
-		entityUser.setProperty("workExperience", this.workExperience);
-		if (this.privileges != null) entityUser.setProperty("privileges", this.privileges);
+		if (this.privileges != null && myPrivileges.equals("admin")) {
+			entityUser.setProperty("privileges", this.privileges);
+		}
+	}
+	
+	/**
+	 * Validate object.
+	 */
+	public Boolean validate() {
+		List<String> sex = Arrays.asList("Not saying", "Male", "Female", "Other");
+		List<String> privileges = Arrays.asList("random", "company", "admin");
+		
+		if (!sex.contains(this.sex) || !privileges.contains(this.privileges)) {
+			return false;
+		}
+		return true;
 	}
 }

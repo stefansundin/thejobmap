@@ -101,17 +101,18 @@ public class SpecialServlet extends HttpServlet {
 		// This is a special case since this is done through a file upload
 		// Apparently since this is used as a callback after the file upload, it can not access the User session object
 		// This is why the email is passed through the url instead. We trust this value since it the upload url was generated for this user.
-		// This is safe since we will get an exception at getUploadedBlobs if nothing was uploaded
+		// This is safe since we will get an exception at getUploadedBlobs() if nothing was uploaded
 		if (path.matches("/cvUpload") && req.getParameter("email") != null) {
 			String email = req.getParameter("email");
+			Entity entityUser = userServlet.getUser(email);
 			
 			// Get blob key
 			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
 			Map<String,BlobKey> blobs = blobstoreService.getUploadedBlobs(req);
 			BlobKey blobKey = blobs.get("cv");
 			
-			// User tried to upload multiple files, or file with wrong name
-			if (blobs.size() > 1 || blobKey == null) {
+			// User tried to upload multiple files, or file with wrong name, or already has CV
+			if (blobs.size() > 1 || blobKey == null || entityUser.hasProperty("cv")) {
 				// Delete all blobs
 				for (BlobKey blob : blobs.values()) {
 					blobstoreService.delete(blob);
@@ -141,7 +142,6 @@ public class SpecialServlet extends HttpServlet {
 			}
 
 			// Add blob key to user
-			Entity entityUser = userServlet.getUser(email);
 			entityUser.setProperty("cv", blobKey.getKeyString());
 			db.put(entityUser);
 			
