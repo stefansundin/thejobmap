@@ -66,8 +66,7 @@ public class UserServlet extends HttpServlet {
 		UserService userService = UserServiceFactory.getUserService();
 		User u = userService.getCurrentUser();
 		if (u == null) {
-			ResultObj result = new ResultObj("fail", "not logged in");
-			writer.write(gson.toJson(result));
+			writer.write(gson.toJson(new ResultObj("fail", "not logged in")));
 			writer.close();
 			return;
 		}
@@ -94,8 +93,7 @@ public class UserServlet extends HttpServlet {
 		
 		// Check privileges
 		if ((resource.length <= 1 || !me.email.equals(resource[1])) && !"admin".equals(me.privileges)) {
-			ResultObj result = new ResultObj("fail", "not enough privileges");
-			writer.write(gson.toJson(result));
+			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 			writer.close();
 			return;
 		}
@@ -197,8 +195,7 @@ public class UserServlet extends HttpServlet {
 		// Fetch user details
 		Entity entityMe = getUser();
 		if (entityMe == null) {
-			ResultObj result = new ResultObj("fail", "not enough privileges");
-			writer.write(gson.toJson(result));
+			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 			writer.close();
 			return;
 		}
@@ -211,14 +208,13 @@ public class UserServlet extends HttpServlet {
 		
 		// Check privileges
 		if ((resource.length <= 1 || !me.email.equals(resource[1])) && !"admin".equals(me.privileges)) {
-			ResultObj result = new ResultObj("fail", "not enough privileges");
-			writer.write(gson.toJson(result));
+			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 			writer.close();
 			return;
 		}
 		
 		// Fetch user object if not me
-		UserObj user = new UserObj();
+		UserObj dbUser = new UserObj();
 		Entity entityUser = entityMe;
 		if (resource.length > 1 && !me.email.equals(resource[1])) {
 			entityUser = getUser(resource[1]);
@@ -228,26 +224,26 @@ public class UserServlet extends HttpServlet {
 				return;
 			}
 		}
-		user.convertFromEntity(entityUser);
+		dbUser.convertFromEntity(entityUser);
+
+		// Parse input
+		UserObj user = gson.fromJson(reader, UserObj.class);
+		reader.close();
 		
 		if (resource.length == 2) {
 			// POST /user/<email>
-			// Return user details
-			user = gson.fromJson(reader, UserObj.class);
-			reader.close();
-			
-			// Update entity properties
-			user.updateEntity(entityUser, entityMe);
-			if (!user.validate()) {
+			// Update user details
+			dbUser.extend(user, entityMe);
+			if (!dbUser.validate()) {
 				throw new ServletException("Invalid entry.");
 			}
+			dbUser.updateEntity(entityUser);
 			
 			// Update database
 			db.put(entityUser);
 			
 			// Send response
-			ResultObj result = new ResultObj("ok");
-			writer.write(gson.toJson(result));
+			writer.write(gson.toJson(new ResultObj("ok")));
 		}
 		else {
 			throw new ServletException("Unimplemented request.");
@@ -269,8 +265,7 @@ public class UserServlet extends HttpServlet {
 		// Check if logged in
 		Entity entityMe = getUser();
 		if (entityMe == null) {
-			ResultObj result = new ResultObj("fail", "not logged in");
-			writer.write(gson.toJson(result));
+			writer.write(gson.toJson(new ResultObj("fail", "not logged in")));
 			writer.close();
 			return;
 		}
@@ -291,8 +286,7 @@ public class UserServlet extends HttpServlet {
 		
 		// Check privileges
 		if ((resource.length == 1 || !me.email.equals(resource[1])) && !"admin".equals(me.privileges)) {
-			ResultObj result = new ResultObj("fail", "not enough privileges");
-			writer.write(gson.toJson(result));
+			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 			writer.close();
 			return;
 		}
@@ -321,8 +315,7 @@ public class UserServlet extends HttpServlet {
 			
 			// Make sure CV exists
 			if (!entityUser.hasProperty("cv")) {
-				ResultObj result = new ResultObj("fail", "user cv does not exist");
-				writer.write(gson.toJson(result));
+				writer.write(gson.toJson(new ResultObj("fail", "user cv does not exist")));
 				writer.close();
 				return;
 			}
@@ -335,8 +328,7 @@ public class UserServlet extends HttpServlet {
 			db.put(entityUser);
 			
 			// Send response
-			ResultObj result = new ResultObj("ok");
-			writer.write(gson.toJson(result));
+			writer.write(gson.toJson(new ResultObj("ok")));
 		}
 		else {
 			throw new ServletException("Unimplemented request.");

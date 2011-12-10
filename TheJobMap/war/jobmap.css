@@ -114,7 +114,7 @@ h1,h2,h3,h4 {
 	background-color: rgb(201,223,175);
 	padding: 3px 15px;
 	
-	border: 2px solid rgb(234,236,201);
+	border: 2px solid rgb(229,229,229);
 	border-top: 0;
 	-webkit-border-bottom-left-radius: 20px;
 	-webkit-border-bottom-right-radius: 20px;
@@ -128,8 +128,15 @@ h1,h2,h3,h4 {
 }
 
 #markerInfo {
-	width: 250px;
-	height: 50px;
+	width: 300px;
+	height: 100px;
+}
+#creationDate {
+	font-style: italic;
+	font-size: small;
+}
+#editMarkerButton {
+	float: right;
 }
 
 

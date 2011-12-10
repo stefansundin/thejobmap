@@ -81,9 +81,12 @@ public class MarkerServlet extends HttpServlet {
 			for (int i=0; i < dbList.size(); i++) {
 				MarkerObj marker = new MarkerObj();
 				marker.convertFromEntity(dbList.get(i));
-				if (entityMe != null && !"admin".equals(me.privileges) && !me.email.equals(marker.author)) {
+				if ((entityMe == null || !me.email.equals(marker.author)) && !"admin".equals(me.privileges)) {
 					// Remove extra information if not needed
 					marker.author = null;
+				}
+				if (marker.id.equals(me.email)) {
+					marker.id = "me";
 				}
 				markers.add(marker);
 			}
@@ -151,13 +154,15 @@ public class MarkerServlet extends HttpServlet {
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
 		UserObj me = new UserObj();
-
+		Entity entityMarker = null;
+		MarkerObj dbMarker = new MarkerObj();
+		
 		// Parse path
 		String path = req.getPathInfo();
 		path = (path==null?"/":path);
 		System.out.println("POST /marker"+path);
 		String[] resource = path.split("/");
-
+		
 		// Fetch user details
 		Entity entityMe = userServlet.getUser();
 		if (entityMe == null) {
@@ -166,19 +171,19 @@ public class MarkerServlet extends HttpServlet {
 			return;
 		}
 		me.convertFromEntity(entityMe);
-
+		
 		// Handle "me"
 		if (resource.length >= 2 && "me".equals(resource[1])) {
 			resource[1] = me.email;
 		}
-
+		
 		// Check privileges
 		if ("random".equals(me.privileges) && (resource.length <= 1 || !me.email.equals(resource[1]))) {
 			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 			writer.close();
 			return;
 		}
-
+		
 		// Parse input
 		MarkerObj marker = gson.fromJson(reader, MarkerObj.class);
 		reader.close();
@@ -186,11 +191,12 @@ public class MarkerServlet extends HttpServlet {
 		if (resource.length <= 1) {
 			// POST /marker/
 			// New marker
-			Entity entityMarker = new Entity("Markers");
-			marker.author = me.email;
-			marker.type = me.privileges;
+			entityMarker = new Entity("Markers");
+			marker.updateEntity(entityMarker);
 			entityMarker.setProperty("creationDate", new Date().getTime());
-			marker.updateEntity(entityMarker, entityMe);
+			entityMarker.setProperty("type", me.privileges);
+			entityMarker.setProperty("author", me.email);
+			marker.convertFromEntity(entityMarker);
 			if (!marker.validate()) {
 				throw new ServletException("Invalid entry.");
 			}
@@ -205,7 +211,6 @@ public class MarkerServlet extends HttpServlet {
 			// POST /marker/<id/email>
 			// Update marker details
 			// Randoms must create their marker this way
-			Entity entityMarker = null;
 			try {
 				// Try first with id as numeric
 				Long id = Long.parseLong(resource[1]);
@@ -213,38 +218,36 @@ public class MarkerServlet extends HttpServlet {
 				// Fetch marker
 				try {
 					entityMarker = db.get(markerKey);
-					marker.updateEntity(entityMarker, entityMe);
+					dbMarker.convertFromEntity(entityMarker);
+					dbMarker.extend(marker, entityMe);
 				} catch (EntityNotFoundException e) {
 					writer.write(gson.toJson(new ResultObj("fail", "no such marker")));
 					writer.close();
 					return;
 				}
-			}
-			catch(NumberFormatException e) {
+			} catch (NumberFormatException e) {
 				// If it's not numeric, it is a marker by a random
 				Key markerKey = KeyFactory.createKey("Markers", resource[1]);
 				try {
 					entityMarker = db.get(markerKey);
-					marker.updateEntity(entityMarker, entityMe);
+					dbMarker.convertFromEntity(entityMarker);
+					dbMarker.extend(marker, entityMe);
 				} catch (EntityNotFoundException e2) {
 					// Entity does not exist in database, create a new one
 					entityMarker = new Entity("Markers", me.email);
+					marker.updateEntity(entityMarker);
+					//entityMarker.setProperty("creationDate", new Date().getTime());
 					entityMarker.setProperty("type", me.privileges);
 					entityMarker.setProperty("author", me.email);
-					entityMarker.setProperty("lat", marker.lat);
-					entityMarker.setProperty("lng", marker.lng);
-					entityMarker.setProperty("near", marker.near);
-					entityMarker.setProperty("info", marker.info);
-					entityMarker.setProperty("creationDate", new Date().getTime());
-					entityMarker.setProperty("updatedDate", new Date().getTime());
-					marker.convertFromEntity(entityMarker);
+					dbMarker.convertFromEntity(entityMarker);
 				}
 			}
 			
 			// Update entity properties
-			if (!marker.validate()) {
+			if (!dbMarker.validate()) {
 				throw new ServletException("Invalid entry.");
 			}
+			dbMarker.updateEntity(entityMarker);
 			
 			// Insert/update in database
 			db.put(entityMarker);

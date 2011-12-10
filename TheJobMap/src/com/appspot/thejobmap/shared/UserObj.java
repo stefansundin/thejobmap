@@ -37,22 +37,32 @@ public class UserObj {
 	}
 
 	/**
-	 * Convenience function update an entity with data from this UserObj.
+	 * Convenience function to extend this UserObj with another UserObj.
+	 * Normally used when updating the database.
 	 * entityMe param makes sure that the current user has permission to update some properties.
 	 */
-	public void updateEntity(Entity entityUser, Entity entityMe) {
+	public void extend(UserObj other, Entity entityMe) {
+		this.name = other.name;
+		this.age = other.age;
+		this.sex = other.sex;
+		this.phonenumber = other.phonenumber;
+
 		String myPrivileges = (String) entityMe.getProperty("privileges");
-		if (!entityMe.equals(entityUser) && !myPrivileges.equals("admin")) {
-			return;
+		if (myPrivileges.equals("admin")) {
+			if (other.privileges != null)
+				this.privileges = other.privileges;
 		}
-		// Set entity properties
+	}
+	
+	/**
+	 * Convenience function update an entity with data from this UserObj.
+	 */
+	public void updateEntity(Entity entityUser) {
 		entityUser.setProperty("name", this.name);
 		entityUser.setProperty("age", this.age);
 		entityUser.setProperty("sex", this.sex);
 		entityUser.setProperty("phonenumber", this.phonenumber);
-		if (this.privileges != null && myPrivileges.equals("admin")) {
-			entityUser.setProperty("privileges", this.privileges);
-		}
+		entityUser.setProperty("privileges", this.privileges);
 	}
 	
 	/**

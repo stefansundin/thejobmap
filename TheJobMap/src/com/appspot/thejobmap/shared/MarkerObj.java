@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.Text;
 
 public class MarkerObj {
 	public String id;
@@ -35,36 +36,45 @@ public class MarkerObj {
 		this.lng = (Double) entityMarker.getProperty("lng");
 		this.type = (String) entityMarker.getProperty("type");
 		this.near = (String) entityMarker.getProperty("near");
-		this.info = (String) entityMarker.getProperty("info");
+		this.info = ((Text) entityMarker.getProperty("info")).getValue();
 		this.creationDate = (Long) entityMarker.getProperty("creationDate");
 		this.author = (String) entityMarker.getProperty("author");
+	}
+
+	/**
+	 * Convenience function to extend this MarkerObj with another MarkerObj.
+	 * Normally used when updating the database.
+	 * entityMe param makes sure that the current user has permission to update some properties.
+	 */
+	public void extend(MarkerObj other, Entity entityMe) {
+		this.lat = other.lat;
+		this.lng = other.lng;
+		this.near = other.near;
+		this.info = other.info;
+
+		String myPrivileges = (String) entityMe.getProperty("privileges");
+		if (myPrivileges.equals("admin")) {
+			if (other.type != null)
+				this.type = other.type;
+			if (other.author != null)
+				this.author = other.author;
+			if (other.creationDate != null)
+				this.creationDate = other.creationDate;
+		}
 	}
 	
 	/**
 	 * Convenience function update an entity with data from this MarkerObj.
-	 * entityMe param makes sure that the current user has permission to update some properties.
 	 */
-	public void updateEntity(Entity entityMarker, Entity entityMe) {
-		String myPrivileges = (String) entityMe.getProperty("privileges");
-		String myEmail = (String) entityMe.getKey().getName();
-		String markerAuthor = (String) entityMarker.getProperty("author");
-		if (!myEmail.equals(markerAuthor) && !myPrivileges.equals("admin")) {
-			return;
-		}
-		// Set entity properties
+	public void updateEntity(Entity entityMarker) {
 		entityMarker.setProperty("lat", this.lat);
 		entityMarker.setProperty("lng", this.lng);
 		entityMarker.setProperty("near", this.near);
-		entityMarker.setProperty("info", this.info);
+		entityMarker.setProperty("info", new Text(this.info));
+		entityMarker.setProperty("type", this.type);
+		entityMarker.setProperty("author", this.author);
+		entityMarker.setProperty("creationDate", this.creationDate);
 		entityMarker.setProperty("updatedDate", new Date().getTime());
-		if (myPrivileges.equals("admin")) {
-			if (this.type != null)
-				entityMarker.setProperty("type", this.type);
-			if (this.author != null)
-				entityMarker.setProperty("author", this.author);
-			if (this.creationDate != null)
-				entityMarker.setProperty("creationDate", this.creationDate);
-		}
 	}
 
 	/**
