@@ -105,6 +105,11 @@ public class UserServlet extends HttpServlet {
 		Entity entityUser = entityMe;
 		if (resource.length > 1 && !me.email.equals(resource[1])) {
 			entityUser = getUser(resource[1]);
+			if (entityUser == null) {
+				writer.write(gson.toJson(new ResultObj("fail", "no such user")));
+				writer.close();
+				return;
+			}
 		}
 		user.convertFromEntity(entityUser);
 		user.logoutUrl = me.logoutUrl;
@@ -217,6 +222,11 @@ public class UserServlet extends HttpServlet {
 		Entity entityUser = entityMe;
 		if (resource.length > 1 && !me.email.equals(resource[1])) {
 			entityUser = getUser(resource[1]);
+			if (entityUser == null) {
+				writer.write(gson.toJson(new ResultObj("fail", "no such user")));
+				writer.close();
+				return;
+			}
 		}
 		user.convertFromEntity(entityUser);
 		
@@ -378,7 +388,9 @@ public class UserServlet extends HttpServlet {
 		entityUser.setProperty("privileges", "random");
 		
 		// These guys are admins!
-		List<String> realAwesomeGuys = Arrays.asList("test@example.com", "alexandra.tsampikakis@gmail.com", "stefan@stefansundin.com");
+		List<String> realAwesomeGuys = Arrays.asList("test@example.com",
+				"alexandra.tsampikakis@gmail.com", "stefan@stefansundin.com",
+				"alexandra@thejobmap.se", "stefan@thejobmap.se");
 		if (realAwesomeGuys.contains(email)) {
 			entityUser.setProperty("privileges", "admin");
 		}

@@ -32,6 +32,7 @@ var jobmap = {
 	markers: [],
 	mapMarkers: [],
 	newMarker: null,
+	myMarkers: [],
 	updatedMarkers: [],
 	mapControls: null,
 	infoWindow: null,
@@ -56,7 +57,7 @@ var jobmap = {
 		// Create map controls
 		var mapControls = $('<div id="MapControls"></div>').css('opacity','0');
 		$('<button id="refreshMarkersButton">Refresh markers</button>').click(jobmap.refreshMarkers).appendTo(mapControls);
-		$('<button id="createMarkerButton">Create marker</button>').click(jobmap.createMarker).attr('disabled',true).appendTo(mapControls);
+		$('<button id="createMarkerButton">Create my marker</button>').click(jobmap.createMarker).attr('disabled',true).appendTo(mapControls);
 		$('<button id="saveMarkerButton">Save markers</button>').click(jobmap.saveMarkers).attr('disabled',true).appendTo(mapControls);
 		jobmap.mapControls = mapControls;
 		map.controls[google.maps.ControlPosition.TOP_CENTER].push(mapControls[0]);
@@ -136,6 +137,8 @@ var jobmap = {
 	 * Add a marker to the map.
 	 */
 	addMarker: function(marker) {
+		//printInfo('Adding marker at ('+marker.lat+','+marker.lng+')');
+		
 		// Construct mapMarker
 		var mapMarker = new google.maps.Marker({
 			//map: jobmap.map,
@@ -145,14 +148,16 @@ var jobmap = {
 		
 		// Check if we already have the marker
 		var alreadyAdded = false;
-		for (var i=0; i < jobmap.markers.length; i++) {
-			if (jobmap.markers[i].id == marker.id) {
-				alreadyAdded = true;
-				var oldMapMarker = jobmap.markers[i].mapMarker;
-				oldMapMarker.setPosition(mapMarker.position);
-				marker.mapMarker = mapMarker = oldMapMarker;
-				jobmap.markers[i] = marker;
-				break;
+		if (marker.id) {
+			for (var i=0; i < jobmap.markers.length; i++) {
+				if (jobmap.markers[i].id == marker.id) {
+					alreadyAdded = true;
+					var oldMapMarker = jobmap.markers[i].mapMarker;
+					oldMapMarker.setPosition(mapMarker.position);
+					marker.mapMarker = mapMarker = oldMapMarker;
+					jobmap.markers[i] = marker;
+					break;
+				}
 			}
 		}
 		if (!alreadyAdded) {
@@ -161,6 +166,14 @@ var jobmap = {
 			marker.mapMarker = mapMarker;
 			jobmap.markers.push(marker);
 			jobmap.mapMarkers.push(mapMarker);
+		}
+		
+		// Is this my marker?
+		if (jobmap.isOwner(marker)) {
+			jobmap.myMarkers.push(marker);
+			if (jobmap.user.privileges == 'random') {
+				$('#createMarkerButton',jobmap.mapControls).contents().replaceWith('Edit my marker');
+			}
 		}
 		
 		// Add listeners
@@ -178,10 +191,18 @@ var jobmap = {
 	 * Create a new marker.
 	 */
 	createMarker: function() {
+		// Has the user already placed a marker?
+		if (jobmap.user.privileges == 'random' && jobmap.myMarkers.length != 0) {
+			google.maps.event.trigger(jobmap.myMarkers[0].mapMarker, 'click');
+			return;
+		}
+		
+		// Remove old newMarker if on the map
 		if (jobmap.newMarker != null) {
 			jobmap.newMarker.setMap(null);
 		}
 		
+		// Create a new marker on the map for the user
 		jobmap.newMarker = new google.maps.Marker({
 			map: jobmap.map,
 			position: jobmap.map.getCenter(),
@@ -202,6 +223,7 @@ var jobmap = {
 	 * Send a marker to the server.
 	 */
 	postMarker: function(marker) {
+		var newMarker = (!marker);
 		var id;
 		var json;
 		if (marker) {
@@ -214,15 +236,15 @@ var jobmap = {
 			marker.mapMarker = mapMarker;
 		}
 		else {
+			if (jobmap.user.privileges == 'random') {
+				id = jobmap.user.email;
+			}
 			marker = {
 				lat: jobmap.newMarker.getPosition().lat(),
 				lng: jobmap.newMarker.getPosition().lng(),
 				info: $('#markerInfo').val(),
 			};
 			json = JSON.stringify(marker);
-			jobmap.newMarker.setMap(null);
-			jobmap.newMarker = null;
-			jobmap.addMarker(marker);
 		}
 		printInfo('Sending marker: ', json);
 		
@@ -233,7 +255,14 @@ var jobmap = {
 			data: json,
 		})
 		.done(function(data) {
-			printInfo('Reply: ', data);
+			jobmap.infoWindow.close();
+			if (newMarker) {
+				jobmap.newMarker.setMap(null);
+				jobmap.newMarker = null;
+				marker.id = jobmap.user.email;
+				marker.author = jobmap.user.email;
+				jobmap.addMarker(marker);
+			}
 		})
 		.fail(function(xhr,txt) {
 			printError('Sending marker failed: '+txt+'.');
@@ -259,6 +288,7 @@ var jobmap = {
 	 */
 	saveMarkers: function() {
 		$('#saveMarkerButton',jobmap.adminControls).attr('disabled', true);
+		printInfo('Saving '+jobmap.updatedMarkers.length+' markers.');
 		for (var i=0; i < jobmap.updatedMarkers.length; i++) {
 			jobmap.postMarker(jobmap.updatedMarkers[i]);
 		}
@@ -463,7 +493,7 @@ var jobmap = {
 	 * Returns true if user has capabilities to edit marker.
 	 */
 	isOwner: function(marker) {
-		return !isNaN(marker.id) && (jobmap.isAdmin() || (jobmap.user && jobmap.user.email == marker.author));
+		return marker.id && (jobmap.isAdmin() || (jobmap.user && jobmap.user.email == marker.author));
 	},
 	
 	/**

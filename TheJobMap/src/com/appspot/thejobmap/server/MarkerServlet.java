@@ -24,6 +24,7 @@ import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.gson.Gson;
 
 public class MarkerServlet extends HttpServlet {
@@ -42,6 +43,7 @@ public class MarkerServlet extends HttpServlet {
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
 		UserObj me = new UserObj();
+		List<MarkerObj> markers = new ArrayList<MarkerObj>();
 		
 		// Parse path
 		String path = req.getPathInfo();
@@ -52,34 +54,89 @@ public class MarkerServlet extends HttpServlet {
 		// Fetch user details
 		Entity entityMe = userServlet.getUser();
 		me.convertFromEntity(entityMe);
+
+		// Handle "me"
+		if (resource.length >= 2 && "me".equals(resource[1])) {
+			resource[1] = me.email;
+		}
 		
-		// Get marker id
-		if (path.equals("")) {
-			//FIXME
+		// Is this a private marker?
+		Boolean privMarker = false;
+		if (resource.length >= 2 && !"random".equals(resource[1]) && !"company".equals(resource[1])) {
+			privMarker = true;
+		}
+
+		// Check privileges
+		if (privMarker && (!me.email.equals(resource[1]) || !"admin".equals(me.privileges))) {
+			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
+			writer.close();
+			return;
+		}
+
+		if (resource.length <= 1) {
+			// GET /marker/
+			// Return list of all public markers
+			Query q = new Query("Markers");
+			List<Entity> dbList = db.prepare(q).asList(FetchOptions.Builder.withLimit(1000));
+			for (int i=0; i < dbList.size(); i++) {
+				MarkerObj marker = new MarkerObj();
+				marker.convertFromEntity(dbList.get(i));
+				if (entityMe != null && !"admin".equals(me.privileges) && !me.email.equals(marker.author)) {
+					// Remove extra information if not needed
+					marker.author = null;
+				}
+				markers.add(marker);
+			}
+			writer.write(gson.toJson(markers));
+		}
+		else if (resource.length == 2
+				&& ("random".equals(resource[1]) || "company".equals(resource[1]))) {
+			// GET /marker/<random/company>
+			// Return list of all markers made by randoms (ordinary people) or companies
+			Query q = new Query("Markers");
+			q.addFilter("type", FilterOperator.EQUAL, resource[1]);
+			if (!"company".equals(me.privileges)) {
+				// "Only show my marker to companies"
+				q.addFilter("privacy", FilterOperator.EQUAL, "public");
+			}
+			List<Entity> dbList = db.prepare(q).asList(FetchOptions.Builder.withLimit(1000));
+			for (int i=0; i < dbList.size(); i++) {
+				MarkerObj marker = new MarkerObj();
+				marker.convertFromEntity(dbList.get(i));
+				if (entityMe != null && !"admin".equals(me.privileges) && !me.email.equals(marker.author)) {
+					// Remove extra information if not needed
+					marker.author = null;
+				}
+				markers.add(marker);
+			}
+			writer.write(gson.toJson(markers));
+		}
+		else if (resource.length == 2) {
+			// GET /marker/<id/email>
+			// Return marker details
+			Key markerKey = null;
+			try {
+				Long id = Long.parseLong(resource[1]);
+				markerKey = KeyFactory.createKey("Markers", id);
+			}
+			catch(NumberFormatException e) {
+				markerKey = KeyFactory.createKey("Markers", resource[1]);
+			}
+			Entity entityMarker = null;
+			try {
+				entityMarker = db.get(markerKey);
+			} catch (EntityNotFoundException e) {
+				writer.write(gson.toJson(new ResultObj("fail", "no such marker")));
+				writer.close();
+				return;
+			}
+			MarkerObj marker = new MarkerObj();
+			marker.convertFromEntity(entityMarker);
+			writer.write(gson.toJson(marker));
 		}
 		else {
-			//long id = Long.parseLong(path);
-			//FIXME
+			throw new ServletException("Unimplemented request.");
 		}
-		
-		// Query database for markers
-		Query q = new Query("Markers");
-		List<Entity> dbList = db.prepare(q).asList(FetchOptions.Builder.withLimit(1000));
-		
-		// Transfer markers to serializable array
-		List<MarkerObj> markers = new ArrayList<MarkerObj>();
-		for (int i=0; i < dbList.size(); i++) {
-			MarkerObj marker = new MarkerObj();
-			marker.convertFromEntity(dbList.get(i));
-			if (!"admin".equals(me.privileges) && !marker.author.equals(me.email)) {
-				marker.creationDate = null;
-				marker.author = null;
-			}
-			markers.add(marker);
-		}
-		
-		// Send markers to client
-		writer.write(gson.toJson(markers));
 		writer.close();
 	}
 
@@ -94,62 +151,110 @@ public class MarkerServlet extends HttpServlet {
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
 		UserObj me = new UserObj();
-		
-		// Parse input
-		MarkerObj marker = gson.fromJson(reader, MarkerObj.class);
-		reader.close();
-		
-		// Check user
+
+		// Parse path
+		String path = req.getPathInfo();
+		path = (path==null?"/":path);
+		System.out.println("POST /marker"+path);
+		String[] resource = path.split("/");
+
+		// Fetch user details
 		Entity entityMe = userServlet.getUser();
 		if (entityMe == null) {
-			ResultObj result = new ResultObj("fail", "not logged in");
-			writer.write(gson.toJson(result));
+			writer.write(gson.toJson(new ResultObj("fail", "not logged in")));
 			writer.close();
 			return;
 		}
 		me.convertFromEntity(entityMe);
+
+		// Handle "me"
+		if (resource.length >= 2 && "me".equals(resource[1])) {
+			resource[1] = me.email;
+		}
+
+		// Check privileges
+		if ("random".equals(me.privileges) && (resource.length <= 1 || !me.email.equals(resource[1]))) {
+			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
+			writer.close();
+			return;
+		}
+
+		// Parse input
+		MarkerObj marker = gson.fromJson(reader, MarkerObj.class);
+		reader.close();
 		
-		// Some stuff
-		Entity entity;
-		Date date = new Date();
-		
-		// Get marker id
-		String path = req.getPathInfo();
-		path = (path==null?"/":path).substring(1);
-		if (path.equals("")) {
-			// This is a new marker
-			Key dbKey = KeyFactory.createKey("Markers", "jobmap");
-			entity = new Entity("Markers", dbKey);
-			entity.setProperty("creationDate", date.getTime());
+		if (resource.length <= 1) {
+			// POST /marker/
+			// New marker
+			Entity entityMarker = new Entity("Markers");
+			marker.author = me.email;
+			marker.type = me.privileges;
+			entityMarker.setProperty("creationDate", new Date().getTime());
+			marker.updateEntity(entityMarker, entityMe);
+			if (!marker.validate()) {
+				throw new ServletException("Invalid entry.");
+			}
+			
+			// Insert in database
+			db.put(entityMarker);
+			
+			// Send response
+			writer.write(gson.toJson(new ResultObj("ok")));
+		}
+		else if (resource.length == 2) {
+			// POST /marker/<id/email>
+			// Update marker details
+			// Randoms must create their marker this way
+			Entity entityMarker = null;
+			try {
+				// Try first with id as numeric
+				Long id = Long.parseLong(resource[1]);
+				Key markerKey = KeyFactory.createKey("Markers", id);
+				// Fetch marker
+				try {
+					entityMarker = db.get(markerKey);
+					marker.updateEntity(entityMarker, entityMe);
+				} catch (EntityNotFoundException e) {
+					writer.write(gson.toJson(new ResultObj("fail", "no such marker")));
+					writer.close();
+					return;
+				}
+			}
+			catch(NumberFormatException e) {
+				// If it's not numeric, it is a marker by a random
+				Key markerKey = KeyFactory.createKey("Markers", resource[1]);
+				try {
+					entityMarker = db.get(markerKey);
+					marker.updateEntity(entityMarker, entityMe);
+				} catch (EntityNotFoundException e2) {
+					// Entity does not exist in database, create a new one
+					entityMarker = new Entity("Markers", me.email);
+					entityMarker.setProperty("type", me.privileges);
+					entityMarker.setProperty("author", me.email);
+					entityMarker.setProperty("lat", marker.lat);
+					entityMarker.setProperty("lng", marker.lng);
+					entityMarker.setProperty("near", marker.near);
+					entityMarker.setProperty("info", marker.info);
+					entityMarker.setProperty("creationDate", new Date().getTime());
+					entityMarker.setProperty("updatedDate", new Date().getTime());
+					marker.convertFromEntity(entityMarker);
+				}
+			}
+			
+			// Update entity properties
+			if (!marker.validate()) {
+				throw new ServletException("Invalid entry.");
+			}
+			
+			// Insert/update in database
+			db.put(entityMarker);
+			
+			// Send response
+			writer.write(gson.toJson(new ResultObj("ok")));
 		}
 		else {
-			long id = Long.parseLong(path);
-			
-			// Query the database
-			Key dbKey = KeyFactory.createKey("Markers", "jobmap");
-			Key markerKey = KeyFactory.createKey(dbKey, "Markers", id);
-			try {
-				entity = db.get(markerKey);
-			} catch (EntityNotFoundException e) {
-				throw new ServletException("Marker does not exist.");
-			}
+			throw new ServletException("Unimplemented request.");
 		}
-		
-		// Set entity properties
-		entity.setProperty("lat", marker.lat);
-		entity.setProperty("lng", marker.lng);
-		entity.setProperty("type", marker.type);
-		entity.setProperty("near", marker.near);
-		entity.setProperty("info", marker.info);
-		entity.setProperty("author", me.email);
-		entity.setProperty("updatedDate", date.getTime());
-		
-		// Insert/update in database
-		db.put(entity);
-		
-		// Send response
-		ResultObj result = new ResultObj("ok");
-		writer.write(gson.toJson(result));
 		writer.close();
 	}
 

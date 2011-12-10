@@ -37,8 +37,8 @@ public class UserObj {
 	}
 
 	/**
-	 * Convenience function update and entity with data from this UserObj.
-	 * Privileges param makes sure that we have permission to update some entries.
+	 * Convenience function update an entity with data from this UserObj.
+	 * entityMe param makes sure that the current user has permission to update some properties.
 	 */
 	public void updateEntity(Entity entityUser, Entity entityMe) {
 		String myPrivileges = (String) entityMe.getProperty("privileges");
