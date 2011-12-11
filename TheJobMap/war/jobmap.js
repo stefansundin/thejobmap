@@ -104,20 +104,60 @@ var jobmap = {
 	
 	//The side menu
 	sideMenu: function(){
-		$('<div id="accordion"><h3><a href="#">1. Find a job</a></h3><div><p>'+
-		'Click on a city on the map to see all available jobs.</p></div>'+
-		'<h3><a href="#">2. Log in</a></h3><div><p>'+
-		'The first time you log in, you can either update your profile with personal information or just view all the markers in the map.</p></div>'+
-		'<h3><a href="#">3. Log in</a></h3><div><p>'+
-		'</p></div>'+
-		'<h3><a href="#">4. Log in</a></h3><div><p>'+
-		'</p></div>'+
-		'<h3><a href="#">Information for company</a></h3><div><p>'+
-		'If you want to sign in as a company, just send us an email with your request and we will create an account for you please.</p></div>'+
-		'<h3><a href="#">About TheJobMap</a></h3><div><p>'+
-		'</p></div>').appendTo('#sidebar');
+		$('<div id="accordion"><h3><a href="#"><b>Find a job</b></a></h3><div>'+
+		'<p>Click on a city to see the available jobs in the area. Then uncheck the boxes for the categories you are not interested in.</p>'+
+		'<p><b>Filter jobs:</b></p>'+
+		'<label><input type="checkbox" id="administration" />Administration</label><br/>'+
+		'<label><input type="checkbox" id="construction" />Construction</label><br/>'+
+		'<label><input type="checkbox" id="projectLeader" />Project leader</label><br/>'+
+		'<label><input type="checkbox" id="computerScience" />Computer science</label><br/>'+
+		'<label><input type="checkbox" id="disposalPromotion" />Disposal & promotion</label><br/>'+
+		'<label><input type="checkbox" id="hotelRestaurant" />Hotel & restaurant</label><br/>'+
+		'<label><input type="checkbox" id="medicalService" />Health & medical service</label><br/>'+
+		'<label><input type="checkbox" id="industrialManufacturing" />Industrial manufacturing </label><br/>'+
+		'<label><input type="checkbox" id="installation" />Installation/maintenance</label><br/>'+
+		'<label><input type="checkbox" id="cultureMedia" />Culture, media, design</label><br/>'+
+		'<label><input type="checkbox" id="military" />Military</label><br/>'+
+		'<label><input type="checkbox" id="environmentalScience" />Environmental science</label><br/>'+
+		'<label><input type="checkbox" id="pedagogical" />Pedagogical</label><br/>'+
+		'<label><input type="checkbox" id="social" />Social work</label><br/>'+
+		'<label><input type="checkbox" id="security" />Security</label><br/>'+
+		'<label><input type="checkbox" id="technical" />Technical</label><br/>'+
+		'<label><input type="checkbox" id="transport" />Transport</label><br/>'+
+		'<label><input type="checkbox" id="other" />Other</label>'+
+		'</div>'+
 		
-		$( "#accordion" ).accordion();
+		'<h3><a href="#"><b>Log in</b></a></h3><div>'+
+		'<p>The first time you log in, you can either update '+
+		'your profile with personal information or just view all '+
+		'the markers on the map. When you are logged in you can apply '+
+		'for the jobs you are interested in.</p>'+
+		'</div>'+
+		
+		'<h3><a href="#"><b>Apply for a job</b></a></h3><div>'+
+		'<p>If you want to apply for a job, just click on the marker '+
+		'and press apply for job. Make sure you have a CV uploaded, write a '+
+		'personal note to the company and then press send.</p>'+  
+		'</div>'+
+		
+		'<h3><a href="#"><b>Put yourself on the map</b></a></h3><div>'+
+		'<p>Place a marker where you live so all the '+
+		'companies can see you. You can choose if you want to be visible '+
+		'for just companies or both companies and other poeple who is looking for a job.</p>'+
+		'</div>'+
+		
+		'<h3><a href="#"><b>Information for company</b></a></h3><div>'+
+		'<p>If you are a company and you want to put markers on the map, then send us an email and we will upgrade your account. '+
+		' </p>'+
+		'<p><b>Email: </b><a href="#">company@thejobmap.se</a></p>'+
+		'</div>'+
+		
+		'<h3><a href="#"><b>About The Job Map</b></a></h3><div><p>'+
+		'The Job Map is a project in course M7011E, Luleå University of Technology, '+
+		'made bye Alexandra Tsampikakis and Stefan Sundin 2011. </p></div>').appendTo('#sidebar');
+		
+		$('#accordion input').attr('checked', true);
+		$( "#accordion" ).accordion({ fillSpace: true });
 	},
 	
 	/** Markers */
