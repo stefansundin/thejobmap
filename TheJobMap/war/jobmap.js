@@ -198,8 +198,8 @@ var jobmap = {
 		'</div>'+
 		
 		'<h3><a href="#"><b>About The Job Map</b></a></h3><div><p>'+
-		'The Job Map is a project in course M7011E, Luleå University of Technology, '+
-		'made bye Alexandra Tsampikakis and Stefan Sundin 2011. </p></div>').appendTo('#sidebar');
+		'The Job Map is a project in course M7011E, Luleå university of technology, '+
+		'made by Alexandra Tsampikakis and Stefan Sundin 2011. </p></div>').appendTo('#sidebar');
 		
 		$('#accordion input').attr('checked', true);
 		$( "#accordion" ).accordion({ fillSpace: true });
@@ -768,6 +768,7 @@ var jobmap = {
 		});
 		$('<p>Email: </p>').add($('<input type="text" id="userEmail" readonly />').val(user.email)).appendTo('#updateUserForm');
 		$('<p>Name: </p>').add($('<input type="text" id="userName" placeholder="Your name" />').val(user.name)).appendTo('#updateUserForm');
+		if (jobmap.user.privileges != 'company') {
 		$('<p>Age: </p>').add($('<input type="number" id="userAge" placeholder="Your age" />').val(user.age)).appendTo('#updateUserForm');
 		$('<p>Sex: </p>').add(($('<select id="userSex"></select>')
 				.append($('<option>Not telling</option>'))
@@ -775,6 +776,7 @@ var jobmap = {
 				.append($('<option>Female</option>'))
 				.append($('<option>Other</option>'))
 			).val(user.sex)).appendTo('#updateUserForm');
+		}
 		$('<p>Phone number: </p>').add($('<input type="tel" id="userPhonenumber" placeholder="Your phone number" />').val(user.phonenumber)).appendTo('#updateUserForm');
 		if (jobmap.isAdmin()) {
 			$('<p>Privileges: </p>').add(($('<select id="userPrivileges"></select>')
@@ -786,15 +788,16 @@ var jobmap = {
 		$('<hr/>').appendTo('#updateUserForm');
 		
 		// CV
-		if (user.cvUploaded) {
-			$('<p><a href="/rest/user/'+who+'/cv" target="_blank">View my CV</a></p>').appendTo('#updateUserForm');
-			$('<p><label><input type="checkbox" id="userDeleteCv" />Delete CV</label></p>').appendTo('#updateUserForm');
+		if (jobmap.user.privileges != 'company') {
+			if (user.cvUploaded) {
+				$('<p><a href="/rest/user/'+who+'/cv" target="_blank">View my CV</a></p>').appendTo('#updateUserForm');
+				$('<p><label><input type="checkbox" id="userDeleteCv" />Delete CV</label></p>').appendTo('#updateUserForm');
+			}
+			else {
+				jobmap.cvFrameLoaded = false;
+				$('<p>Upload CV (pdf only, maximum size is 1 MB): </p>').add('<p><iframe src="/upload-cv.html" id="cvIframe" scrolling="no" frameborder="0" onload="jobmap.cvFrameOnload();"></iframe></p>').appendTo('#updateUserForm');
+			}
 		}
-		else {
-			jobmap.cvFrameLoaded = false;
-			$('<p>Upload CV (pdf only, maximum size is 1 MB): </p>').add('<p><iframe src="/upload-cv.html" id="cvIframe" scrolling="no" frameborder="0" onload="jobmap.cvFrameOnload();"></iframe></p>').appendTo('#updateUserForm');
-		}
-		
 	},
 	
 	/**
