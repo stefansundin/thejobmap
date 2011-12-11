@@ -267,7 +267,7 @@ var jobmap = {
 	 */
 	filterMarkers: function() {
 		$.each(jobmap.markers, function(i, marker) {
-			var show = (jobmap.filter.indexOf(marker.type) != -1);
+			var show = (jobmap.filter.indexOf(marker.type) != -1 || jobmap.isOwner(marker));
 			var now = (marker.mapMarker && marker.mapMarker.getMap() != null);
 			if (show && !now) {
 				marker.mapMarker.setMap(jobmap.map);
@@ -316,6 +316,7 @@ var jobmap = {
 		}
 		*/
 		marker.mapMarker = mapMarker;
+		jobmap.mapMarkers.push(mapMarker);
 
 		// Set marker icon
 		var pin = jobmap.pins[(!jobmap.isAdmin()&&jobmap.isOwner(marker))?'me':marker.type];
@@ -341,7 +342,6 @@ var jobmap = {
 		
 		// Add marker
 		if (jobmap.filter.indexOf(marker.type) != -1) {
-			jobmap.mapMarkers.push(mapMarker);
 			mapMarker.setMap(jobmap.map);
 		}
 	},
