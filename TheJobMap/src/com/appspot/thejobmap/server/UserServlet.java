@@ -374,7 +374,11 @@ public class UserServlet extends HttpServlet {
 		Entity entityUser = new Entity("Users", email);
 		Date date = new Date();
 		entityUser.setProperty("creationDate", date.getTime());
-		entityUser.setProperty("name", email.substring(0,email.indexOf('@')));
+		String name = email;
+		if (email.indexOf('@') != -1) {
+			name = email.substring(0, email.indexOf('@'));
+		}
+		entityUser.setProperty("name", name);
 		entityUser.setProperty("age", null);
 		entityUser.setProperty("sex", "Not telling");
 		entityUser.setProperty("phonenumber", null);
