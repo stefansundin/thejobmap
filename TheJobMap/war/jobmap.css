@@ -137,18 +137,25 @@ h1,h2,h3,h4 {
 	max-height: 250px;
 	white-space: pre-wrap;
 }
-#markerInfo {
+#infoWindow #markerInfo {
 	width: 300px;
 	height: 250px;
 }
-#markerTitle {
+#infoWindow.new #markerInfo {
+	width: 300px;
+	height: 120px;
+}
+#infoWindow #markerTitle {
 	font-weight: bold;
 }
-#creationDate {
+#infoWindow #creationDate {
 	font-style: italic;
 }
 #infoWindow button {
 	float: right;
+}
+#infoWindow textarea {
+	resize: none;
 }
 
 
