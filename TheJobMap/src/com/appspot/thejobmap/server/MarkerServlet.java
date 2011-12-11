@@ -27,6 +27,15 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.gson.Gson;
 
+import java.util.Properties;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+
 public class MarkerServlet extends HttpServlet {
 	
 	private static final long serialVersionUID = -919160328227007218L;
@@ -117,14 +126,7 @@ public class MarkerServlet extends HttpServlet {
 		else if (resource.length == 2) {
 			// GET /marker/<id/email>
 			// Return marker details
-			Key markerKey = null;
-			try {
-				Long id = Long.parseLong(resource[1]);
-				markerKey = KeyFactory.createKey("Markers", id);
-			}
-			catch(NumberFormatException e) {
-				markerKey = KeyFactory.createKey("Markers", resource[1]);
-			}
+			Key markerKey = getMarkerKey(resource[1]);
 			Entity entityMarker = null;
 			try {
 				entityMarker = db.get(markerKey);
@@ -193,6 +195,7 @@ public class MarkerServlet extends HttpServlet {
 			// New marker
 			entityMarker = new Entity("Markers");
 			marker.updateEntity(entityMarker);
+			entityMarker.setProperty("numApply", 0);
 			entityMarker.setProperty("creationDate", new Date().getTime());
 			entityMarker.setProperty("type", me.privileges);
 			entityMarker.setProperty("author", me.email);
@@ -236,6 +239,7 @@ public class MarkerServlet extends HttpServlet {
 					// Entity does not exist in database, create a new one
 					entityMarker = new Entity("Markers", me.email);
 					marker.updateEntity(entityMarker);
+					entityMarker.setProperty("numApply", 0);
 					entityMarker.setProperty("creationDate", new Date().getTime());
 					entityMarker.setProperty("type", me.privileges);
 					entityMarker.setProperty("author", me.email);
@@ -250,6 +254,46 @@ public class MarkerServlet extends HttpServlet {
 			dbMarker.updateEntity(entityMarker);
 			
 			// Insert/update in database
+			db.put(entityMarker);
+			
+			// Send response
+			writer.write(gson.toJson(new ResultObj("ok")));
+		}
+		else if (resource.length == 3
+				&& "apply".equals(resource[1])) {
+			// POST /marker/apply/<id>
+			// Apply for a job
+			// Sends an email to the author of the pin
+			try {
+				entityMarker = db.get(getMarkerKey(resource[2]));
+				dbMarker.convertFromEntity(entityMarker);
+			} catch (EntityNotFoundException e) {
+				writer.write(gson.toJson(new ResultObj("fail", "no such marker")));
+				writer.close();
+				return;
+			}
+			
+			// Send email
+			Properties props = new Properties();
+			Session session = Session.getDefaultInstance(props, null);
+			String msgBody = "Hej Alex!";
+
+			try {
+				Message msg = new MimeMessage(session);
+				msg.setFrom(new InternetAddress(me.email, me.name));
+				msg.addRecipient(Message.RecipientType.TO, new InternetAddress(dbMarker.author));
+				msg.setSubject("Job Application: "+dbMarker.title);
+				msg.setText(msgBody);
+				Transport.send(msg);
+			} catch (AddressException e) {
+				throw new ServletException("AddressException.");
+			} catch (MessagingException e) {
+				throw new ServletException("MessagingException.");
+			}
+			
+			// Update numApply
+			dbMarker.incApply();
+			dbMarker.updateEntity(entityMarker);
 			db.put(entityMarker);
 			
 			// Send response
@@ -304,18 +348,8 @@ public class MarkerServlet extends HttpServlet {
 			// DELETE /marker/<id>
 			// Delete marker
 			
-			// Construct key
-			Key markerKey = null;
-			try {
-				// Try first with id as numeric
-				Long id = Long.parseLong(resource[1]);
-				markerKey = KeyFactory.createKey("Markers", id);
-			} catch (NumberFormatException e) {
-				// If it's not numeric, it is a marker by a random
-				markerKey = KeyFactory.createKey("Markers", resource[1]);
-			}
-			
 			// Check if marker exists
+			Key markerKey = getMarkerKey(resource[1]);
 			try {
 				db.get(markerKey);
 			} catch (EntityNotFoundException e) {
@@ -334,6 +368,17 @@ public class MarkerServlet extends HttpServlet {
 			throw new ServletException("Unimplemented request.");
 		}
 		writer.close();
+	}
+	
+	public Key getMarkerKey(String id) {
+		try {
+			// Try first with id as numeric
+			Long num = Long.parseLong(id);
+			return KeyFactory.createKey("Markers", num);
+		} catch (NumberFormatException e) {
+			// If it's not numeric, it is a marker by a random
+			return KeyFactory.createKey("Markers", id);
+		}
 	}
 
 }

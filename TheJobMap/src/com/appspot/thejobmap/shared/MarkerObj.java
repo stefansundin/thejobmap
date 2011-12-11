@@ -18,6 +18,7 @@ public class MarkerObj {
 	public String info;
 	public String author;
 	public Long creationDate;
+	public Integer numApply;
 	
 	public MarkerObj() {}
 
@@ -38,6 +39,7 @@ public class MarkerObj {
 		this.near = (String) entityMarker.getProperty("near");
 		this.title = (String) entityMarker.getProperty("title");
 		this.info = ((Text) entityMarker.getProperty("info")).getValue();
+		//this.numApply = ((Long) entityMarker.getProperty("numApply")).intValue();
 		this.creationDate = (Long) entityMarker.getProperty("creationDate");
 		this.author = (String) entityMarker.getProperty("author");
 	}
@@ -85,6 +87,7 @@ public class MarkerObj {
 		entityMarker.setProperty("info", new Text(this.info));
 		entityMarker.setProperty("type", this.type);
 		entityMarker.setProperty("author", this.author);
+		//entityMarker.setProperty("numApply", this.numApply);
 		entityMarker.setProperty("creationDate", this.creationDate);
 		entityMarker.setProperty("updatedDate", new Date().getTime());
 	}
@@ -99,5 +102,13 @@ public class MarkerObj {
 			return false;
 		}
 		return true;
+	}
+	
+	/**
+	 * Increment numApply.
+	 */
+	public void incApply() {
+		/*if (this.numApply == null) this.numApply = 0;
+		this.numApply++;*/
 	}
 }

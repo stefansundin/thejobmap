@@ -30,6 +30,7 @@ var jobmap = {
 	/** Variables */
 	map: null,
 	markers: [],
+	filter: ['city'],
 	mapMarkers: [],
 	newMarker: null,
 	myMarkers: [],
@@ -140,11 +141,26 @@ var jobmap = {
 		$('<button id="logButton"></button>').click(jobmap.logButton).appendTo('#account');
 		jobmap.getUser();
 		
+		// Add listeners
+		google.maps.event.addListener(map, 'zoom_changed', jobmap.zoomChanged);
+		
 		// Markers
 		jobmap.refreshMarkers();
 		
 		// Side menu
 		jobmap.sideMenu();
+	},
+	
+	zoomChanged: function() {
+		var zoom = jobmap.map.getZoom();
+		//printInfo('New zoom level: '+zoom);
+		if (zoom > 7) {
+			jobmap.filter = ['company', 'random'];
+		}
+		else {
+			jobmap.filter = ['city'];
+		}
+		jobmap.filterMarkers();
 	},
 	
 	//The side menu
@@ -170,6 +186,7 @@ var jobmap = {
 		'<label><input type="checkbox" id="technical" />Technical</label><br/>'+
 		'<label><input type="checkbox" id="transport" />Transport</label><br/>'+
 		'<label><input type="checkbox" id="other" />Other</label>'+
+		'<label><input type="checkbox" id="showRandoms" />Display other job searchers</label>'+
 		'</div>'+
 		
 		'<h3><a href="#"><b>Log in</b></a></h3><div>'+
@@ -191,7 +208,7 @@ var jobmap = {
 		'for just companies or both companies and other poeple who is looking for a job.</p>'+
 		'</div>'+
 		
-		'<h3><a href="#"><b>Information for company</b></a></h3><div>'+
+		'<h3><a href="#"><b>Information for companies</b></a></h3><div>'+
 		'<p>If you are a company and you want to put markers on the map, then send us an email and we will upgrade your account. '+
 		' </p>'+
 		'<p><b>Email: </b><a href="#">company@thejobmap.se</a></p>'+
@@ -231,12 +248,30 @@ var jobmap = {
 		.done(function(data) {
 			printInfo('Received '+data.length+' markers: ', data);
 			jobmap.clearMarkers();
-			$.each(data, function(key, val) {
-				jobmap.addMarker(val);
+			$.each(data, function(key, marker) {
+				jobmap.markers.push(marker);
+				jobmap.addMarker(marker);
 			});
+			jobmap.filterMarkers();
 		})
 		.fail(function(xhr,txt) {
 			printError('Getting markers failed: '+txt+'.');
+		});
+	},
+
+	/**
+	 * Show markers by type.
+	 */
+	filterMarkers: function() {
+		$.each(jobmap.markers, function(i, marker) {
+			var show = (jobmap.filter.indexOf(marker.type) != -1);
+			var now = (marker.mapMarker && marker.mapMarker.getMap() != null);
+			if (show && !now) {
+				marker.mapMarker.setMap(jobmap.map);
+			}
+			else if (!show && now) {
+				marker.mapMarker.setMap(null);
+			}
 		});
 	},
 	
@@ -251,8 +286,10 @@ var jobmap = {
 			//map: jobmap.map,
 			position: new google.maps.LatLng(marker.lat, marker.lng),
 			draggable: jobmap.canEdit(marker),
+			title: marker.title,
 		});
-		
+
+		/*
 		// Check if we already have the marker
 		var alreadyAdded = false;
 		if (marker.id) {
@@ -274,7 +311,9 @@ var jobmap = {
 			jobmap.markers.push(marker);
 			jobmap.mapMarkers.push(mapMarker);
 		}
-		
+		*/
+		marker.mapMarker = mapMarker;
+
 		// Set marker icon
 		var pin = jobmap.pins[(!jobmap.isAdmin()&&jobmap.isOwner(marker))?'me':marker.type];
 		mapMarker.setIcon(pin.icon);
@@ -296,6 +335,12 @@ var jobmap = {
 		google.maps.event.addListener(mapMarker, 'dragend', function() {
 			jobmap.updatedMarkersPush(marker);
 		});
+		
+		// Add marker
+		if (jobmap.filter.indexOf(marker.type) != -1) {
+			jobmap.mapMarkers.push(mapMarker);
+			mapMarker.setMap(jobmap.map);
+		}
 	},
 	
 	/**
@@ -358,6 +403,7 @@ var jobmap = {
 				lng: jobmap.newMarker.getPosition().lng(),
 				info: $('#markerInfo').val(),
 				title: $('#markerTitle').val() || jobmap.user.name,
+				type: $('#markerType').val() || jobmap.user.privileges,
 			};
 			json = JSON.stringify(marker);
 			if (jobmap.user.privileges == 'random') {
@@ -388,6 +434,23 @@ var jobmap = {
 		})
 		.fail(function(xhr,txt) {
 			printError('Sending marker failed: '+txt+'.');
+		});
+	},
+
+	/**
+	 * Applies for a job.
+	 */
+	applyJob: function(marker) {
+		$.ajax({
+			url: '/rest/marker/apply/'+marker.id,
+			type: 'POST',
+		})
+		.done(function(data) {
+			printInfo('Reply: ', data);
+			$('#applyButton').text('Mail sent').attr('disabled',true);
+		})
+		.fail(function(xhr,txt) {
+			printError('applyJob failed: '+txt+'.');
 		});
 	},
 
@@ -427,6 +490,7 @@ var jobmap = {
 		var pin = jobmap.pins[(!jobmap.isAdmin()&&jobmap.isOwner(marker))?'me':marker.type];
 		marker.mapMarker.setIcon(pin.icon);
 		marker.mapMarker.setShadow(pin.shadow);
+		marker.mapMarker.setTitle(marker.title);
 		
 		// Check if marker is already in list
 		for (var i=0; i < jobmap.updatedMarkers.length; i++) {
@@ -518,6 +582,15 @@ var jobmap = {
 					}
 					jobmap.setInfoWindow(marker, 'edit');
 					jobmap.infoWindow.open(jobmap.map, marker.mapMarker);
+				}).appendTo(info);
+			}
+			if (marker.type == 'company' && jobmap.user.privileges == 'random') {
+				$('<button id="applyButton">Apply for job</button>').click(function() {
+					if (!jobmap.user) {
+						alert('You must log in first.');
+						return;
+					}
+					jobmap.applyJob(marker);
 				}).appendTo(info);
 			}
 			if (marker.type != 'city') {
