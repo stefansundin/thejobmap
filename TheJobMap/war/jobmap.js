@@ -367,7 +367,6 @@ var jobmap = {
 			marker.creationDate = new Date().getTime();
 		}
 		printInfo('Sending marker: ', json);
-		printInfo('id: '+id);
 		
 		$.ajax({
 			url: '/rest/marker/'+(id?id:''),
@@ -389,6 +388,33 @@ var jobmap = {
 		})
 		.fail(function(xhr,txt) {
 			printError('Sending marker failed: '+txt+'.');
+		});
+	},
+
+	/**
+	 * Delete a marker.
+	 */
+	deleteMarker: function(marker) {
+		$.ajax({
+			url: '/rest/marker/'+marker.id,
+			type: 'DELETE',
+		})
+		.done(function(data) {
+			printInfo('Reply: ', data);
+			marker.mapMarker.setMap(null);
+			if (marker == jobmap.myMarkers[0]) {
+				jobmap.myMarkers.splice(0, 1);
+				$('#createMarkerButton',jobmap.mapControls).contents().replaceWith('Create my marker');
+			}
+			for (var i=0; i < jobmap.markers.length; i++) {
+				if (marker.id == jobmap.markers[i].id) {
+					delete jobmap.markers[i].id;
+					break;
+				}
+			}
+		})
+		.fail(function(xhr,txt) {
+			printError('Delete marker failed: '+txt+'.');
 		});
 	},
 
@@ -429,46 +455,53 @@ var jobmap = {
 	 * Create the contents of an info window for a marker.
 	 */
 	setInfoWindow: function(marker, mode) {
-		if (!mode && marker == jobmap.newMarker) mode='new';
+		if (!mode && marker == jobmap.newMarker) {
+			mode='new';
+			marker = {};
+		}
 		if (!mode) mode='view';
 		
 		var pad = function(n) { return ('0'+n).slice(-2); };
 		var creationDate = new Date(marker.creationDate);
 		var timestamp = creationDate.getFullYear()+'-'+pad(creationDate.getMonth()+1)+'-'+pad(creationDate.getDate());
 		
-		var info = $('<div id="infoWindow"></div>');
-		if (mode == 'new') {
-			$(info).append('<h3>Enter details</h3>');
+		var info = $('<div id="infoWindow"></div>').addClass(mode);
+		if (mode == 'edit' || mode == 'new') {
+			$('<h3></h3>').text((mode=='edit'?'Edit marker':'Enter details')).appendTo(info);
 			if (jobmap.user.privileges != 'random') {
-				$('<input id="markerTitle" placeholder="Marker title" />').appendTo(info);
+				$('<input id="markerTitle" placeholder="Marker title" />').val(marker.title || jobmap.user.name).appendTo(info);
 			}
-			$(info).append('<textarea id="markerInfo" placeholder="Write description here"></textarea>');
-			$(info).append('<br/>');
-			$('<button>Store marker</button>').click(function() {
-				jobmap.postMarker();
-			}).appendTo(info);
-		}
-		else if (mode == 'edit') {
-			$(info).append('<h3>Edit marker</h3>');
-			if (jobmap.user.privileges != 'random') {
-				$('<input id="markerTitle" placeholder="Marker title" />').val(marker.title).appendTo(info);
-			}
-			$('<textarea id="markerInfo" placeholder="Write description here"></textarea>').val(marker.info).appendTo(info);
-			$(info).append('<br/>');
-			$('<button>Save changes</button>').click(function() {
-				marker.title = $('#markerTitle').val() || marker.title;
-				marker.info = $('#markerInfo').val();
-				marker.type = $('#markerType').val() || marker.type;
-				jobmap.updatedMarkersPush(marker);
-				jobmap.infoWindow.close();
-			}).appendTo(info);
 			if (jobmap.isAdmin()) {
-				$('<span>Type: </span>').add(($('<select id="markerType"></select>')
-						.append($('<option>random</option>'))
-						.append($('<option>company</option>'))
-						.append($('<option>city</option>'))
-						.append($('<option>admin</option>'))
-					).val(marker.type)).appendTo(info);
+				$('<select id="markerType"></select>')
+					.append('<option>random</option>')
+					.append('<option>company</option>')
+					.append('<option>city</option>')
+					.append('<option>admin</option>')
+					.val(marker.type).appendTo(info);
+			}
+			$('<textarea id="markerInfo"></textarea>')
+				.attr('placeholder',(jobmap.user.privileges=='random'
+					?'Write a little text about yourself here. It\'s what the companies will see first, so be intuitive.'
+					:'Write the job description here. It\'s what the job searchers will see first, so be intuitive.'))
+				.val(marker.info)
+				.appendTo(info);
+			$('<br/>').appendTo(info);
+			$('<button></button>').text((mode=='edit'?'Save changes':'Store marker')).click(function() {
+				if (mode == 'edit') {
+					marker.title = $('#markerTitle').val() || marker.title;
+					marker.info = $('#markerInfo').val();
+					marker.type = $('#markerType').val() || marker.type;
+					jobmap.updatedMarkersPush(marker);
+					jobmap.infoWindow.close();
+				}
+				else {
+					jobmap.postMarker();
+				}
+			}).appendTo(info);
+			if (mode == 'edit') {
+				$('<button>Delete marker</button>').click(function() {
+					jobmap.deleteMarker(marker);
+				}).appendTo(info);
 			}
 		}
 		else if (mode == 'view') {
@@ -484,6 +517,7 @@ var jobmap = {
 						return;
 					}
 					jobmap.setInfoWindow(marker, 'edit');
+					jobmap.infoWindow.open(jobmap.map, marker.mapMarker);
 				}).appendTo(info);
 			}
 			if (marker.type != 'city') {

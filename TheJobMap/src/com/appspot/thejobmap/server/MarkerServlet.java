@@ -261,4 +261,79 @@ public class MarkerServlet extends HttpServlet {
 		writer.close();
 	}
 
+	/**
+	 * DELETE - Delete marker.
+	 */
+	protected void doDelete(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+		// Initialize stuff like streams
+		res.setContentType("application/json; charset=UTF-8");
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
+		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
+		Gson gson = new Gson();
+		UserObj me = new UserObj();
+		
+		// Check if logged in
+		Entity entityMe = userServlet.getUser();
+		if (entityMe == null) {
+			writer.write(gson.toJson(new ResultObj("fail", "not logged in")));
+			writer.close();
+			return;
+		}
+		me.convertFromEntity(entityMe);
+		
+		// Parse path
+		String path = req.getPathInfo();
+		System.out.println("localname: "+req.getLocalName());
+		path = (path==null?"/":path);
+		System.out.println("DELETE /marker"+path);
+		String[] resource = path.split("/");
+		
+		// Handle "me"
+		if (resource.length >= 2 && "me".equals(resource[1])) {
+			resource[1] = me.email;
+		}
+		
+		// Check privileges
+		if ((resource.length == 1 || !me.email.equals(resource[1])) && !"admin".equals(me.privileges)) {
+			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
+			writer.close();
+			return;
+		}
+		
+		if (resource.length == 2) {
+			// DELETE /marker/<id>
+			// Delete marker
+			
+			// Construct key
+			Key markerKey = null;
+			try {
+				// Try first with id as numeric
+				Long id = Long.parseLong(resource[1]);
+				markerKey = KeyFactory.createKey("Markers", id);
+			} catch (NumberFormatException e) {
+				// If it's not numeric, it is a marker by a random
+				markerKey = KeyFactory.createKey("Markers", resource[1]);
+			}
+			
+			// Check if marker exists
+			try {
+				db.get(markerKey);
+			} catch (EntityNotFoundException e) {
+				writer.write(gson.toJson(new ResultObj("fail", "marker does not exist")));
+				writer.close();
+				return;
+			}
+			
+			// Delete marker
+			db.delete(markerKey);
+			
+			// Send response
+			writer.write(gson.toJson(new ResultObj("ok")));
+		}
+		else {
+			throw new ServletException("Unimplemented request.");
+		}
+		writer.close();
+	}
+
 }
