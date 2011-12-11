@@ -144,7 +144,7 @@ public class MarkerServlet extends HttpServlet {
 	}
 
 	/**
-	 * POST - Addition of marker.
+	 * POST - Addition or update of marker.
 	 */
 	protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
 		// Initialize stuff like streams
@@ -236,7 +236,7 @@ public class MarkerServlet extends HttpServlet {
 					// Entity does not exist in database, create a new one
 					entityMarker = new Entity("Markers", me.email);
 					marker.updateEntity(entityMarker);
-					//entityMarker.setProperty("creationDate", new Date().getTime());
+					entityMarker.setProperty("creationDate", new Date().getTime());
 					entityMarker.setProperty("type", me.privileges);
 					entityMarker.setProperty("author", me.email);
 					dbMarker.convertFromEntity(entityMarker);

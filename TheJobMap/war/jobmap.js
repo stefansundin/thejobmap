@@ -72,20 +72,59 @@ var jobmap = {
 		});
 		
 		// Define pins
-		jobmap.pins.green = new google.maps.MarkerImage(
-			'images/pins/green-dot.png',
-			new google.maps.Size(32, 32),
-			new google.maps.Point(0, 0),
-			new google.maps.Point(16, 32)
-		);
-		jobmap.pins.shadow = new google.maps.MarkerImage(
+		var shadow = new google.maps.MarkerImage(
 			'images/pins/shadow.png',
 			new google.maps.Size(59, 32),
 			new google.maps.Point(0, 0),
 			new google.maps.Point(16, 32)
 		);
-		jobmap.normalPin = new google.maps.Marker();
+		var shadow_pushpin = new google.maps.MarkerImage(
+			'images/pins/pushpin_shadow.png',
+			new google.maps.Size(59, 32),
+			new google.maps.Point(0, 0),
+			new google.maps.Point(16, 32)
+		);
+		jobmap.pins.red = {
+			icon: new google.maps.MarkerImage(
+				'images/pins/red-dot.png',
+				new google.maps.Size(32, 32),
+				new google.maps.Point(0, 0),
+				new google.maps.Point(16, 32)
+			),
+			shadow: shadow,
+		};
+		jobmap.pins.green = {
+			icon: new google.maps.MarkerImage(
+				'images/pins/green-dot.png',
+				new google.maps.Size(32, 32),
+				new google.maps.Point(0, 0),
+				new google.maps.Point(16, 32)
+			),
+			shadow: shadow,
+		};
+		jobmap.pins.blue = {
+			icon: new google.maps.MarkerImage(
+				'images/pins/blue-dot.png',
+				new google.maps.Size(32, 32),
+				new google.maps.Point(0, 0),
+				new google.maps.Point(16, 32)
+			),
+			shadow: shadow,
+		};
+		jobmap.pins.pushpin = {
+			icon: new google.maps.MarkerImage(
+				'images/pins/red-pushpin.png',
+				new google.maps.Size(32, 32),
+				new google.maps.Point(0, 0),
+				new google.maps.Point(16, 32)
+			),
+			shadow: shadow_pushpin,
+		};
+		jobmap.pins.company = jobmap.pins.red;
 		jobmap.pins.me = jobmap.pins.green;
+		jobmap.pins.random = jobmap.pins.blue;
+		jobmap.pins.city = jobmap.pins.pushpin;
+		jobmap.pins.admin = jobmap.pins.pushpin;
 		
 		// User
 		$('<div id="account"></div>').appendTo('#panel');
@@ -189,11 +228,14 @@ var jobmap = {
 			jobmap.mapMarkers.push(mapMarker);
 		}
 		
+		// Set marker icon
+		var pin = jobmap.pins[jobmap.isOwner(marker)?'me':marker.type];
+		mapMarker.setIcon(pin.icon);
+		mapMarker.setShadow(pin.shadow);
+		
 		// Is this my marker?
 		if (jobmap.isOwner(marker)) {
 			jobmap.myMarkers.push(marker);
-			mapMarker.setIcon(jobmap.pins.me);
-			mapMarker.setShadow(jobmap.pins.shadow);
 			if (jobmap.user.privileges == 'random') {
 				$('#createMarkerButton',jobmap.mapControls).contents().replaceWith('Edit my marker');
 			}
@@ -231,8 +273,8 @@ var jobmap = {
 			title: 'Drag me!',
 			draggable: true,
 			animation: google.maps.Animation.BOUNCE,
-			icon: jobmap.pins.me,
-			shadow: jobmap.pins.shadow,
+			icon: jobmap.pins.me.icon,
+			shadow: jobmap.pins.me.shadow,
 		});
 		google.maps.event.addListenerOnce(jobmap.newMarker, 'mouseover', function() {
 			jobmap.newMarker.setAnimation(null);
@@ -251,6 +293,7 @@ var jobmap = {
 		var id;
 		var json;
 		if (marker) {
+			// Editing existing marker
 			id = marker.id;
 			var mapMarker = marker.mapMarker;
 			marker.lat = mapMarker.getPosition().lat();
@@ -260,6 +303,7 @@ var jobmap = {
 			marker.mapMarker = mapMarker;
 		}
 		else {
+			// New marker
 			if (jobmap.user.privileges == 'random') {
 				id = jobmap.user.email;
 			}
@@ -269,6 +313,7 @@ var jobmap = {
 				info: $('#markerInfo').val(),
 			};
 			json = JSON.stringify(marker);
+			marker.creationDate = new Date().getTime();
 		}
 		printInfo('Sending marker: ', json);
 		
@@ -297,8 +342,15 @@ var jobmap = {
 
 	/**
 	 * Pushes marker to updatedMarkers, but makes sure there are no duplicates.
+	 * Also updates mapMarker properties (like icon).
 	 */
 	updatedMarkersPush: function(marker) {
+		// Update mapMarker
+		var pin = jobmap.pins[jobmap.isOwner(marker)?'me':marker.type];
+		marker.mapMarker.setIcon(pin.icon);
+		marker.mapMarker.setShadow(pin.shadow);
+		
+		// Check if marker is already in list
 		for (var i=0; i < jobmap.updatedMarkers.length; i++) {
 			if (marker == jobmap.updatedMarkers[i]) {
 				return;
@@ -332,7 +384,7 @@ var jobmap = {
 		var creationDate = new Date(marker.creationDate);
 		var timestamp = creationDate.getFullYear()+'-'+pad(creationDate.getMonth()+1)+'-'+pad(creationDate.getDate());
 		
-		var info = $('<div></div>');
+		var info = $('<div id="infoWindow"></div>');
 		if (mode == 'new') {
 			$(info).append('<h3>Enter details</h3>');
 			$(info).append('<textarea id="markerInfo" placeholder="Write description here"></textarea>');
@@ -343,19 +395,33 @@ var jobmap = {
 		}
 		else if (mode == 'edit') {
 			$(info).append('<h3>Edit marker</h3>');
+			if (jobmap.user.privileges != 'random') {
+				$('<input id="markerTitle" placeholder="Marker title" />').val(marker.title).appendTo(info);
+			}
 			$('<textarea id="markerInfo" placeholder="Write description here"></textarea>').val(marker.info).appendTo(info);
 			$(info).append('<br/>');
 			$('<button>Save changes</button>').click(function() {
+				marker.title = $('#markerTitle').val() || marker.title;
 				marker.info = $('#markerInfo').val();
+				marker.type = $('#markerType').val() || marker.type;
 				jobmap.updatedMarkersPush(marker);
 				jobmap.infoWindow.close();
 			}).appendTo(info);
-			$(info).append('<br/>');
+			if (jobmap.isAdmin()) {
+				$('<span>Type: </span>').add(($('<select id="markerType"></select>')
+						.append($('<option>random</option>'))
+						.append($('<option>company</option>'))
+						.append($('<option>city</option>'))
+						.append($('<option>admin</option>'))
+					).val(marker.type)).appendTo(info);
+			}
 		}
 		else if (mode == 'view') {
+			$('<h2></h2>').text(marker.title || "Titel").appendTo(info);
+			$('<div id="desc"></div>').text(marker.info).appendTo(info);
+			$(info).append('<hr/>');
 			if (jobmap.isOwner(marker) || jobmap.canEdit(marker)) {
-				$('<div></div>').text(marker.info).appendTo(info);
-				$('<button id="editMarkerButton">Edit marker</button>').click(function() {
+				$('<button>Edit marker</button>').click(function() {
 					if (!jobmap.canEdit(marker)) {
 						alert('Please refresh markers to edit a newly added marker.');
 						return;
@@ -363,8 +429,7 @@ var jobmap = {
 					jobmap.setInfoWindow(marker, 'edit');
 				}).appendTo(info);
 			}
-			$(info).append('<hr/>');
-			$('<div id="creationDate"></div>').text('Created at '+timestamp).appendTo(info);
+			$('<div id="creationDate"></div>').text('Created on '+timestamp+'.').appendTo(info);
 		}
 		
 		jobmap.infoWindow.setContent(info[0]);

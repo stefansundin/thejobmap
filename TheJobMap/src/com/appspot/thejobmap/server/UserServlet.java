@@ -238,6 +238,7 @@ public class UserServlet extends HttpServlet {
 				throw new ServletException("Invalid entry.");
 			}
 			dbUser.updateEntity(entityUser);
+			//TODO: Update marker title if this is a random.
 			
 			// Update database
 			db.put(entityUser);
@@ -365,7 +366,7 @@ public class UserServlet extends HttpServlet {
 	/**
 	 * Insert new user into database.
 	 */
-	void createUser(String email) {
+	Entity createUser(String email) {
 		System.out.println("Creating user "+email);
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		
@@ -373,11 +374,12 @@ public class UserServlet extends HttpServlet {
 		Entity entityUser = new Entity("Users", email);
 		Date date = new Date();
 		entityUser.setProperty("creationDate", date.getTime());
-		entityUser.setProperty("name", null);
+		entityUser.setProperty("name", email.substring(0,email.indexOf('@')));
 		entityUser.setProperty("age", null);
 		entityUser.setProperty("sex", "Not telling");
 		entityUser.setProperty("phonenumber", null);
 		entityUser.setProperty("privileges", "random");
+		entityUser.setProperty("lastLogin", new Date().getTime());
 		
 		// These guys are admins!
 		List<String> realAwesomeGuys = Arrays.asList("test@example.com",
@@ -389,6 +391,7 @@ public class UserServlet extends HttpServlet {
 		
 		// Insert in database
 		db.put(entityUser);
+		return entityUser;
 	}
 	
 	/**

@@ -11,12 +11,14 @@ public class UserObj {
 	public String age;
 	public String sex;
 	public String phonenumber;
-	public Boolean cvUploaded;
-	
 	public String privileges;
+	
+	public Boolean cvUploaded;
+	public Long lastLogin;
+	
 	public String logoutUrl;
 	public String auth_key;
-
+	
 	public UserObj() {}
 	
 	/**
@@ -34,6 +36,7 @@ public class UserObj {
 		this.phonenumber = (String) entityUser.getProperty("phonenumber");
 		this.privileges = (String) entityUser.getProperty("privileges");
 		this.cvUploaded = (Boolean) entityUser.hasProperty("cv");
+		this.lastLogin = (Long) entityUser.getProperty("lastLogin");
 	}
 
 	/**

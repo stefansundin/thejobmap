@@ -3,6 +3,7 @@ package com.appspot.thejobmap.server;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.util.Date;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -39,6 +40,7 @@ public class SpecialServlet extends HttpServlet {
 		// Initialize stuff like streams
 		res.setContentType("text/html; charset=UTF-8");
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
+		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		//Gson gson = new Gson();
 		
 		// Parse path
@@ -59,6 +61,7 @@ public class SpecialServlet extends HttpServlet {
 			if (u == null) {
 				writer.write("Not logged in");
 				writer.close();
+				return;
 			}
 
 			// Create user if it does not exist
@@ -66,17 +69,22 @@ public class SpecialServlet extends HttpServlet {
 			if (entityUser == null) {
 				userServlet.createUser(email);
 			}
+			else {
+				// Update lastLogin
+				entityUser.setProperty("lastLogin", new Date().getTime());
+				db.put(entityUser);
+			}
 			
 			// Write response that closes the window and refreshes the login details in the job map
 			writer.write("<html>"+
 					"<script type=\"text/javascript\">window.opener.jobmap.getUser();window.close();</script>"+
 					"<body><h2>You can close this window now.</h2></body>"+
 					"</html>");
-			writer.close();
 		}
 		else {
 			throw new ServletException("Not implemented yet.");
 		}
+		writer.close();
 	}
 
 	/**
@@ -149,12 +157,10 @@ public class SpecialServlet extends HttpServlet {
 			writer.write("<html>"+
 					"<body style=\"margin:0;\">CV uploaded.</body>"+
 					"</html>");
-			writer.close();
-			return;
-			
 		}
 		else {
 			throw new ServletException("Not implemented yet.");
 		}
+		writer.close();
 	}
 }

@@ -14,8 +14,8 @@ public class MarkerObj {
 	public Double lng;
 	public String type;
 	public String near;
+	public String title;
 	public String info;
-
 	public String author;
 	public Long creationDate;
 	
@@ -36,6 +36,7 @@ public class MarkerObj {
 		this.lng = (Double) entityMarker.getProperty("lng");
 		this.type = (String) entityMarker.getProperty("type");
 		this.near = (String) entityMarker.getProperty("near");
+		this.title = (String) entityMarker.getProperty("title");
 		this.info = ((Text) entityMarker.getProperty("info")).getValue();
 		this.creationDate = (Long) entityMarker.getProperty("creationDate");
 		this.author = (String) entityMarker.getProperty("author");
@@ -52,7 +53,17 @@ public class MarkerObj {
 		this.near = other.near;
 		this.info = other.info;
 
+		String myName = (String) entityMe.getProperty("name");
 		String myPrivileges = (String) entityMe.getProperty("privileges");
+		
+		if (myPrivileges.equals("random")) {
+			this.title = myName;
+		}
+		else {
+			if (other.title != null)
+				this.title = other.title;
+		}
+		
 		if (myPrivileges.equals("admin")) {
 			if (other.type != null)
 				this.type = other.type;
@@ -70,6 +81,7 @@ public class MarkerObj {
 		entityMarker.setProperty("lat", this.lat);
 		entityMarker.setProperty("lng", this.lng);
 		entityMarker.setProperty("near", this.near);
+		entityMarker.setProperty("title", this.title);
 		entityMarker.setProperty("info", new Text(this.info));
 		entityMarker.setProperty("type", this.type);
 		entityMarker.setProperty("author", this.author);
