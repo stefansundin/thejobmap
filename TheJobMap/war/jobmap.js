@@ -151,18 +151,6 @@ var jobmap = {
 		jobmap.sideMenu();
 	},
 	
-	zoomChanged: function() {
-		var zoom = jobmap.map.getZoom();
-		//printInfo('New zoom level: '+zoom);
-		if (zoom > 7) {
-			jobmap.filter = ['company', 'random'];
-		}
-		else {
-			jobmap.filter = ['city'];
-		}
-		jobmap.filterMarkers();
-	},
-	
 	//The side menu
 	sideMenu: function(){
 		$('<div id="accordion"><h3><a href="#"><b>Find a job</b></a></h3><div>'+
@@ -259,6 +247,21 @@ var jobmap = {
 		});
 	},
 
+	/**
+	 * Filter markers based on zoom level.
+	 */
+	zoomChanged: function() {
+		var zoom = jobmap.map.getZoom();
+		//printInfo('New zoom level: '+zoom);
+		if (zoom > 7) {
+			jobmap.filter = ['company', 'random', 'admin'];
+		}
+		else {
+			jobmap.filter = ['city'];
+		}
+		jobmap.filterMarkers();
+	},
+	
 	/**
 	 * Show markers by type.
 	 */

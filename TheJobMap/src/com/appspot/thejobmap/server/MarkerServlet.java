@@ -197,7 +197,9 @@ public class MarkerServlet extends HttpServlet {
 			marker.updateEntity(entityMarker);
 			entityMarker.setProperty("numApply", 0);
 			entityMarker.setProperty("creationDate", new Date().getTime());
-			entityMarker.setProperty("type", me.privileges);
+			if (!"admin".equals(me.privileges) || marker.type != null) {
+				entityMarker.setProperty("type", me.privileges);
+			}
 			entityMarker.setProperty("author", me.email);
 			marker.convertFromEntity(entityMarker);
 			if (!marker.validate()) {
