@@ -140,15 +140,27 @@ h1,h2,h3,h4 {
 	margin: 1px 5px;
 }
 
+#infoWindow {
+	min-width: 225px;
+	max-width: 300px;
+	font-size: small;
+}
+#infoWindow #desc {
+	overflow: auto;
+	max-height: 250px;
+	white-space: pre-wrap;
+}
 #markerInfo {
 	width: 300px;
-	height: 100px;
+	height: 250px;
+}
+#markerTitle {
+	font-weight: bold;
 }
 #creationDate {
 	font-style: italic;
-	font-size: small;
 }
-#editMarkerButton {
+#infoWindow button {
 	float: right;
 }
 
