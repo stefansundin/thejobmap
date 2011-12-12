@@ -53,6 +53,13 @@ var jobmap = {
 	pins: {},
 	user: null,
 	
+	//Array with categories
+	categories: {administration: 'Administration', construction: 'Construction', projectLeader: 'Project leader', computerScience: 'Computer science',
+		disposalPromotion: 'Disposal & promotion', hotelRestaurant: 'Hotel & restaurant',medicalService: 'Health & medical service',
+		industrialManufacturing: 'Industrial manufacturing',installation: 'Installation', cultureMedia: 'Culture, media, design', 
+		military: 'Military', environmentalScience: 'Environmental science', pedagogical: 'Pedagogical', social: 'Social work', 
+		security: 'Security', technical: 'Technical', transport: 'Transport', other: 'Other', showRandoms: 'Display job searchers'},
+	
 	/**
 	 * Initialize The Job Map.
 	 */
@@ -140,7 +147,6 @@ var jobmap = {
 		// Add listeners
 		google.maps.event.addListener(map, 'zoom_changed', jobmap.zoomChanged);
 		google.maps.event.addListener(map, 'zoomButton', jobmap.zoomChangedByMarker);
-		var ostersund = new google.maps.LatLng(63.179151,14.633789);
 		
 		// Markers
 		jobmap.refreshMarkers();
@@ -148,31 +154,13 @@ var jobmap = {
 		// Side menu
 		jobmap.sideMenu();
 	},
-	
+
 	//The side menu
 	sideMenu: function(){
 		$('<div id="accordion"><h3><a href="#"><b>Find a job</b></a></h3><div>'+
 		'<p>Click on a city to see the available jobs in the area. Then uncheck the boxes for the categories you are not interested in.</p>'+
 		'<p><b>Filter jobs:</b></p>'+
-		'<label><input type="checkbox" id="administration" />Administration</label><br/>'+
-		'<label><input type="checkbox" id="construction" />Construction</label><br/>'+
-		'<label><input type="checkbox" id="projectLeader" />Project leader</label><br/>'+
-		'<label><input type="checkbox" id="computerScience" />Computer science</label><br/>'+
-		'<label><input type="checkbox" id="disposalPromotion" />Disposal & promotion</label><br/>'+
-		'<label><input type="checkbox" id="hotelRestaurant" />Hotel & restaurant</label><br/>'+
-		'<label><input type="checkbox" id="medicalService" />Health & medical service</label><br/>'+
-		'<label><input type="checkbox" id="industrialManufacturing" />Industrial manufacturing </label><br/>'+
-		'<label><input type="checkbox" id="installation" />Installation/maintenance</label><br/>'+
-		'<label><input type="checkbox" id="cultureMedia" />Culture, media, design</label><br/>'+
-		'<label><input type="checkbox" id="military" />Military</label><br/>'+
-		'<label><input type="checkbox" id="environmentalScience" />Environmental science</label><br/>'+
-		'<label><input type="checkbox" id="pedagogical" />Pedagogical</label><br/>'+
-		'<label><input type="checkbox" id="social" />Social work</label><br/>'+
-		'<label><input type="checkbox" id="security" />Security</label><br/>'+
-		'<label><input type="checkbox" id="technical" />Technical</label><br/>'+
-		'<label><input type="checkbox" id="transport" />Transport</label><br/>'+
-		'<label><input type="checkbox" id="other" />Other</label><br/>'+
-		'<label><input type="checkbox" id="showRandoms" />Display job searchers</label>'+
+		'<div id="categorieList"></div>'+
 		'</div>'+
 		
 		'<h3><a href="#"><b>Log in</b></a></h3><div>'+
@@ -203,6 +191,10 @@ var jobmap = {
 		'<h3><a href="#"><b>About The Job Map</b></a></h3><div><p>'+
 		'The Job Map is a project in course M7011E, Luleå university of technology, '+
 		'made by Alexandra Tsampikakis and Stefan Sundin 2011. </p></div>').appendTo('#sidebar');
+		
+		$.each(jobmap.categories, function(id, cat){
+			$('<label><input type="checkbox" id="'+id+'" />'+cat+'</label><br/>').appendTo('#categorieList');
+		});
 		
 		$('#accordion input').attr('checked', true);
 		$( "#accordion" ).accordion({ fillSpace: true });
