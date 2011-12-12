@@ -603,6 +603,12 @@ var jobmap = {
 				.val(marker.info)
 				.appendTo(info);
 			$('<br/>').appendTo(info);
+			if (jobmap.isAdmin()) {
+				var markerCat = $('<select id="markerCat"></select>').appendTo(info);
+				$.each(jobmap.categories, function(id,cat) {
+					$('<option></option>').attr('id',id).text(cat).appendTo(markerCat);
+				});
+			}
 			$('<button></button>').text((mode=='edit'?'Save changes':'Store marker')).click(function() {
 				if (mode == 'edit') {
 					marker.title = $('#markerTitle').val() || marker.title;

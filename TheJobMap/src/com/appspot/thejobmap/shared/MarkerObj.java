@@ -13,6 +13,7 @@ public class MarkerObj {
 	public Double lat;
 	public Double lng;
 	public String type;
+	public String cat;
 	public String near;
 	public String title;
 	public String info;
@@ -36,6 +37,7 @@ public class MarkerObj {
 		this.lat = (Double) entityMarker.getProperty("lat");
 		this.lng = (Double) entityMarker.getProperty("lng");
 		this.type = (String) entityMarker.getProperty("type");
+		this.cat = (String) entityMarker.getProperty("cat");
 		this.near = (String) entityMarker.getProperty("near");
 		this.title = (String) entityMarker.getProperty("title");
 		this.info = ((Text) entityMarker.getProperty("info")).getValue();
@@ -52,6 +54,7 @@ public class MarkerObj {
 	public void extend(MarkerObj other, Entity entityMe) {
 		this.lat = other.lat;
 		this.lng = other.lng;
+		this.cat = other.cat;
 		this.near = other.near;
 		this.info = other.info;
 
@@ -85,6 +88,7 @@ public class MarkerObj {
 		entityMarker.setProperty("near", this.near);
 		entityMarker.setProperty("title", this.title);
 		entityMarker.setProperty("info", new Text(this.info));
+		entityMarker.setProperty("cat", this.cat);
 		entityMarker.setProperty("type", this.type);
 		entityMarker.setProperty("author", this.author);
 		//entityMarker.setProperty("numApply", this.numApply);
