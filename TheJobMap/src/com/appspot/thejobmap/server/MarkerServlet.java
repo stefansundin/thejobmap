@@ -47,6 +47,7 @@ public class MarkerServlet extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
 		// Initialize stuff like streams
+		req.setCharacterEncoding("UTF-8");
 		res.setContentType("application/json; charset=UTF-8");
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
@@ -150,6 +151,7 @@ public class MarkerServlet extends HttpServlet {
 	 */
 	protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
 		// Initialize stuff like streams
+		req.setCharacterEncoding("UTF-8");
 		res.setContentType("application/json; charset=UTF-8");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(req.getInputStream()));
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
@@ -179,12 +181,14 @@ public class MarkerServlet extends HttpServlet {
 			resource[1] = me.email;
 		}
 		
+		/*
 		// Check privileges
 		if ("random".equals(me.privileges) && (resource.length <= 1 || !me.email.equals(resource[1]))) {
 			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 			writer.close();
 			return;
 		}
+		*/
 		
 		// Parse input
 		MarkerObj marker = gson.fromJson(reader, MarkerObj.class);
@@ -262,15 +266,20 @@ public class MarkerServlet extends HttpServlet {
 			writer.write(gson.toJson(new ResultObj("ok")));
 		}
 		else if (resource.length == 3
-				&& "apply".equals(resource[1])) {
-			// POST /marker/apply/<id>
+				&& "apply".equals(resource[2])) {
+			// POST /marker/<id>/apply
 			// Apply for a job
 			// Sends an email to the author of the pin
 			try {
-				entityMarker = db.get(getMarkerKey(resource[2]));
+				entityMarker = db.get(getMarkerKey(resource[1]));
 				dbMarker.convertFromEntity(entityMarker);
 			} catch (EntityNotFoundException e) {
 				writer.write(gson.toJson(new ResultObj("fail", "no such marker")));
+				writer.close();
+				return;
+			}
+			if (!"company".equals(dbMarker.type)) {
+				writer.write(gson.toJson(new ResultObj("fail", "not a company marker")));
 				writer.close();
 				return;
 			}

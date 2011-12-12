@@ -14,7 +14,7 @@ function initialize() {
 		center: new google.maps.LatLng(62.390369, 17.314453),
 		mapTypeId: google.maps.MapTypeId.ROADMAP,
 		streetViewControl: false,
-		mapTypeControl: false,
+		mapTypeControl: false
 	};
 	var map = new google.maps.Map(document.getElementById('map_canvas'), mapOptions);
 	
@@ -45,6 +45,9 @@ var jobmap = {
 	 * Initialize The Job Map.
 	 */
 	init: function(map) {
+		$.ajaxSetup({
+			contentType: 'application/json; charset=utf-8'
+		});
 		jobmap.map = map;
 		
 		// Console
@@ -72,66 +75,47 @@ var jobmap = {
 		
 		// Info Window
 		jobmap.infoWindow = new google.maps.InfoWindow({
-			maxWidth: 400,
+			maxWidth: 400
 		});
 		google.maps.event.addListener(jobmap.map, 'click', function() {
 			jobmap.infoWindow.close();
 		});
 		
 		// Define pins
-		var shadow = new google.maps.MarkerImage(
-			'images/pins/shadow.png',
-			new google.maps.Size(59, 32),
-			new google.maps.Point(0, 0),
-			new google.maps.Point(16, 32)
-		);
-		var shadow_pushpin = new google.maps.MarkerImage(
-			'images/pins/pushpin_shadow.png',
-			new google.maps.Size(59, 32),
-			new google.maps.Point(0, 0),
-			new google.maps.Point(9, 32)
-		);
-		jobmap.pins.red = {
-			icon: new google.maps.MarkerImage(
-				'images/pins/red-dot.png',
-				new google.maps.Size(32, 32),
-				new google.maps.Point(0, 0),
-				new google.maps.Point(16, 32)
-			),
-			shadow: shadow,
+		var shadow = {
+			pin:     [[59,32], [0,32], [16,32]],
+			pushpin: [[59,32], [0,32], [16,32]]
 		};
-		jobmap.pins.green = {
-			icon: new google.maps.MarkerImage(
-				'images/pins/green-dot.png',
-				new google.maps.Size(32, 32),
-				new google.maps.Point(0, 0),
-				new google.maps.Point(16, 32)
-			),
-			shadow: shadow,
+		$.each(shadow, function(i, m) {
+			shadow[i] = new google.maps.MarkerImage(
+				'/images/pins/pins.png',
+				new google.maps.Size(m[0][0],  m[0][1]),
+				new google.maps.Point(m[1][0], m[1][1]),
+				new google.maps.Point(m[2][0], m[2][1])
+			);
+		});
+		var pins = {
+			red:     [[32,32], [0,0],  [16,32], shadow.pin],
+			green:   [[32,32], [32,0], [16,32], shadow.pin],
+			blue:    [[32,32], [64,0], [16,32], shadow.pin],
+			pushpin: [[32,32], [96,0], [9,32],  shadow.pushpin]
 		};
-		jobmap.pins.blue = {
-			icon: new google.maps.MarkerImage(
-				'images/pins/blue-dot.png',
-				new google.maps.Size(32, 32),
-				new google.maps.Point(0, 0),
-				new google.maps.Point(16, 32)
-			),
-			shadow: shadow,
-		};
-		jobmap.pins.pushpin = {
-			icon: new google.maps.MarkerImage(
-				'images/pins/red-pushpin.png',
-				new google.maps.Size(32, 32),
-				new google.maps.Point(0, 0),
-				new google.maps.Point(9, 32)
-			),
-			shadow: shadow_pushpin,
-		};
+		$.each(pins, function(i, m) {
+			jobmap.pins[i] = {
+				icon: new google.maps.MarkerImage(
+					'/images/pins/pins.png',
+					new google.maps.Size(m[0][0],  m[0][1]),
+					new google.maps.Point(m[1][0], m[1][1]),
+					new google.maps.Point(m[2][0], m[2][1])
+				),
+				shadow: m[3]
+			};
+		});
 		jobmap.pins.company = jobmap.pins.red;
-		jobmap.pins.me = jobmap.pins.green;
-		jobmap.pins.random = jobmap.pins.blue;
-		jobmap.pins.city = jobmap.pins.pushpin;
-		jobmap.pins.admin = jobmap.pins.pushpin;
+		jobmap.pins.me      = jobmap.pins.green;
+		jobmap.pins.random  = jobmap.pins.blue;
+		jobmap.pins.city    = jobmap.pins.pushpin;
+		jobmap.pins.admin   = jobmap.pins.pushpin;
 		
 		// User
 		$('<div id="account"></div>').appendTo('#panel');
@@ -253,13 +237,22 @@ var jobmap = {
 	zoomChanged: function() {
 		var zoom = jobmap.map.getZoom();
 		//printInfo('New zoom level: '+zoom);
+		var filter_old = jobmap.filter.slice();
 		if (zoom > 7) {
 			jobmap.filter = ['company', 'random', 'admin'];
 		}
 		else {
 			jobmap.filter = ['city'];
 		}
-		jobmap.filterMarkers();
+		
+		// Filter markers if necessary
+		var array_diff = function(a,b) {
+			return a.filter(function(i) { return !(b.indexOf(i) > -1); });
+		};
+		var filter_diff = array_diff(jobmap.filter, filter_old);
+		if (filter_diff.length > 0) {
+			jobmap.filterMarkers();
+		}
 	},
 	
 	/**
@@ -289,7 +282,7 @@ var jobmap = {
 			//map: jobmap.map,
 			position: new google.maps.LatLng(marker.lat, marker.lng),
 			draggable: jobmap.canEdit(marker),
-			title: marker.title,
+			title: marker.title
 		});
 
 		/*
@@ -341,7 +334,8 @@ var jobmap = {
 		});
 		
 		// Add marker
-		if (jobmap.filter.indexOf(marker.type) != -1) {
+		if (jobmap.filter.indexOf(marker.type) != -1
+		 || jobmap.isOwner(marker)) {
 			mapMarker.setMap(jobmap.map);
 		}
 	},
@@ -371,7 +365,7 @@ var jobmap = {
 			draggable: true,
 			animation: google.maps.Animation.BOUNCE,
 			icon: jobmap.pins.me.icon,
-			shadow: jobmap.pins.me.shadow,
+			shadow: jobmap.pins.me.shadow
 		});
 		google.maps.event.addListenerOnce(jobmap.newMarker, 'mouseover', function() {
 			jobmap.newMarker.setAnimation(null);
@@ -405,8 +399,8 @@ var jobmap = {
 				lat: jobmap.newMarker.getPosition().lat(),
 				lng: jobmap.newMarker.getPosition().lng(),
 				info: $('#markerInfo').val(),
-				title: $('#markerTitle').val() || jobmap.user.name,
-				type: $('#markerType').val() || jobmap.user.privileges,
+				title: ($('#markerTitle').val() || jobmap.user.name),
+				type: ($('#markerType').val() || jobmap.user.privileges)
 			};
 			json = JSON.stringify(marker);
 			if (jobmap.user.privileges == 'random') {
@@ -421,7 +415,7 @@ var jobmap = {
 			url: '/rest/marker/'+(id?id:''),
 			type: 'POST',
 			dataType: 'json',
-			data: json,
+			data: json
 		})
 		.done(function(data) {
 			jobmap.infoWindow.close();
@@ -446,7 +440,7 @@ var jobmap = {
 	applyJob: function(marker) {
 		$.ajax({
 			url: '/rest/marker/apply/'+marker.id,
-			type: 'POST',
+			type: 'POST'
 		})
 		.done(function(data) {
 			printInfo('Reply: ', data);
@@ -463,7 +457,7 @@ var jobmap = {
 	deleteMarker: function(marker) {
 		$.ajax({
 			url: '/rest/marker/'+marker.id,
-			type: 'DELETE',
+			type: 'DELETE'
 		})
 		.done(function(data) {
 			printInfo('Reply: ', data);
@@ -587,7 +581,7 @@ var jobmap = {
 					jobmap.infoWindow.open(jobmap.map, marker.mapMarker);
 				}).appendTo(info);
 			}
-			if (marker.type == 'company' && jobmap.user.privileges == 'random') {
+			if (marker.type == 'company' && jobmap.user && jobmap.user.privileges == 'random') {
 				$('<button id="applyButton">Apply for job</button>').click(function() {
 					if (!jobmap.user) {
 						alert('You must log in first.');
@@ -635,11 +629,11 @@ var jobmap = {
 			buttons: {
 				Cancel: function() {
 					$(this).dialog('close');
-				},
+				}
 			},
 			close: function() {
 				$(this).remove();
-			},
+			}
 		});
 
 		$.getJSON('/rest/openid')
@@ -739,11 +733,11 @@ var jobmap = {
 			buttons: {
 				Done: function() {
 					$(this).dialog('close');
-				},
+				}
 			},
 			close: function() {
 				$(this).remove();
-			},
+			}
 		});
 		
 		$('<h4>List of users:</h4>').appendTo('#adminDialog');
@@ -821,11 +815,11 @@ var jobmap = {
 						name: $('#userName').val(),
 						age: $('#userAge').val(),
 						sex: $('#userSex').val(),
-						phonenumber: $('#userPhonenumber').val(),
+						phonenumber: $('#userPhonenumber').val()
 					};
 					if (jobmap.isAdmin()) {
 						$.extend(userObj, {
-							privileges: $('#userPrivileges').val(),
+							privileges: $('#userPrivileges').val()
 						});
 					}
 					printInfo('Sending user ('+who+') details: ', userObj);
@@ -834,7 +828,7 @@ var jobmap = {
 						url: '/rest/user/'+who,
 						type: 'POST',
 						dataType: 'json',
-						data: JSON.stringify(userObj),
+						data: JSON.stringify(userObj)
 					})
 					.done(function(data) {
 						printInfo('Reply: ', data);
@@ -852,7 +846,7 @@ var jobmap = {
 
 						$.ajax({
 							url: '/rest/user/'+who+'/cv',
-							type: 'DELETE',
+							type: 'DELETE'
 						})
 						.done(function(data) {
 							printInfo('Reply: ', data);
@@ -865,14 +859,14 @@ var jobmap = {
 				},
 				Cancel: function() {
 					$(this).dialog('close');
-				},
+				}
 			},
 			close: function() {
 				$(this).remove();
-			},
+			}
 		})
 		.keypress(function(e) {
-			if(e.which == 13) {
+			if (e.which == 13) {
 				$("#updateUserForm").parents('.ui-dialog').first().find('.ui-button').first().click();
 			}
 		});
@@ -932,7 +926,7 @@ var jobmap = {
 		.fail(function(xhr,txt) {
 			printError('Getting CV upload url failed: '+txt+'.');
 		});
-	},
+	}
 };
 
 // Dynamically resize map

@@ -34,6 +34,7 @@ public class OpenIDServlet extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
 		// Initialize stuff like streams
+		req.setCharacterEncoding("UTF-8");
 		res.setContentType("application/json; charset=UTF-8");
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 		//DatastoreService db = DatastoreServiceFactory.getDatastoreService();
