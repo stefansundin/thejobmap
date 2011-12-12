@@ -58,7 +58,7 @@ var jobmap = {
 		disposalPromotion: 'Disposal & promotion', hotelRestaurant: 'Hotel & restaurant',medicalService: 'Health & medical service',
 		industrialManufacturing: 'Industrial manufacturing',installation: 'Installation', cultureMedia: 'Culture, media, design', 
 		military: 'Military', environmentalScience: 'Environmental science', pedagogical: 'Pedagogical', social: 'Social work', 
-		security: 'Security', technical: 'Technical', transport: 'Transport', other: 'Other', showRandoms: 'Display job searchers'},
+		security: 'Security', technical: 'Technical', transport: 'Transport', other: 'Other'},
 	
 	/**
 	 * Initialize The Job Map.
@@ -193,8 +193,9 @@ var jobmap = {
 		'made by Alexandra Tsampikakis and Stefan Sundin 2011. </p></div>').appendTo('#sidebar');
 		
 		$.each(jobmap.categories, function(id, cat){
-			$('<label><input type="checkbox" id="'+id+'" />'+cat+'</label><br/>').appendTo('#categorieList');
+			$('<label><input type="checkbox" id="'+id+'" />'+cat+'</label><br/>').click(jobmap.filterMarkers).appendTo('#categorieList');
 		});
+		$('<label><input type="checkbox" id="showRandoms" />Display job searchers</label><br/>').appendTo('#categorieList');
 		
 		$('#accordion input').attr('checked', true);
 		$( "#accordion" ).accordion({ fillSpace: true });
@@ -273,8 +274,17 @@ var jobmap = {
 	 * Show markers by type.
 	 */
 	filterMarkers: function() {
+		var selectedCategories = [];
+		$('#categorieList :checked').each(function() {
+			selectedCategories.push($(this).attr('id'));
+		});
+		printInfo(selectedCategories.join(','));
 		$.each(jobmap.markers, function(i, marker) {
-			var show = (jobmap.filter.indexOf(marker.type) != -1 || jobmap.isOwner(marker));
+			printInfo(marker.cat+': '+selectedCategories.indexOf(marker.cat));
+			var show = (jobmap.showAll
+					|| jobmap.isOwner(marker)
+					|| (jobmap.filter.indexOf(marker.type) != -1
+							&& (marker.type != 'company' || selectedCategories.indexOf(marker.cat) != -1)));
 			var now = (marker.mapMarker && marker.mapMarker.getMap() != null);
 			if (show && !now) {
 				marker.mapMarker.setMap(jobmap.map);
@@ -414,7 +424,8 @@ var jobmap = {
 				lng: jobmap.newMarker.getPosition().lng(),
 				info: $('#markerInfo').val(),
 				title: ($('#markerTitle').val() || jobmap.user.name),
-				type: ($('#markerType').val() || jobmap.user.privileges)
+				type: ($('#markerType').val() || jobmap.user.privileges),
+				cat: ($('#markerCat').val() || null),
 			};
 			json = JSON.stringify(marker);
 			if (jobmap.user.privileges == 'random') {
@@ -544,6 +555,9 @@ var jobmap = {
 		
 		var info = $('<div id="infoWindow"></div>').addClass(mode);
 		if (mode == 'view') {
+			if (marker.type == 'company') {
+				$('<span class="right"></span>').text(jobmap.categories[marker.cat]).appendTo(info);
+			}
 			$('<h2></h2>').text(marker.title || "Titel").appendTo(info);
 			$('<div id="desc"></div>').text(marker.info).appendTo(info);
 			if (marker.type != 'city') {
@@ -598,10 +612,10 @@ var jobmap = {
 			}
 			if (jobmap.isAdmin()) {
 				$('<select id="markerType"></select>')
-					.append('<option>random</option>')
 					.append('<option>company</option>')
 					.append('<option>city</option>')
 					.append('<option>admin</option>')
+					.append('<option>random</option>')
 					.val(marker.type).appendTo(info);
 			}
 			$('<textarea id="markerInfo"></textarea>')
@@ -611,17 +625,21 @@ var jobmap = {
 				.val(marker.info)
 				.appendTo(info);
 			$('<br/>').appendTo(info);
-			if (jobmap.isAdmin()) {
+			// Add categories
+			if (marker.type == 'company' || jobmap.user.privileges == 'company' || jobmap.isAdmin()) {
 				var markerCat = $('<select id="markerCat"></select>').appendTo(info);
 				$.each(jobmap.categories, function(id,cat) {
-					$('<option></option>').attr('id',id).text(cat).appendTo(markerCat);
+					$('<option></option>').val(id).text(cat).appendTo(markerCat);
 				});
+				$(markerCat).val(marker.cat);
 			}
+			// Save button
 			$('<button></button>').text((mode=='edit'?'Save changes':'Store marker')).click(function() {
 				if (mode == 'edit') {
 					marker.title = $('#markerTitle').val() || marker.title;
 					marker.info = $('#markerInfo').val();
 					marker.type = $('#markerType').val() || marker.type;
+					marker.cat = $('#markerCat').val() || marker.cat;
 					jobmap.updatedMarkersPush(marker);
 					jobmap.infoWindow.close();
 				}
