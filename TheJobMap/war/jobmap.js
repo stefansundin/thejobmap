@@ -139,6 +139,8 @@ var jobmap = {
 		
 		// Add listeners
 		google.maps.event.addListener(map, 'zoom_changed', jobmap.zoomChanged);
+		google.maps.event.addListener(map, 'zoomButton', jobmap.zoomChangedByMarker);
+		var ostersund = new google.maps.LatLng(63.179151,14.633789);
 		
 		// Markers
 		jobmap.refreshMarkers();
@@ -169,8 +171,8 @@ var jobmap = {
 		'<label><input type="checkbox" id="security" />Security</label><br/>'+
 		'<label><input type="checkbox" id="technical" />Technical</label><br/>'+
 		'<label><input type="checkbox" id="transport" />Transport</label><br/>'+
-		'<label><input type="checkbox" id="other" />Other</label>'+
-		'<label><input type="checkbox" id="showRandoms" />Display other job searchers</label>'+
+		'<label><input type="checkbox" id="other" />Other</label><br/>'+
+		'<label><input type="checkbox" id="showRandoms" />Display job searchers</label>'+
 		'</div>'+
 		
 		'<h3><a href="#"><b>Log in</b></a></h3><div>'+
@@ -248,7 +250,6 @@ var jobmap = {
 	 */
 	zoomChanged: function() {
 		var zoom = jobmap.map.getZoom();
-		//printInfo('New zoom level: '+zoom);
 		var filter_old = jobmap.filter.slice();
 		if (zoom > 7) {
 			jobmap.filter = ['company', 'random', 'admin'];
@@ -258,13 +259,22 @@ var jobmap = {
 		}
 		
 		// Filter markers if necessary
-		var array_diff = function(a,b) {
-			return a.filter(function(i) { return !(b.indexOf(i) > -1); });
+		/*var array_diff = function(a,b) {
+			return a.filter(function(i) { return !(b.indexOf(i) > -1 || ); });
 		};
 		var filter_diff = array_diff(jobmap.filter, filter_old);
-		if (filter_diff.length > 0) {
+		if (filter_diff.length > 0) {*/
 			jobmap.filterMarkers();
-		}
+		//}
+	},
+	
+	/**
+	 * Zoom in if the user (anyone) pressed zoom when viewing a city marker.
+	 */
+	zoomChangedByMarker: function(marker) {
+		jobmap.map.setCenter(marker.mapMarker.getPosition());
+		jobmap.map.setZoom(8);
+		jobmap.zoomChanged();
 	},
 	
 	/**
@@ -565,6 +575,12 @@ var jobmap = {
 					}
 					jobmap.setInfoWindow(marker, 'apply');
 					jobmap.infoWindow.open(jobmap.map, marker.mapMarker);
+				}).appendTo(info);
+			}
+			if (marker.type == 'city') {
+				$('<button id="zoomButton">Press here to zoom</button>').click(function() {
+					jobmap.infoWindow.close();
+					jobmap.zoomChangedByMarker(marker);
 				}).appendTo(info);
 			}
 			if (marker.type != 'city') {
