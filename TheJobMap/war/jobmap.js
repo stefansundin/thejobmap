@@ -53,6 +53,13 @@ var jobmap = {
 	pins: {},
 	user: null,
 	
+	//Array with categories
+	categories: {administration: 'Administration', construction: 'Construction', projectLeader: 'Project leader', computerScience: 'Computer science',
+		disposalPromotion: 'Disposal & promotion', hotelRestaurant: 'Hotel & restaurant',medicalService: 'Health & medical service',
+		industrialManufacturing: 'Industrial manufacturing',installation: 'Installation', cultureMedia: 'Culture, media, design', 
+		military: 'Military', environmentalScience: 'Environmental science', pedagogical: 'Pedagogical', social: 'Social work', 
+		security: 'Security', technical: 'Technical', transport: 'Transport', other: 'Other', showRandoms: 'Display job searchers'},
+	
 	/**
 	 * Initialize The Job Map.
 	 */
@@ -139,6 +146,7 @@ var jobmap = {
 		
 		// Add listeners
 		google.maps.event.addListener(map, 'zoom_changed', jobmap.zoomChanged);
+		google.maps.event.addListener(map, 'zoomButton', jobmap.zoomChangedByMarker);
 		
 		// Markers
 		jobmap.refreshMarkers();
@@ -146,31 +154,13 @@ var jobmap = {
 		// Side menu
 		jobmap.sideMenu();
 	},
-	
+
 	//The side menu
 	sideMenu: function(){
 		$('<div id="accordion"><h3><a href="#"><b>Find a job</b></a></h3><div>'+
 		'<p>Click on a city to see the available jobs in the area. Then uncheck the boxes for the categories you are not interested in.</p>'+
 		'<p><b>Filter jobs:</b></p>'+
-		'<label><input type="checkbox" id="administration" />Administration</label><br/>'+
-		'<label><input type="checkbox" id="construction" />Construction</label><br/>'+
-		'<label><input type="checkbox" id="projectLeader" />Project leader</label><br/>'+
-		'<label><input type="checkbox" id="computerScience" />Computer science</label><br/>'+
-		'<label><input type="checkbox" id="disposalPromotion" />Disposal & promotion</label><br/>'+
-		'<label><input type="checkbox" id="hotelRestaurant" />Hotel & restaurant</label><br/>'+
-		'<label><input type="checkbox" id="medicalService" />Health & medical service</label><br/>'+
-		'<label><input type="checkbox" id="industrialManufacturing" />Industrial manufacturing </label><br/>'+
-		'<label><input type="checkbox" id="installation" />Installation/maintenance</label><br/>'+
-		'<label><input type="checkbox" id="cultureMedia" />Culture, media, design</label><br/>'+
-		'<label><input type="checkbox" id="military" />Military</label><br/>'+
-		'<label><input type="checkbox" id="environmentalScience" />Environmental science</label><br/>'+
-		'<label><input type="checkbox" id="pedagogical" />Pedagogical</label><br/>'+
-		'<label><input type="checkbox" id="social" />Social work</label><br/>'+
-		'<label><input type="checkbox" id="security" />Security</label><br/>'+
-		'<label><input type="checkbox" id="technical" />Technical</label><br/>'+
-		'<label><input type="checkbox" id="transport" />Transport</label><br/>'+
-		'<label><input type="checkbox" id="other" />Other</label>'+
-		'<label><input type="checkbox" id="showRandoms" />Display other job searchers</label>'+
+		'<div id="categorieList"></div>'+
 		'</div>'+
 		
 		'<h3><a href="#"><b>Log in</b></a></h3><div>'+
@@ -201,6 +191,10 @@ var jobmap = {
 		'<h3><a href="#"><b>About The Job Map</b></a></h3><div><p>'+
 		'The Job Map is a project in course M7011E, Luleå university of technology, '+
 		'made by Alexandra Tsampikakis and Stefan Sundin 2011. </p></div>').appendTo('#sidebar');
+		
+		$.each(jobmap.categories, function(id, cat){
+			$('<label><input type="checkbox" id="'+id+'" />'+cat+'</label><br/>').appendTo('#categorieList');
+		});
 		
 		$('#accordion input').attr('checked', true);
 		$( "#accordion" ).accordion({ fillSpace: true });
@@ -248,7 +242,6 @@ var jobmap = {
 	 */
 	zoomChanged: function() {
 		var zoom = jobmap.map.getZoom();
-		//printInfo('New zoom level: '+zoom);
 		var filter_old = jobmap.filter.slice();
 		if (zoom > 7) {
 			jobmap.filter = ['company', 'random', 'admin'];
@@ -258,13 +251,22 @@ var jobmap = {
 		}
 		
 		// Filter markers if necessary
-		var array_diff = function(a,b) {
-			return a.filter(function(i) { return !(b.indexOf(i) > -1); });
+		/*var array_diff = function(a,b) {
+			return a.filter(function(i) { return !(b.indexOf(i) > -1 || ); });
 		};
 		var filter_diff = array_diff(jobmap.filter, filter_old);
-		if (filter_diff.length > 0) {
+		if (filter_diff.length > 0) {*/
 			jobmap.filterMarkers();
-		}
+		//}
+	},
+	
+	/**
+	 * Zoom in if the user (anyone) pressed zoom when viewing a city marker.
+	 */
+	zoomChangedByMarker: function(marker) {
+		jobmap.map.setCenter(marker.mapMarker.getPosition());
+		jobmap.map.setZoom(8);
+		jobmap.zoomChanged();
 	},
 	
 	/**
@@ -565,6 +567,12 @@ var jobmap = {
 					}
 					jobmap.setInfoWindow(marker, 'apply');
 					jobmap.infoWindow.open(jobmap.map, marker.mapMarker);
+				}).appendTo(info);
+			}
+			if (marker.type == 'city') {
+				$('<button id="zoomButton">Press here to zoom</button>').click(function() {
+					jobmap.infoWindow.close();
+					jobmap.zoomChangedByMarker(marker);
 				}).appendTo(info);
 			}
 			if (marker.type != 'city') {
