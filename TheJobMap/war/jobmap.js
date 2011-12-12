@@ -451,15 +451,17 @@ var jobmap = {
 	 */
 	applyJob: function(marker) {
 		$.ajax({
-			url: '/rest/marker/apply/'+marker.id,
-			type: 'POST'
+			url: '/rest/marker/'+marker.id+'/apply',
+			type: 'POST',
+			data: JSON.stringify({info:$('#applyInfo').val()})
 		})
 		.done(function(data) {
 			printInfo('Reply: ', data);
-			$('#applyButton').text('Mail sent').attr('disabled',true);
 		})
 		.fail(function(xhr,txt) {
 			printError('applyJob failed: '+txt+'.');
+			$('#applyButton').text('Send application').attr('disabled', false);
+			$('#applyInfo').attr('disabled', false);
 		});
 	},
 
@@ -539,7 +541,49 @@ var jobmap = {
 		var timestamp = creationDate.getFullYear()+'-'+pad(creationDate.getMonth()+1)+'-'+pad(creationDate.getDate());
 		
 		var info = $('<div id="infoWindow"></div>').addClass(mode);
-		if (mode == 'edit' || mode == 'new') {
+		if (mode == 'view') {
+			$('<h2></h2>').text(marker.title || "Titel").appendTo(info);
+			$('<div id="desc"></div>').text(marker.info).appendTo(info);
+			if (marker.type != 'city') {
+				$(info).append('<hr/>');
+			}
+			if (jobmap.isOwner(marker) || jobmap.canEdit(marker)) {
+				$('<button>Edit marker</button>').click(function() {
+					if (!jobmap.canEdit(marker)) {
+						alert('Please refresh markers to edit a newly added marker.');
+						return;
+					}
+					jobmap.setInfoWindow(marker, 'edit');
+					jobmap.infoWindow.open(jobmap.map, marker.mapMarker);
+				}).appendTo(info);
+			}
+			if (marker.type == 'company' && jobmap.user && jobmap.user.privileges == 'random') {
+				$('<button>Apply for job</button>').click(function() {
+					if (!jobmap.user) {
+						alert('You must log in first.');
+						return;
+					}
+					jobmap.setInfoWindow(marker, 'apply');
+					jobmap.infoWindow.open(jobmap.map, marker.mapMarker);
+				}).appendTo(info);
+			}
+			if (marker.type != 'city') {
+				$('<div id="creationDate"></div>').text('Created on '+timestamp+'.').appendTo(info);
+			}
+		}
+		else if (mode == 'apply') {
+			$('<h3>Apply for job</h3>').appendTo(info);
+			$('<textarea id="applyInfo"></textarea>')
+				.attr('placeholder', 'Write a short motivation why we should hire you. Maximum 500 letters. Along with this text, your personal details and your CV will be attached automatically.')
+				.appendTo(info);
+			$('<br/>').appendTo(info);
+			$('<button id="applyButton">Send application</button>').click(function() {
+				$('#applyButton').text('Mail sent').attr('disabled', true);
+				$('#applyInfo').attr('disabled', true);
+				jobmap.applyJob(marker);
+			}).appendTo(info);
+		}
+		else if (mode == 'edit' || mode == 'new') {
 			$('<h3></h3>').text((mode=='edit'?'Edit marker':'Enter details')).appendTo(info);
 			if (jobmap.user.privileges != 'random') {
 				$('<input id="markerTitle" placeholder="Marker title" />').val(marker.title || jobmap.user.name).appendTo(info);
@@ -575,35 +619,6 @@ var jobmap = {
 				$('<button>Delete marker</button>').click(function() {
 					jobmap.deleteMarker(marker);
 				}).appendTo(info);
-			}
-		}
-		else if (mode == 'view') {
-			$('<h2></h2>').text(marker.title || "Titel").appendTo(info);
-			$('<div id="desc"></div>').text(marker.info).appendTo(info);
-			if (marker.type != 'city') {
-				$(info).append('<hr/>');
-			}
-			if (jobmap.isOwner(marker) || jobmap.canEdit(marker)) {
-				$('<button>Edit marker</button>').click(function() {
-					if (!jobmap.canEdit(marker)) {
-						alert('Please refresh markers to edit a newly added marker.');
-						return;
-					}
-					jobmap.setInfoWindow(marker, 'edit');
-					jobmap.infoWindow.open(jobmap.map, marker.mapMarker);
-				}).appendTo(info);
-			}
-			if (marker.type == 'company' && jobmap.user && jobmap.user.privileges == 'random') {
-				$('<button id="applyButton">Apply for job</button>').click(function() {
-					if (!jobmap.user) {
-						alert('You must log in first.');
-						return;
-					}
-					jobmap.applyJob(marker);
-				}).appendTo(info);
-			}
-			if (marker.type != 'city') {
-				$('<div id="creationDate"></div>').text('Created on '+timestamp+'.').appendTo(info);
 			}
 		}
 		

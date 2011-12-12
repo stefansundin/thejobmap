@@ -28,6 +28,8 @@ import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.gson.Gson;
 
 import java.util.Properties;
+import java.util.logging.Logger;
+
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -150,6 +152,10 @@ public class MarkerServlet extends HttpServlet {
 	 * POST - Addition or update of marker.
 	 */
 	protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+		Logger log = Logger.getLogger(MarkerServlet.class.getName());
+		log.info(req.getCharacterEncoding());
+		
+		
 		// Initialize stuff like streams
 		req.setCharacterEncoding("UTF-8");
 		res.setContentType("application/json; charset=UTF-8");
@@ -165,6 +171,8 @@ public class MarkerServlet extends HttpServlet {
 		String path = req.getPathInfo();
 		path = (path==null?"/":path);
 		System.out.println("POST /marker"+path);
+		System.out.flush();
+		//System.out.close();
 		String[] resource = path.split("/");
 		
 		// Fetch user details
@@ -209,7 +217,9 @@ public class MarkerServlet extends HttpServlet {
 			if (!marker.validate()) {
 				throw new ServletException("Invalid entry.");
 			}
-			
+
+			log.info("Title: "+marker.title);
+			log.info("Info: "+marker.info);
 			// Insert in database
 			db.put(entityMarker);
 			

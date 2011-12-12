@@ -150,10 +150,6 @@ h1,h2,h3,h4 {
 	max-height: 250px;
 	white-space: pre-wrap;
 }
-#infoWindow #markerInfo {
-	width: 300px;
-	height: 250px;
-}
 #infoWindow.new #markerInfo {
 	width: 300px;
 	height: 120px;
@@ -168,6 +164,8 @@ h1,h2,h3,h4 {
 	float: right;
 }
 #infoWindow textarea {
+	width: 300px;
+	height: 250px;
 	resize: none;
 }
 
