@@ -447,7 +447,7 @@ var jobmap = {
 				info: $('#markerInfo').val(),
 				title: ($('#markerTitle').val() || jobmap.user.name),
 				type: ($('#markerType').val() || jobmap.user.privileges),
-				cat: ($('#markerCat').val() || null),
+				cat: ($('#markerCat').val() || null)
 			};
 			json = JSON.stringify(marker);
 			if (jobmap.user.privileges == 'random') {
