@@ -134,6 +134,19 @@ var jobmap = {
 		jobmap.pins.random  = jobmap.pins.blue;
 		jobmap.pins.city    = jobmap.pins.pushpin;
 		jobmap.pins.admin   = jobmap.pins.pushpin;
+
+		// Create pin legend
+		var pinLegend = $('<div id="PinLegend">'+
+				'<span class="right ui-icon ui-icon-circle-close" title="Close"></span>'+
+				'<div><span class="city"></span> = A city</div>'+
+				'<div><span class="red"></span> = A job offer</div>'+
+				'<div><span class="green"></span> = You</div>'+
+				'<div><span class="blue"></span> = Someone else</div>'+
+				'</div>');
+		$('.ui-icon',pinLegend).click(function() {
+			$(pinLegend).hide();
+		});
+		map.controls[google.maps.ControlPosition.TOP_RIGHT].push(pinLegend[0]);
 		
 		// User
 		$('<div id="account"></div>').appendTo('#panel');
@@ -529,7 +542,7 @@ var jobmap = {
 		var info = $('<div id="infoWindow"></div>').addClass(mode);
 		if (mode == 'view') {
 			if (marker.type == 'company') {
-				$('<span class="right"></span>').text(jobmap.categories[marker.cat]).appendTo(info);
+				$('<span class="right" title="Category"></span>').text(jobmap.categories[marker.cat]).appendTo(info);
 			}
 			$('<h2></h2>').text(marker.title || "Titel").appendTo(info);
 			$('<div id="desc"></div>').text(marker.info).appendTo(info);
