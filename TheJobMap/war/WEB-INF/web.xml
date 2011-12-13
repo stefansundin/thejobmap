@@ -43,6 +43,11 @@
 	<url-pattern>/special/*</url-pattern>
 </servlet-mapping>
 
+<!-- Application cache -->
+<mime-mapping>
+	<extension>.appcache</extension>
+	<mime-type>text/cache-manifest</mime-type>
+</mime-mapping>
 
 <!-- Default page to serve -->
 <welcome-file-list>

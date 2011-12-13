@@ -1,0 +1,15 @@
+CACHE MANIFEST
+# 2011-12-13
+
+images/logo.png
+images/pins/pins.png
+images/openid/google.png
+images/openid/myopenid.png
+images/openid/yahoo.png
+favicon.ico
+jobmap.min.js
+jobmap.css
+upload-cv.html
+
+NETWORK:
+*
