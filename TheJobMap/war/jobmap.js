@@ -88,7 +88,7 @@ var jobmap = {
 		var mapControls = $('<div id="MapControls"></div>').css('opacity','0');
 		$('<button id="refreshMarkersButton">Refresh markers</button>').click(jobmap.refreshMarkers).appendTo(mapControls);
 		$('<button id="createMarkerButton">Create my marker</button>').click(jobmap.createMarker).attr('disabled',true).appendTo(mapControls);
-		$('<button id="saveMarkerButton">Save markers</button>').click(jobmap.saveMarkers).attr('disabled',true).appendTo(mapControls);
+		$('<button id="zoomOutButton">Zoom out</button>').click(jobmap.zoomChangedByButton).appendTo(mapControls);
 		jobmap.mapControls = mapControls;
 		map.controls[google.maps.ControlPosition.TOP_CENTER].push(mapControls[0]);
 		
@@ -147,6 +147,7 @@ var jobmap = {
 		// Add listeners
 		google.maps.event.addListener(map, 'zoom_changed', jobmap.zoomChanged);
 		google.maps.event.addListener(map, 'zoomButton', jobmap.zoomChangedByMarker);
+		google.maps.event.addListener(map, 'zoomOutButton', jobmap.zoomChangedByButton);
 		
 		// Markers
 		jobmap.refreshMarkers();
@@ -154,7 +155,7 @@ var jobmap = {
 		// Side menu
 		jobmap.sideMenu();
 	},
-
+	
 	//The side menu
 	sideMenu: function(){
 		$('<div id="accordion"><h3><a href="#"><b>Find a job</b></a></h3><div>'+
@@ -207,7 +208,6 @@ var jobmap = {
 	 * Clear all markers from the map.
 	 */
 	clearMarkers: function() {
-		$('#saveMarkerButton',jobmap.adminControls).attr('disabled', true);
 		if (jobmap.newMarker != null) {
 			jobmap.newMarker.setMap(null);
 			jobmap.newMarker = null;
@@ -259,6 +259,15 @@ var jobmap = {
 		if (filter_diff.length > 0) {*/
 			jobmap.filterMarkers();
 		//}
+	},
+	
+	/**
+	 * Zoom out button pressed:
+	 */
+	zoomChangedByButton: function() {
+		jobmap.map.setZoom(5);
+		jobmap.zoomChanged();
+		jobmap.map.setCenter(new google.maps.LatLng(62.390369, 17.314453));
 	},
 	
 	/**
@@ -524,14 +533,12 @@ var jobmap = {
 		}
 		
 		jobmap.updatedMarkers.push(marker);
-		$('#saveMarkerButton',jobmap.adminControls).attr('disabled', false);
 	},
 	
 	/**
 	 * Send all updated markers to postMarker().
 	 */
 	saveMarkers: function() {
-		$('#saveMarkerButton',jobmap.adminControls).attr('disabled', true);
 		printInfo('Saving '+jobmap.updatedMarkers.length+' markers.');
 		for (var i=0; i < jobmap.updatedMarkers.length; i++) {
 			jobmap.postMarker(jobmap.updatedMarkers[i]);
