@@ -142,11 +142,14 @@ var jobmap = {
 				'<div><span class="red"></span> = A job offer</div>'+
 				'<div><span class="green"></span> = You</div>'+
 				'<div><span class="blue"></span> = Someone else</div>'+
-				'</div>');
+				'</div>').css('opacity','0');
 		$('.ui-icon',pinLegend).click(function() {
-			$(pinLegend).hide();
+			$(pinLegend).fadeOut('fast');
 		});
 		map.controls[google.maps.ControlPosition.TOP_RIGHT].push(pinLegend[0]);
+		setTimeout(function() {
+			$(pinLegend).animate({opacity:1}, 1000);
+		}, 1000);
 		
 		// User
 		$('<div id="account"></div>').appendTo('#panel');
@@ -300,7 +303,6 @@ var jobmap = {
 			selectedCategories.push($(this).attr('id'));
 		});
 		$.each(jobmap.markers, function(i, marker) {
-			printInfo(marker.cat+': '+selectedCategories.indexOf(marker.cat));
 			var show = (jobmap.showAll
 					|| (jobmap.isOwner(marker) && !jobmap.isAdmin())
 					|| (jobmap.filter.indexOf(marker.type) != -1
