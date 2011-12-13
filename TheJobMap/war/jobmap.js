@@ -46,7 +46,6 @@ var jobmap = {
 	mapMarkers: [],
 	newMarker: null,
 	myMarkers: [],
-	updatedMarkers: [],
 	mapControls: null,
 	mapOverlay: null,
 	infoWindow: null,
@@ -287,11 +286,10 @@ var jobmap = {
 		$('#categorieList :checked').each(function() {
 			selectedCategories.push($(this).attr('id'));
 		});
-		printInfo(selectedCategories.join(','));
 		$.each(jobmap.markers, function(i, marker) {
 			printInfo(marker.cat+': '+selectedCategories.indexOf(marker.cat));
 			var show = (jobmap.showAll
-					|| jobmap.isOwner(marker)
+					|| (jobmap.isOwner(marker) && !jobmap.isAdmin())
 					|| (jobmap.filter.indexOf(marker.type) != -1
 							&& (marker.type != 'company' || selectedCategories.indexOf(marker.cat) != -1)));
 			var now = (marker.mapMarker && marker.mapMarker.getMap() != null);
@@ -363,7 +361,7 @@ var jobmap = {
 			jobmap.infoWindow.open(jobmap.map, mapMarker);
 		});
 		google.maps.event.addListener(mapMarker, 'dragend', function() {
-			jobmap.updatedMarkersPush(marker);
+			jobmap.postMarker(marker);
 		});
 		
 		// Add marker
@@ -515,38 +513,6 @@ var jobmap = {
 	},
 
 	/**
-	 * Pushes marker to updatedMarkers, but makes sure there are no duplicates.
-	 * Also updates mapMarker properties (like icon).
-	 */
-	updatedMarkersPush: function(marker) {
-		// Update mapMarker
-		var pin = jobmap.pins[(!jobmap.isAdmin()&&jobmap.isOwner(marker))?'me':marker.type];
-		marker.mapMarker.setIcon(pin.icon);
-		marker.mapMarker.setShadow(pin.shadow);
-		marker.mapMarker.setTitle(marker.title);
-		
-		// Check if marker is already in list
-		for (var i=0; i < jobmap.updatedMarkers.length; i++) {
-			if (marker == jobmap.updatedMarkers[i]) {
-				return;
-			}
-		}
-		
-		jobmap.updatedMarkers.push(marker);
-	},
-	
-	/**
-	 * Send all updated markers to postMarker().
-	 */
-	saveMarkers: function() {
-		printInfo('Saving '+jobmap.updatedMarkers.length+' markers.');
-		for (var i=0; i < jobmap.updatedMarkers.length; i++) {
-			jobmap.postMarker(jobmap.updatedMarkers[i]);
-		}
-		jobmap.updatedMarkers = [];
-	},
-	
-	/**
 	 * Create the contents of an info window for a marker.
 	 */
 	setInfoWindow: function(marker, mode) {
@@ -647,7 +613,7 @@ var jobmap = {
 					marker.info = $('#markerInfo').val();
 					marker.type = $('#markerType').val() || marker.type;
 					marker.cat = $('#markerCat').val() || marker.cat;
-					jobmap.updatedMarkersPush(marker);
+					jobmap.postMarker(marker);
 					jobmap.infoWindow.close();
 				}
 				else {
