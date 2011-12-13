@@ -78,7 +78,7 @@ var jobmap = {
 				$('#console').addClass('big').show();
 			}
 		});
-
+		
 		// Init OverlayView
 		jobmap.mapOverlay = new google.maps.OverlayView();
 		jobmap.mapOverlay.draw = function() {};
@@ -695,6 +695,8 @@ var jobmap = {
 			}
 		});
 
+		// Add google image now to make it appear faster
+		$('<img src="images/openid/google.png" id="openid-google" />').appendTo('#loginForm');
 		$.getJSON('/rest/openid')
 		.done(function(data) {
 			printInfo('OpenID providers: ', data);
@@ -707,7 +709,7 @@ var jobmap = {
 					',location=yes,status=yes,resizable=yes');
 			};
 			
-			$('<img src="images/openid/'+data[0].name+'.png" />').click(data[0],openLoginWindow).appendTo('#loginForm');
+			$('#openid-google').click(data[0],openLoginWindow);
 			var moreProviders = $('<div id="moreProviders"></div>');
 			$('<a>+ Show more providers</a>').click(function() {
 				$(this).replaceWith(moreProviders);
