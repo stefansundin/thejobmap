@@ -542,11 +542,8 @@ var jobmap = {
 		var creationDate = new Date(marker.creationDate);
 		var timestamp = creationDate.getFullYear()+'-'+pad(creationDate.getMonth()+1)+'-'+pad(creationDate.getDate());
 		
-		var info = $('<div id="infoWindow"></div>').addClass(mode);
+		var info = $('<div id="infoWindow"></div>').addClass(mode).addClass(marker.type);
 		if (mode == 'view') {
-			if (marker.type == 'company') {
-				$('<span class="right" title="Category"></span>').text(jobmap.categories[marker.cat]).appendTo(info);
-			}
 			$('<h2></h2>').text(marker.title || "Titel").appendTo(info);
 			$('<div id="desc"></div>').text(marker.info).appendTo(info);
 			if (marker.type != 'city') {
@@ -579,7 +576,10 @@ var jobmap = {
 				}).appendTo(info);
 			}
 			if (marker.type != 'city') {
-				$('<div id="creationDate"></div>').text('Created on '+timestamp+'.').appendTo(info);
+				$('<div class="creationDate"></div>').text('Created on '+timestamp+'.').appendTo(info);
+			}
+			if (marker.type == 'company') {
+				$('<span class="category" title="Category"></span>').text('Category: '+jobmap.categories[marker.cat]).appendTo(info);
 			}
 		}
 		else if (mode == 'apply') {

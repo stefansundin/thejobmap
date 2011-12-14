@@ -176,9 +176,13 @@ h1,h2,h3,h4 {
 #PinLegend div span.blue  { background-position:-64px 0px; }
 
 #infoWindow {
-	min-width: 225px;
+	min-width: 200px;
 	max-width: 300px;
 	font-size: small;
+}
+#infoWindow.company,
+#infoWindow.random {
+	min-width: 275px;
 }
 #infoWindow #desc {
 	overflow: auto;
@@ -192,7 +196,8 @@ h1,h2,h3,h4 {
 #infoWindow #markerTitle {
 	font-weight: bold;
 }
-#infoWindow #creationDate {
+#infoWindow .creationDate,
+#infoWindow .category {
 	font-style: italic;
 }
 #infoWindow button {

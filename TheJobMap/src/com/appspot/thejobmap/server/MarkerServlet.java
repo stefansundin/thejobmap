@@ -78,12 +78,14 @@ public class MarkerServlet extends HttpServlet {
 			privMarker = true;
 		}
 
+		/*
 		// Check privileges
 		if (privMarker && (!me.email.equals(resource[1]) || !"admin".equals(me.privileges))) {
 			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 			writer.close();
 			return;
 		}
+		*/
 
 		if (resource.length <= 1) {
 			// GET /marker/
@@ -93,10 +95,12 @@ public class MarkerServlet extends HttpServlet {
 			for (int i=0; i < dbList.size(); i++) {
 				MarkerObj marker = new MarkerObj();
 				marker.convertFromEntity(dbList.get(i));
+				/*
 				if ((entityMe == null || !me.email.equals(marker.author)) && !"admin".equals(me.privileges)) {
 					// Remove extra information if not needed
 					marker.author = null;
 				}
+				*/
 				if (marker.id.equals(me.email)) {
 					marker.id = "me";
 				}
@@ -358,12 +362,14 @@ public class MarkerServlet extends HttpServlet {
 			resource[1] = me.email;
 		}
 		
+/*
 		// Check privileges
 		if ((resource.length == 1 || !me.email.equals(resource[1])) && !"admin".equals(me.privileges)) {
 			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 			writer.close();
 			return;
 		}
+*/
 		
 		if (resource.length == 2) {
 			// DELETE /marker/<id>
