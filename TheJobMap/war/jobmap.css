@@ -176,7 +176,7 @@ h1,h2,h3,h4 {
 #PinLegend div span.blue  { background-position:-64px 0px; }
 
 #infoWindow {
-	min-width: 200px;
+	min-width: 210px;
 	max-width: 300px;
 	font-size: small;
 }

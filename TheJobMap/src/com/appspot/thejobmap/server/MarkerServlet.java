@@ -298,6 +298,7 @@ public class MarkerServlet extends HttpServlet {
 				return;
 			}
 			
+			/*
 			// Send email
 			Properties props = new Properties();
 			Session session = Session.getDefaultInstance(props, null);
@@ -315,6 +316,7 @@ public class MarkerServlet extends HttpServlet {
 			} catch (MessagingException e) {
 				throw new ServletException("MessagingException.");
 			}
+			*/
 			
 			// Update numApply
 			dbMarker.incApply();

@@ -489,6 +489,7 @@ var jobmap = {
 		$.ajax({
 			url: '/rest/marker/'+marker.id+'/apply',
 			type: 'POST',
+			dataType: 'json',
 			data: JSON.stringify({info:$('#applyInfo').val()})
 		})
 		.done(function(data) {
