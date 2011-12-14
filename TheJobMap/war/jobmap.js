@@ -495,11 +495,11 @@ var jobmap = {
 		.done(function(data) {
 			printInfo('Reply: ', data);
 		})
-		.fail(function(xhr,txt) {
+		/*.fail(function(xhr,txt) {
 			printError('applyJob failed: '+txt+'.');
 			$('#applyButton').text('Send application').attr('disabled', false);
 			$('#applyInfo').attr('disabled', false);
-		});
+		});*/
 	},
 
 	/**
@@ -665,6 +665,7 @@ var jobmap = {
 	 * Creates the login dialog.
 	 */
 	loginForm: function() {
+		jobmap.infoWindow.close();
 		$('<div id="loginForm"></div>').dialog({
 			title: 'Login with OpenID',
 			dialogClass: 'loginDialog',
