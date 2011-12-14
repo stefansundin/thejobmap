@@ -164,7 +164,7 @@ h1,h2,h3,h4 {
 	margin-bottom: 0;
 }
 #PinLegend div span {
-	background: url(images/pins/pins.png) no-repeat;
+	background: url(images/pins.png) no-repeat;
 	width: 32px;
 	height: 32px;
 	float: left;

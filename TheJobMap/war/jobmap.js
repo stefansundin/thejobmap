@@ -100,13 +100,14 @@ var jobmap = {
 		});
 		
 		// Define pins
+		// [size], [origin], [point]
 		var shadow = {
-			pin:     [[59,32], [0,32], [16,32]],
-			pushpin: [[59,32], [0,32], [16,32]]
+			pin:     [[59,32], [0,34],  [16,32]],
+			pushpin: [[59,32], [61,34], [9,32]]
 		};
 		$.each(shadow, function(i, m) {
 			shadow[i] = new google.maps.MarkerImage(
-				'/images/pins/pins.png',
+					'/images/pins.png',
 				new google.maps.Size(m[0][0],  m[0][1]),
 				new google.maps.Point(m[1][0], m[1][1]),
 				new google.maps.Point(m[2][0], m[2][1])
@@ -121,7 +122,7 @@ var jobmap = {
 		$.each(pins, function(i, m) {
 			jobmap.pins[i] = {
 				icon: new google.maps.MarkerImage(
-					'/images/pins/pins.png',
+						'/images/pins.png',
 					new google.maps.Size(m[0][0],  m[0][1]),
 					new google.maps.Point(m[1][0], m[1][1]),
 					new google.maps.Point(m[2][0], m[2][1])
