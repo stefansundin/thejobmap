@@ -18,10 +18,13 @@ public class MarkerObj {
 	public String title;
 	public String info;
 	public String author;
+	public String privacy;
 	public Long creationDate;
 	public Integer numApply;
 	
-	public MarkerObj() {}
+	public MarkerObj() {
+		privacy = "public";
+	}
 
 	/**
 	 * Convenience function to convert database entity to MarkerObj.
@@ -44,6 +47,7 @@ public class MarkerObj {
 		//this.numApply = ((Long) entityMarker.getProperty("numApply")).intValue();
 		this.creationDate = (Long) entityMarker.getProperty("creationDate");
 		this.author = (String) entityMarker.getProperty("author");
+		this.privacy = (String) entityMarker.getProperty("privacy");
 	}
 
 	/**
@@ -57,6 +61,7 @@ public class MarkerObj {
 		this.cat = other.cat;
 		this.near = other.near;
 		this.info = other.info;
+		this.privacy = other.privacy;
 
 		String myName = (String) entityMe.getProperty("name");
 		String myPrivileges = (String) entityMe.getProperty("privileges");
@@ -91,6 +96,7 @@ public class MarkerObj {
 		entityMarker.setProperty("cat", this.cat);
 		entityMarker.setProperty("type", this.type);
 		entityMarker.setProperty("author", this.author);
+		entityMarker.setProperty("privacy", this.privacy);
 		//entityMarker.setProperty("numApply", this.numApply);
 		entityMarker.setProperty("creationDate", this.creationDate);
 		entityMarker.setProperty("updatedDate", new Date().getTime());
@@ -101,8 +107,11 @@ public class MarkerObj {
 	 */
 	public Boolean validate() {
 		List<String> type = Arrays.asList("random", "company", "admin", "city");
+		List<String> privacy = Arrays.asList("public", "private");
 		
-		if (!type.contains(this.type) || this.lat.isNaN() || this.lng.isNaN()) {
+		if (this.lat.isNaN() || this.lng.isNaN()
+			|| !type.contains(this.type)
+			|| !privacy.contains(this.privacy)) {
 			return false;
 		}
 		return true;

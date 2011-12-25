@@ -12,6 +12,9 @@ a {
 	color: blue !important;
 	cursor: pointer;
 }
+input {
+	margin: 0;
+}
 input[readonly] {
 	background: buttonface;
 	font-size: small !important;
@@ -177,8 +180,13 @@ h1,h2,h3,h4 {
 
 #infoWindow {
 	min-width: 210px;
-	max-width: 300px;
+	max-width: 320px;
 	font-size: small;
+}
+#infoWindow textarea {
+	width: 320px;
+	height: 250px;
+	resize: none;
 }
 #infoWindow.company,
 #infoWindow.random {
@@ -190,7 +198,6 @@ h1,h2,h3,h4 {
 	white-space: pre-wrap;
 }
 #infoWindow.new #markerInfo {
-	width: 300px;
 	height: 120px;
 }
 #infoWindow #markerTitle {
@@ -205,11 +212,6 @@ h1,h2,h3,h4 {
 }
 #infoWindow #zoomButton {
 	float: none;
-}
-#infoWindow textarea {
-	width: 300px;
-	height: 250px;
-	resize: none;
 }
 
 

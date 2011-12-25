@@ -120,12 +120,12 @@ public class MarkerServlet extends HttpServlet {
 			writer.write(gson.toJson(markers));
 		}
 		else if (resource.length == 2
-				&& ("random".equals(resource[1]) || "company".equals(resource[1]))) {
-			// GET /marker/<random/company>
-			// Return list of all markers made by randoms (ordinary people) or companies
+				&& ("city".equals(resource[1]) || "random".equals(resource[1]) || "company".equals(resource[1]))) {
+			// GET /marker/<city/random/company>
+			// Return list of markers by type
 			Query q = new Query("Markers");
 			q.addFilter("type", FilterOperator.EQUAL, resource[1]);
-			if (!"company".equals(me.privileges)) {
+			if ("random".equals(me.privileges)) {
 				// "Only show my marker to companies"
 				q.addFilter("privacy", FilterOperator.EQUAL, "public");
 			}
@@ -232,7 +232,7 @@ public class MarkerServlet extends HttpServlet {
 			if (!marker.validate()) {
 				throw new ServletException("Invalid entry.");
 			}
-
+			
 			log.info("Title: "+marker.title);
 			log.info("Info: "+marker.info);
 			// Insert in database

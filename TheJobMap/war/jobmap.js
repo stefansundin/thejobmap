@@ -210,9 +210,9 @@ var jobmap = {
 		'made by Alexandra Tsampikakis and Stefan Sundin 2011. </p></div>').appendTo('#sidebar');
 		
 		$.each(jobmap.categories, function(id, cat){
-			$('<label><input type="checkbox" id="'+id+'" />'+cat+'</label><br/>').click(jobmap.filterMarkers).appendTo('#categorieList');
+			$('<label><input type="checkbox" id="'+id+'" /> '+cat+'</label><br/>').click(jobmap.filterMarkers).appendTo('#categorieList');
 		});
-		$('<label><input type="checkbox" id="showRandoms" />Display job searchers</label><br/>').appendTo('#categorieList');
+		$('<label><input type="checkbox" id="showRandoms" /> Display job searchers</label><br/>').appendTo('#categorieList');
 		
 		$('#accordion input').attr('checked', true);
 		$( "#accordion" ).accordion({ fillSpace: true });
@@ -448,7 +448,8 @@ var jobmap = {
 				info: $('#markerInfo').val(),
 				title: ($('#markerTitle').val() || jobmap.user.name),
 				type: ($('#markerType').val() || jobmap.user.privileges),
-				cat: ($('#markerCat').val() || null)
+				cat: ($('#markerCat').val() || null),
+				privacy: (($('#markerPrivacy').val()?"private":"public") || null)
 			};
 			json = JSON.stringify(marker);
 			if (jobmap.user.privileges == 'random') {
@@ -623,6 +624,11 @@ var jobmap = {
 				});
 				$(markerCat).val(marker.cat);
 			}
+			if (jobmap.user.privileges == 'random') {
+				printInfo((marker.privacy=='private'));
+				$('<label><input type="checkbox" id="markerPrivacy" /> Only show my marker to companies</label>').appendTo(info);
+				$('#markerPrivacy',info).attr('checked', (marker.privacy == 'private'));
+			}
 			// Save button
 			$('<button></button>').text((mode=='edit'?'Save changes':'Store marker')).click(function() {
 				if (mode == 'edit') {
@@ -630,6 +636,7 @@ var jobmap = {
 					marker.info = $('#markerInfo').val();
 					marker.type = $('#markerType').val() || marker.type;
 					marker.cat = $('#markerCat').val() || marker.cat;
+					marker.privacy = $('#markerPrivacy').val() || marker.privacy;
 					jobmap.postMarker(marker);
 					jobmap.infoWindow.close();
 				}
@@ -947,7 +954,7 @@ var jobmap = {
 		if (jobmap.user.privileges != 'company') {
 			if (user.cvUploaded) {
 				$('<p><a href="/rest/user/'+who+'/cv" target="_blank">View my CV</a></p>').appendTo('#updateUserForm');
-				$('<p><label><input type="checkbox" id="userDeleteCv" />Delete CV</label></p>').appendTo('#updateUserForm');
+				$('<p><label><input type="checkbox" id="userDeleteCv" /> Delete CV</label></p>').appendTo('#updateUserForm');
 			}
 			else {
 				jobmap.cvFrameLoaded = false;
