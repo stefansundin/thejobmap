@@ -179,7 +179,7 @@ h1,h2,h3,h4 {
 #PinLegend div span.blue  { background-position:-64px 0px; }
 
 #infoWindow {
-	min-width: 210px;
+	min-width: 225px;
 	max-width: 320px;
 	font-size: small;
 }
@@ -207,7 +207,8 @@ h1,h2,h3,h4 {
 #infoWindow .category {
 	font-style: italic;
 }
-#infoWindow button {
+#infoWindow.view button,
+#infoWindow.apply button {
 	float: right;
 }
 #infoWindow #zoomButton {

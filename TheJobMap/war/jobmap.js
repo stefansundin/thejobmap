@@ -87,7 +87,7 @@ var jobmap = {
 		var mapControls = $('<div id="MapControls"></div>').css('opacity','0');
 		$('<button id="refreshMarkersButton">Refresh markers</button>').click(jobmap.refreshMarkers).appendTo(mapControls);
 		$('<button id="createMarkerButton">Create my marker</button>').click(jobmap.createMarker).attr('disabled',true).appendTo(mapControls);
-		$('<button id="zoomOutButton">Zoom out</button>').click(jobmap.zoomChangedByButton).appendTo(mapControls);
+		$('<button id="zoomOutButton">Zoom out</button>').click(jobmap.resetZoom).appendTo(mapControls);
 		jobmap.mapControls = mapControls;
 		map.controls[google.maps.ControlPosition.TOP_CENTER].push(mapControls[0]);
 		
@@ -162,8 +162,6 @@ var jobmap = {
 		
 		// Add listeners
 		google.maps.event.addListener(map, 'zoom_changed', jobmap.zoomChanged);
-		google.maps.event.addListener(map, 'zoomButton', jobmap.zoomChangedByMarker);
-		google.maps.event.addListener(map, 'zoomOutButton', jobmap.zoomChangedByButton);
 		
 		// Markers
 		jobmap.refreshMarkers();
@@ -218,6 +216,49 @@ var jobmap = {
 		$( "#accordion" ).accordion({ fillSpace: true });
 	},
 	
+	/** Zoom */
+	
+	/**
+	 * Filter markers based on zoom level.
+	 */
+	zoomChanged: function() {
+		var zoom = jobmap.map.getZoom();
+		var filter_old = jobmap.filter.slice();
+		if (zoom > 7) {
+			jobmap.filter = ['company', 'random', 'admin'];
+		}
+		else {
+			jobmap.filter = ['city'];
+		}
+		
+		// Filter markers if necessary
+		/*var array_diff = function(a,b) {
+			return a.filter(function(i) { return !(b.indexOf(i) > -1 || ); });
+		};
+		var filter_diff = array_diff(jobmap.filter, filter_old);
+		if (filter_diff.length > 0) {*/
+			jobmap.filterMarkers();
+		//}
+	},
+	
+	/**
+	 * Zoom out button pressed:
+	 */
+	resetZoom: function() {
+		jobmap.map.setZoom(5);
+		jobmap.zoomChanged();
+		jobmap.map.setCenter(new google.maps.LatLng(62.390369, 17.314453));
+	},
+	
+	/**
+	 * Zoom in if the user (anyone) pressed zoom when viewing a city marker.
+	 */
+	zoomToMarker: function(marker) {
+		jobmap.map.setCenter(marker.mapMarker.getPosition());
+		jobmap.map.setZoom(8);
+		jobmap.zoomChanged();
+	},
+	
 	/** Markers */
 	
 	/**
@@ -254,47 +295,6 @@ var jobmap = {
 		});
 	},
 
-	/**
-	 * Filter markers based on zoom level.
-	 */
-	zoomChanged: function() {
-		var zoom = jobmap.map.getZoom();
-		var filter_old = jobmap.filter.slice();
-		if (zoom > 7) {
-			jobmap.filter = ['company', 'random', 'admin'];
-		}
-		else {
-			jobmap.filter = ['city'];
-		}
-		
-		// Filter markers if necessary
-		/*var array_diff = function(a,b) {
-			return a.filter(function(i) { return !(b.indexOf(i) > -1 || ); });
-		};
-		var filter_diff = array_diff(jobmap.filter, filter_old);
-		if (filter_diff.length > 0) {*/
-			jobmap.filterMarkers();
-		//}
-	},
-	
-	/**
-	 * Zoom out button pressed:
-	 */
-	zoomChangedByButton: function() {
-		jobmap.map.setZoom(5);
-		jobmap.zoomChanged();
-		jobmap.map.setCenter(new google.maps.LatLng(62.390369, 17.314453));
-	},
-	
-	/**
-	 * Zoom in if the user (anyone) pressed zoom when viewing a city marker.
-	 */
-	zoomChangedByMarker: function(marker) {
-		jobmap.map.setCenter(marker.mapMarker.getPosition());
-		jobmap.map.setZoom(8);
-		jobmap.zoomChanged();
-	},
-	
 	/**
 	 * Show markers by type.
 	 */
@@ -382,7 +382,7 @@ var jobmap = {
 		
 		// Add marker
 		if (jobmap.filter.indexOf(marker.type) != -1
-		 || jobmap.isOwner(marker)) {
+		 || (jobmap.isOwner(marker) && !jobmap.isAdmin())) {
 			mapMarker.setMap(jobmap.map);
 		}
 	},
@@ -449,7 +449,7 @@ var jobmap = {
 				title: ($('#markerTitle').val() || jobmap.user.name),
 				type: ($('#markerType').val() || jobmap.user.privileges),
 				cat: ($('#markerCat').val() || null),
-				privacy: (($('#markerPrivacy').val()?"private":"public") || null)
+				privacy: (($('#markerPrivacy').val()=='on'?'private':'public') || null)
 			};
 			json = JSON.stringify(marker);
 			if (jobmap.user.privileges == 'random') {
@@ -535,8 +535,8 @@ var jobmap = {
 	 */
 	setInfoWindow: function(marker, mode) {
 		if (!mode && marker == jobmap.newMarker) {
-			mode='new';
-			marker = {};
+			mode = 'new';
+			marker = {mapMarker: jobmap.newMarker};
 		}
 		if (!mode) mode='view';
 		
@@ -574,7 +574,7 @@ var jobmap = {
 			if (marker.type == 'city') {
 				$('<button id="zoomButton">Press here to zoom</button>').click(function() {
 					jobmap.infoWindow.close();
-					jobmap.zoomChangedByMarker(marker);
+					jobmap.zoomToMarker(marker);
 				}).appendTo(info);
 			}
 			if (marker.type != 'city') {
@@ -602,12 +602,22 @@ var jobmap = {
 				$('<input id="markerTitle" placeholder="Marker title" />').val(marker.title || jobmap.user.name).appendTo(info);
 			}
 			if (jobmap.isAdmin()) {
-				$('<select id="markerType"></select>')
-					.append('<option>company</option>')
-					.append('<option>city</option>')
-					.append('<option>admin</option>')
-					.append('<option>random</option>')
-					.val(marker.type).appendTo(info);
+				$('<select id="markerType">'+
+					'<option>company</option>'+
+					'<option>city</option>'+
+					'<option>admin</option>'+
+					'<option>random</option>'+
+					'</select>')
+					.val(marker.type).change(function() {
+						var type = $('#markerType').val();
+						// Update mapMarker icon
+						var pin = jobmap.pins[type];
+						marker.mapMarker.setIcon(pin.icon);
+						marker.mapMarker.setShadow(pin.shadow);
+						// Hide or show category
+						if (type == 'company') $('#markerCat').show();
+						else $('#markerCat').hide();
+					}).appendTo(info);
 			}
 			$('<textarea id="markerInfo"></textarea>')
 				.attr('placeholder',(jobmap.user.privileges=='random'
@@ -636,7 +646,7 @@ var jobmap = {
 					marker.info = $('#markerInfo').val();
 					marker.type = $('#markerType').val() || marker.type;
 					marker.cat = $('#markerCat').val() || marker.cat;
-					marker.privacy = $('#markerPrivacy').val() || marker.privacy;
+					marker.privacy = ($('#markerPrivacy').val()=='on'?'private':'public') || marker.privacy;
 					jobmap.postMarker(marker);
 					jobmap.infoWindow.close();
 				}
@@ -777,7 +787,7 @@ var jobmap = {
 	},
 
 	/**
-	 * Open the admin dialog.
+	 * Opens the admin dialog.
 	 */
 	admin: function() {
 		if ($('#adminDialog').length) return;
@@ -799,6 +809,17 @@ var jobmap = {
 			}
 		});
 		
+		// Settings
+		$('<h4>Settings:</h4>').appendTo('#adminDialog');
+		$('<label><input type="checkbox" id="showAllMarkers" /> Always show all markers</label>').appendTo('#adminDialog');
+		$('#showAllMarkers').click(function() {
+			jobmap.showAll = ($('#showAllMarkers').val() == 'on');
+			jobmap.filterMarkers();
+		});
+		$('<br/>').appendTo('#adminDialog');
+		$('<br/>').appendTo('#adminDialog');
+		
+		// List of users
 		$('<h4>List of users:</h4>').appendTo('#adminDialog');
 		$.getJSON('/rest/user')
 		.done(function(data) {
