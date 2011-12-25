@@ -495,11 +495,11 @@ var jobmap = {
 		.done(function(data) {
 			printInfo('Reply: ', data);
 		})
-		/*.fail(function(xhr,txt) {
+		.fail(function(xhr,txt) {
 			printError('applyJob failed: '+txt+'.');
 			$('#applyButton').text('Send application').attr('disabled', false);
 			$('#applyInfo').attr('disabled', false);
-		});*/
+		});
 	},
 
 	/**

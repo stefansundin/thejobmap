@@ -16,6 +16,11 @@ import javax.servlet.http.HttpServletResponse;
 import com.appspot.thejobmap.shared.MarkerObj;
 import com.appspot.thejobmap.shared.ResultObj;
 import com.appspot.thejobmap.shared.UserObj;
+import com.google.appengine.api.blobstore.BlobInfo;
+import com.google.appengine.api.blobstore.BlobInfoFactory;
+import com.google.appengine.api.blobstore.BlobKey;
+import com.google.appengine.api.blobstore.BlobstoreService;
+import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
@@ -30,13 +35,19 @@ import com.google.gson.Gson;
 import java.util.Properties;
 import java.util.logging.Logger;
 
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
 import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.util.ByteArrayDataSource;
 
 public class MarkerServlet extends HttpServlet {
 	
@@ -298,25 +309,58 @@ public class MarkerServlet extends HttpServlet {
 				return;
 			}
 			
-			/*
-			// Send email
-			Properties props = new Properties();
-			Session session = Session.getDefaultInstance(props, null);
-			String msgBody = "Hej Alex!";
-
 			try {
+				Properties props = new Properties();
+				Session session = Session.getDefaultInstance(props, null);
+				Multipart mp = new MimeMultipart();
+				
+				// Set metadata
 				Message msg = new MimeMessage(session);
-				msg.setFrom(new InternetAddress(me.email, me.name));
+				msg.setFrom(new InternetAddress("thejobmap@appspot.gserviceaccount.com", "The Job Map"));
 				msg.addRecipient(Message.RecipientType.TO, new InternetAddress(dbMarker.author));
 				msg.setSubject("Job Application: "+dbMarker.title);
-				msg.setText(msgBody);
+				
+				// Compose message
+				String msgBody = "<img src=\"http://www.thejobmap.se/images/logo.png\" /><br/>\n"+
+						"<br/>\n"+
+						"A job application has been submitted to one of your job offers.<br/>\n"+
+						"Blablabla...";
+				
+				// Add HTML and plain text parts
+				MimeBodyPart htmlPart = new MimeBodyPart();
+				htmlPart.setContent(msgBody, "text/html");
+				mp.addBodyPart(htmlPart);
+				msg.setText(msgBody.replaceAll("\\<.*?>",""));
+				
+				// Attach CV, if it exists
+				if (entityMe.hasProperty("cv")) {
+					// Get blob
+					res.setContentType("application/pdf");
+					BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
+					BlobKey blobKey = new BlobKey((String) entityMe.getProperty("cv"));
+					BlobInfoFactory blobInfoFactory = new BlobInfoFactory(db);
+					BlobInfo blobInfo = blobInfoFactory.loadBlobInfo(blobKey);
+					byte[] cv = blobstoreService.fetchData(blobKey, 0, 1024*1024);
+					
+					// Attach CV
+					MimeBodyPart attachment = new MimeBodyPart();
+					attachment.setFileName(blobInfo.getFilename());
+					DataSource src = new ByteArrayDataSource(cv, "application/pdf");
+					attachment.setDataHandler(new DataHandler(src));
+					mp.addBodyPart(attachment);
+				}
+				
+				// Set contents
+				msg.setContent(mp);
+				msg.saveChanges();
+				
+				// Send email
 				Transport.send(msg);
 			} catch (AddressException e) {
-				throw new ServletException("AddressException.");
+				throw new ServletException("AddressException");
 			} catch (MessagingException e) {
-				throw new ServletException("MessagingException.");
+				throw new ServletException("MessagingException");
 			}
-			*/
 			
 			// Update numApply
 			dbMarker.incApply();
