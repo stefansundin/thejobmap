@@ -137,7 +137,7 @@ public class UserServlet extends HttpServlet {
 			// Return CV
 			
 			// Make sure CV exists
-			if (!entityUser.hasProperty("cv")) {
+			if (!user.cvUploaded) {
 				res.setContentType("text/plain");
 				writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 				writer.write("Could not find CV. Try again soon.");
@@ -164,6 +164,14 @@ public class UserServlet extends HttpServlet {
 				&& "uploadUrl".equals(resource[3])) {
 			// GET /user/<email>/cv/uploadUrl
 			// Return upload url for CV
+
+			// Fail if CV already is uploaded
+			if (user.cvUploaded) {
+				writer.write(gson.toJson(new ResultObj("fail", "already has cv")));
+				writer.close();
+				return;
+			}
+			
 			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
 			UploadUrlObj uploadUrl = new UploadUrlObj();
 			uploadUrl.uploadUrl = blobstoreService.createUploadUrl("/special/cvUpload?email="+user.email, UploadOptions.Builder.withMaxUploadSizeBytes(1000000));

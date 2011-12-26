@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -11,6 +12,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.appspot.thejobmap.shared.UserObj;
 import com.google.appengine.api.blobstore.BlobInfo;
 import com.google.appengine.api.blobstore.BlobInfoFactory;
 import com.google.appengine.api.blobstore.BlobKey;
@@ -100,7 +102,7 @@ public class SpecialServlet extends HttpServlet {
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		//Gson gson = new Gson();
-		//UserObj user = new UserObj();
+		UserObj user = new UserObj();
 		
 		// Parse path
 		String path = req.getPathInfo();
@@ -115,26 +117,32 @@ public class SpecialServlet extends HttpServlet {
 		if (path.matches("/cvUpload") && req.getParameter("email") != null) {
 			String email = req.getParameter("email");
 			Entity entityUser = userServlet.getUser(email);
+			user.convertFromEntity(entityUser);
 			
-			// Get blob key
+			// Inspect uploaded files
 			BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
-			Map<String,BlobKey> blobs = blobstoreService.getUploadedBlobs(req);
-			BlobKey blobKey = blobs.get("cv");
+			Map<String,List<BlobKey>> blobs = blobstoreService.getUploads(req);
+			List<BlobKey> cvs = blobs.get("cv");
 			
 			// User tried to upload multiple files, or file with wrong name, or already has CV
-			if (blobs.size() > 1 || blobKey == null || entityUser.hasProperty("cv")) {
+			if (blobs.size() > 1 || cvs == null || cvs.size() > 1 || user.cvUploaded) {
 				// Delete all blobs
-				for (BlobKey blob : blobs.values()) {
-					blobstoreService.delete(blob);
+				for (List<BlobKey> i : blobs.values()) {
+					for (BlobKey j : i) {
+						blobstoreService.delete(j);
+					}
 				}
 				
 				// Send response
-				writer.write("<html>"+
-						"<body style=\"margin:0;\">Stop trying to hax plz.</body>"+
-						"</html>");
+				writer.write("<html><body style=\"margin:0;\">"+
+						"Stop trying to hax plz."+
+						"</body></html>");
 				writer.close();
 				return;
 			}
+			
+			// Get blob key
+			BlobKey blobKey = cvs.get(0);
 			
 			// Make sure it's a pdf
 			BlobInfoFactory blobInfoFactory = new BlobInfoFactory(db);
@@ -144,9 +152,9 @@ public class SpecialServlet extends HttpServlet {
 				blobstoreService.delete(blobKey);
 				
 				// Send response
-				writer.write("<html>"+
-						"<body style=\"margin:0;\">We only accept pdf files.</body>"+
-						"</html>");
+				writer.write("<html><body style=\"margin:0;\">"+
+						"We only accept pdf files."+
+						"</body></html>");
 				writer.close();
 				return;
 			}
@@ -156,9 +164,9 @@ public class SpecialServlet extends HttpServlet {
 			db.put(entityUser);
 			
 			// Finished
-			writer.write("<html>"+
-					"<body style=\"margin:0;\">CV uploaded.</body>"+
-					"</html>");
+			writer.write("<html><body style=\"margin:0;\">"+
+					"CV uploaded."+
+					"</body></html>");
 		}
 		else {
 			throw new ServletException("Not implemented yet.");
