@@ -16,11 +16,6 @@ import javax.servlet.http.HttpServletResponse;
 import com.appspot.thejobmap.shared.MarkerObj;
 import com.appspot.thejobmap.shared.ResultObj;
 import com.appspot.thejobmap.shared.UserObj;
-import com.google.appengine.api.blobstore.BlobInfo;
-import com.google.appengine.api.blobstore.BlobInfoFactory;
-import com.google.appengine.api.blobstore.BlobKey;
-import com.google.appengine.api.blobstore.BlobstoreService;
-import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
@@ -32,22 +27,7 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.gson.Gson;
 
-import java.util.Properties;
 import java.util.logging.Logger;
-
-import javax.activation.DataHandler;
-import javax.activation.DataSource;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.util.ByteArrayDataSource;
 
 public class MarkerServlet extends HttpServlet {
 	
@@ -285,86 +265,6 @@ public class MarkerServlet extends HttpServlet {
 			dbMarker.updateEntity(entityMarker);
 			
 			// Insert/update in database
-			db.put(entityMarker);
-			
-			// Send response
-			writer.write(gson.toJson(new ResultObj("ok")));
-		}
-		else if (resource.length == 3
-				&& "apply".equals(resource[2])) {
-			// POST /marker/<id>/apply
-			// Apply for a job
-			// Sends an email to the author of the pin
-			try {
-				entityMarker = db.get(getMarkerKey(resource[1]));
-				dbMarker.convertFromEntity(entityMarker);
-			} catch (EntityNotFoundException e) {
-				writer.write(gson.toJson(new ResultObj("fail", "no such marker")));
-				writer.close();
-				return;
-			}
-			if (!"company".equals(dbMarker.type)) {
-				writer.write(gson.toJson(new ResultObj("fail", "not a company marker")));
-				writer.close();
-				return;
-			}
-			
-			try {
-				Properties props = new Properties();
-				Session session = Session.getDefaultInstance(props, null);
-				Multipart mp = new MimeMultipart();
-				
-				// Set metadata
-				Message msg = new MimeMessage(session);
-				msg.setFrom(new InternetAddress("thejobmap@appspot.gserviceaccount.com", "The Job Map"));
-				msg.addRecipient(Message.RecipientType.TO, new InternetAddress(dbMarker.author));
-				msg.setSubject("Job Application: "+dbMarker.title);
-				
-				// Compose message
-				String msgBody = "<img src=\"http://www.thejobmap.se/images/logo.png\" /><br/>\n"+
-						"<br/>\n"+
-						"A job application has been submitted to one of your job offers.<br/>\n"+
-						"Blablabla...";
-				
-				// Add HTML and plain text parts
-				MimeBodyPart htmlPart = new MimeBodyPart();
-				htmlPart.setContent(msgBody, "text/html");
-				mp.addBodyPart(htmlPart);
-				msg.setText(msgBody.replaceAll("\\<.*?>",""));
-				
-				// Attach CV, if it exists
-				if (entityMe.hasProperty("cv")) {
-					// Get blob
-					res.setContentType("application/pdf");
-					BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
-					BlobKey blobKey = new BlobKey((String) entityMe.getProperty("cv"));
-					BlobInfoFactory blobInfoFactory = new BlobInfoFactory(db);
-					BlobInfo blobInfo = blobInfoFactory.loadBlobInfo(blobKey);
-					byte[] cv = blobstoreService.fetchData(blobKey, 0, 1024*1024);
-					
-					// Attach CV
-					MimeBodyPart attachment = new MimeBodyPart();
-					attachment.setFileName(blobInfo.getFilename());
-					DataSource src = new ByteArrayDataSource(cv, "application/pdf");
-					attachment.setDataHandler(new DataHandler(src));
-					mp.addBodyPart(attachment);
-				}
-				
-				// Set contents
-				msg.setContent(mp);
-				msg.saveChanges();
-				
-				// Send email
-				Transport.send(msg);
-			} catch (AddressException e) {
-				throw new ServletException("AddressException");
-			} catch (MessagingException e) {
-				throw new ServletException("MessagingException");
-			}
-			
-			// Update numApply
-			dbMarker.incApply();
-			dbMarker.updateEntity(entityMarker);
 			db.put(entityMarker);
 			
 			// Send response

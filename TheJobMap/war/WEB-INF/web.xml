@@ -17,12 +17,12 @@
 </servlet-mapping>
 
 <servlet>
-	<servlet-name>openIDServlet</servlet-name>
-	<servlet-class>com.appspot.thejobmap.server.OpenIDServlet</servlet-class>
+	<servlet-name>applyServlet</servlet-name>
+	<servlet-class>com.appspot.thejobmap.server.ApplyServlet</servlet-class>
 </servlet>
 <servlet-mapping>
-	<servlet-name>openIDServlet</servlet-name>
-	<url-pattern>/rest/openid</url-pattern>
+	<servlet-name>applyServlet</servlet-name>
+	<url-pattern>/rest/apply/*</url-pattern>
 </servlet-mapping>
 
 <servlet>
@@ -32,6 +32,15 @@
 <servlet-mapping>
 	<servlet-name>userServlet</servlet-name>
 	<url-pattern>/rest/user/*</url-pattern>
+</servlet-mapping>
+
+<servlet>
+	<servlet-name>openIDServlet</servlet-name>
+	<servlet-class>com.appspot.thejobmap.server.OpenIDServlet</servlet-class>
+</servlet>
+<servlet-mapping>
+	<servlet-name>openIDServlet</servlet-name>
+	<url-pattern>/rest/openid</url-pattern>
 </servlet-mapping>
 
 <servlet>

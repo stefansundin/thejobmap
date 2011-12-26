@@ -484,26 +484,6 @@ var jobmap = {
 	},
 
 	/**
-	 * Applies for a job.
-	 */
-	applyJob: function(marker) {
-		$.ajax({
-			url: '/rest/marker/'+marker.id+'/apply',
-			type: 'POST',
-			dataType: 'json',
-			data: JSON.stringify({info:$('#applyInfo').val()})
-		})
-		.done(function(data) {
-			printInfo('Reply: ', data);
-		})
-		.fail(function(xhr,txt) {
-			printError('applyJob failed: '+txt+'.');
-			$('#applyButton').text('Send application').attr('disabled', false);
-			$('#applyInfo').attr('disabled', false);
-		});
-	},
-
-	/**
 	 * Delete a marker.
 	 */
 	deleteMarker: function(marker) {
@@ -527,6 +507,32 @@ var jobmap = {
 		})
 		.fail(function(xhr,txt) {
 			printError('Delete marker failed: '+txt+'.');
+		});
+	},
+
+	/**
+	 * Applies for a job.
+	 */
+	applyJob: function(marker) {
+		var motivation = $('#applyInfo').val();
+		if (motivation.length > 500) {
+			alert('The motivation is limited to 500 characters. You have used '+motivation.length+'.');
+			return;
+		}
+		
+		$.ajax({
+			url: '/rest/apply/'+marker.id,
+			type: 'POST',
+			dataType: 'json',
+			data: JSON.stringify({motivation:motivation})
+		})
+		.done(function(data) {
+			printInfo('Reply: ', data);
+		})
+		.fail(function(xhr,txt) {
+			printError('applyJob failed: '+txt+'.');
+			$('#applyButton').text('Send application').attr('disabled', false);
+			$('#applyInfo').attr('disabled', false);
 		});
 	},
 
