@@ -20,10 +20,11 @@ public class MarkerObj {
 	public String author;
 	public String privacy;
 	public Long creationDate;
-	public Integer numApply;
+	public Long numApply;
 	
 	public MarkerObj() {
 		privacy = "public";
+		numApply = 0L;
 	}
 
 	/**
@@ -44,7 +45,7 @@ public class MarkerObj {
 		this.near = (String) entityMarker.getProperty("near");
 		this.title = (String) entityMarker.getProperty("title");
 		this.info = ((Text) entityMarker.getProperty("info")).getValue();
-		//this.numApply = ((Long) entityMarker.getProperty("numApply")).intValue();
+		this.numApply = ((Long) entityMarker.getProperty("numApply"));
 		this.creationDate = (Long) entityMarker.getProperty("creationDate");
 		this.author = (String) entityMarker.getProperty("author");
 		this.privacy = (String) entityMarker.getProperty("privacy");
@@ -97,7 +98,7 @@ public class MarkerObj {
 		entityMarker.setProperty("type", this.type);
 		entityMarker.setProperty("author", this.author);
 		entityMarker.setProperty("privacy", this.privacy);
-		//entityMarker.setProperty("numApply", this.numApply);
+		entityMarker.setProperty("numApply", this.numApply);
 		entityMarker.setProperty("creationDate", this.creationDate);
 		entityMarker.setProperty("updatedDate", new Date().getTime());
 	}
@@ -121,7 +122,6 @@ public class MarkerObj {
 	 * Increment numApply.
 	 */
 	public void incApply() {
-		/*if (this.numApply == null) this.numApply = 0;
-		this.numApply++;*/
+		this.numApply++;
 	}
 }

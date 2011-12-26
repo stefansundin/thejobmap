@@ -19,14 +19,15 @@ public class UserObj {
 	public String logoutUrl;
 	public String auth_key;
 	
-	public UserObj() {}
+	public UserObj() {
+		this.privileges = "random";
+	}
 	
 	/**
 	 * Convenience function to convert database entity to UserObj.
 	 */
 	public void convertFromEntity(Entity entityUser) {
 		if (entityUser == null) {
-			this.privileges = "random";
 			return;
 		}
 		this.email = entityUser.getKey().getName();
@@ -79,5 +80,12 @@ public class UserObj {
 			return false;
 		}
 		return true;
+	}
+	
+	/**
+	 * Is the user an admin?
+	 */
+	public Boolean isAdmin() {
+		return ("admin".equals(this.privileges));
 	}
 }

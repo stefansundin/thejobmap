@@ -457,6 +457,7 @@ var jobmap = {
 				//marker.title = $('#markerTitle').val() || jobmap.user.name;
 			}
 			marker.creationDate = new Date().getTime();
+			marker.author = jobmap.user.email;
 		}
 		printInfo('Sending marker: ', json);
 		
@@ -467,6 +468,7 @@ var jobmap = {
 			data: json
 		})
 		.done(function(data) {
+			printInfo('Reply: ', data);
 			jobmap.infoWindow.close();
 			if (newMarker) {
 				jobmap.newMarker.setMap(null);
@@ -474,6 +476,9 @@ var jobmap = {
 				marker.author = jobmap.user.email;
 				if (jobmap.user.privileges == 'random') {
 					marker.id = jobmap.user.email;
+				}
+				else {
+					marker.id = data.id;
 				}
 				jobmap.addMarker(marker);
 			}
@@ -514,20 +519,15 @@ var jobmap = {
 	 * Applies for a job.
 	 */
 	applyJob: function(marker) {
-		var motivation = $('#applyInfo').val();
-		if (motivation.length > 500) {
-			alert('The motivation is limited to 500 characters. You have used '+motivation.length+'.');
-			return;
-		}
-		
 		$.ajax({
 			url: '/rest/apply/'+marker.id,
 			type: 'POST',
 			dataType: 'json',
-			data: JSON.stringify({motivation:motivation})
+			data: JSON.stringify({motivation:$('#applyInfo').val()})
 		})
 		.done(function(data) {
 			printInfo('Reply: ', data);
+			marker.numApply++;
 		})
 		.fail(function(xhr,txt) {
 			printError('applyJob failed: '+txt+'.');
@@ -557,12 +557,8 @@ var jobmap = {
 			if (marker.type != 'city') {
 				$(info).append('<hr/>');
 			}
-			if (jobmap.isOwner(marker) || jobmap.canEdit(marker)) {
+			if (jobmap.canEdit(marker)) {
 				$('<button>Edit marker</button>').click(function() {
-					if (!jobmap.canEdit(marker)) {
-						alert('Please refresh markers to edit a newly added marker.');
-						return;
-					}
 					jobmap.setInfoWindow(marker, 'edit');
 					jobmap.infoWindow.open(jobmap.map, marker.mapMarker);
 				}).appendTo(info);
@@ -587,7 +583,8 @@ var jobmap = {
 				$('<div class="creationDate"></div>').text('Created on '+timestamp+'.').appendTo(info);
 			}
 			if (marker.type == 'company') {
-				$('<span class="category" title="Category"></span>').text('Category: '+jobmap.categories[marker.cat]).appendTo(info);
+				$('<span class="category" title="Category"></span>').text('Category: '+jobmap.categories[marker.cat]).append('<br/>').appendTo(info);
+				$('<span class="numApply" title="Number of people who have applied for this job"></span>').text('Applications: '+marker.numApply).appendTo(info);
 			}
 		}
 		else if (mode == 'apply') {
@@ -597,6 +594,11 @@ var jobmap = {
 				.appendTo(info);
 			$('<br/>').appendTo(info);
 			$('<button id="applyButton">Send application</button>').click(function() {
+				var motivation = $('#applyInfo').val();
+				if (motivation.length > 500) {
+					alert('The motivation is limited to 500 characters. You have used '+motivation.length+'.');
+					return;
+				}
 				$('#applyButton').text('Mail sent').attr('disabled', true);
 				$('#applyInfo').attr('disabled', true);
 				jobmap.applyJob(marker);
@@ -767,9 +769,9 @@ var jobmap = {
 			
 			}
 			$.each(jobmap.markers, function(i, marker) {
-				if (jobmap.isOwner(marker)) {
-					marker.mapMarker.setIcon(jobmap.pins.me);
-					marker.mapMarker.setShadow(jobmap.pins.shadow);
+				if (jobmap.isOwner(marker) && !jobmap.isAdmin()) {
+					marker.mapMarker.setIcon(jobmap.pins.me.icon);
+					marker.mapMarker.setShadow(jobmap.pins.me.shadow);
 				}
 				if (jobmap.canEdit(marker)) {
 					marker.mapMarker.setDraggable(true);

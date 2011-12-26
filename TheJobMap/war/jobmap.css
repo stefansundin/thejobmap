@@ -190,7 +190,7 @@ h1,h2,h3,h4 {
 }
 #infoWindow.company,
 #infoWindow.random {
-	min-width: 275px;
+	min-width: 300px;
 }
 #infoWindow #desc {
 	overflow: auto;
@@ -204,7 +204,8 @@ h1,h2,h3,h4 {
 	font-weight: bold;
 }
 #infoWindow .creationDate,
-#infoWindow .category {
+#infoWindow .category,
+#infoWindow .numApply {
 	font-style: italic;
 }
 #infoWindow.view button,

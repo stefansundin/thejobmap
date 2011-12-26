@@ -71,7 +71,7 @@ public class MarkerServlet extends HttpServlet {
 
 		/*
 		// Check privileges
-		if (privMarker && (!me.email.equals(resource[1]) || !"admin".equals(me.privileges))) {
+		if (privMarker && (!me.email.equals(resource[1]) || !me.isAdmin())) {
 			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 			writer.close();
 			return;
@@ -82,12 +82,16 @@ public class MarkerServlet extends HttpServlet {
 			// GET /marker/
 			// Return list of all public markers
 			Query q = new Query("Markers");
+			if ("random".equals(me.privileges)) {
+				// "Only show my marker to companies"
+				q.addFilter("privacy", FilterOperator.NOT_EQUAL, "private");
+			}
 			List<Entity> dbList = db.prepare(q).asList(FetchOptions.Builder.withLimit(1000));
 			for (int i=0; i < dbList.size(); i++) {
 				MarkerObj marker = new MarkerObj();
 				marker.convertFromEntity(dbList.get(i));
 				/*
-				if ((entityMe == null || !me.email.equals(marker.author)) && !"admin".equals(me.privileges)) {
+				if ((entityMe == null || !me.email.equals(marker.author)) && !me.isAdmin()) {
 					// Remove extra information if not needed
 					marker.author = null;
 				}
@@ -107,13 +111,13 @@ public class MarkerServlet extends HttpServlet {
 			q.addFilter("type", FilterOperator.EQUAL, resource[1]);
 			if ("random".equals(me.privileges)) {
 				// "Only show my marker to companies"
-				q.addFilter("privacy", FilterOperator.EQUAL, "public");
+				q.addFilter("privacy", FilterOperator.NOT_EQUAL, "private");
 			}
 			List<Entity> dbList = db.prepare(q).asList(FetchOptions.Builder.withLimit(1000));
 			for (int i=0; i < dbList.size(); i++) {
 				MarkerObj marker = new MarkerObj();
 				marker.convertFromEntity(dbList.get(i));
-				if (entityMe != null && !"admin".equals(me.privileges) && !me.email.equals(marker.author)) {
+				if (entityMe != null && !me.isAdmin() && !me.email.equals(marker.author)) {
 					// Remove extra information if not needed
 					marker.author = null;
 				}
@@ -202,9 +206,9 @@ public class MarkerServlet extends HttpServlet {
 			// New marker
 			entityMarker = new Entity("Markers");
 			marker.updateEntity(entityMarker);
-			entityMarker.setProperty("numApply", 0);
+			entityMarker.setProperty("numApply", 0L);
 			entityMarker.setProperty("creationDate", new Date().getTime());
-			if (!"admin".equals(me.privileges) || marker.type == null) {
+			if (!me.isAdmin() || marker.type == null) {
 				entityMarker.setProperty("type", me.privileges);
 			}
 			entityMarker.setProperty("author", me.email);
@@ -217,9 +221,10 @@ public class MarkerServlet extends HttpServlet {
 			log.info("Info: "+marker.info);
 			// Insert in database
 			db.put(entityMarker);
+			Long id = entityMarker.getKey().getId();
 			
 			// Send response
-			writer.write(gson.toJson(new ResultObj("ok")));
+			writer.write(gson.toJson(new ResultObj("ok", id)));
 		}
 		else if (resource.length == 2) {
 			// POST /marker/<id/email>
@@ -310,7 +315,7 @@ public class MarkerServlet extends HttpServlet {
 		
 /*
 		// Check privileges
-		if ((resource.length == 1 || !me.email.equals(resource[1])) && !"admin".equals(me.privileges)) {
+		if ((resource.length == 1 || !me.email.equals(resource[1])) && !me.isAdmin()) {
 			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 			writer.close();
 			return;

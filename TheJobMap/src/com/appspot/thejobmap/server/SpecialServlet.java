@@ -113,7 +113,7 @@ public class SpecialServlet extends HttpServlet {
 		// This is a special case since this is done through a file upload
 		// Apparently since this is used as a callback after the file upload, it can not access the User session object
 		// This is why the email is passed through the url instead. We trust this value since it the upload url was generated for this user.
-		// This is safe since we will get an exception at getUploadedBlobs() if nothing was uploaded
+		// This is safe since we will get an exception at getUploads() if this is not a blob upload callback request.
 		if (path.matches("/cvUpload") && req.getParameter("email") != null) {
 			String email = req.getParameter("email");
 			Entity entityUser = userServlet.getUser(email);
