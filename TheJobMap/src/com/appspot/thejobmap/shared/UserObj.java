@@ -70,16 +70,26 @@ public class UserObj {
 	}
 	
 	/**
-	 * Validate object.
+	 * Validate object. This automatically sanitize()s the object too.
 	 */
 	public Boolean validate() {
+		sanitize();
+		
 		List<String> sex = Arrays.asList("Not telling", "Male", "Female", "Other");
 		List<String> privileges = Arrays.asList("random", "company", "admin");
 		
-		if (!sex.contains(this.sex) || !privileges.contains(this.privileges) /*|| Integer.parseInt(this.age) < 0*/) {
+		if (!sex.contains(this.sex) || !privileges.contains(this.privileges)) {
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Function to make the data in this object safe to use.
+	 */
+	public void sanitize() {
+		this.name = this.name.replaceAll("\\<.*?>","");
+		this.phonenumber = this.phonenumber.replaceAll("\\<.*?>","");
 	}
 	
 	/**
