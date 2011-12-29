@@ -5,6 +5,8 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Properties;
 
 import javax.activation.DataHandler;
@@ -38,8 +40,6 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
-import com.google.appengine.repackaged.org.joda.time.format.DateTimeFormat;
-import com.google.appengine.repackaged.org.joda.time.format.DateTimeFormatter;
 import com.google.gson.Gson;
 
 public class ApplyServlet extends HttpServlet {
@@ -125,7 +125,10 @@ public class ApplyServlet extends HttpServlet {
 				msg.setSubject("Job Application: "+dbMarker.title);
 				
 				// Get birthday in "July 9, 1989" format.
-				DateTimeFormatter fmt = DateTimeFormat.forPattern("MMMM d, y");
+				String months[] = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
+				Calendar bday = Calendar.getInstance();
+				bday.setTime(new Date(me.birthday));
+				String birthday = months[bday.get(Calendar.MONTH)]+" "+bday.get(Calendar.DATE)+", "+bday.get(Calendar.YEAR);
 				
 				// Compose message
 				String msgBody = "<p><a href=\"http://www.thejobmap.se/\"><img src=\"http://www.thejobmap.se/images/logo.png\" /></a></p>\n"+
@@ -134,7 +137,7 @@ public class ApplyServlet extends HttpServlet {
 						"\n"+
 						"<b>Information about the applicant:</b><br/>\n"+
 						"<b>Name:</b> "+me.name+"<br/>\n"+
-						"<b>Date of birth:</b> "+fmt.print(me.birthday)+"<br/>\n"+
+						"<b>Date of birth:</b> "+birthday+"<br/>\n"+
 						"<b>Sex:</b> "+me.sex+"<br/>\n"+
 						"<b>Phone number:</b> "+me.phonenumber+"<br/>\n"+
 						"<b>Email:</b> "+me.email+"<br/>\n"+
