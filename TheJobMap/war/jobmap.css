@@ -115,8 +115,9 @@ h1,h2,h3,h4 {
 #accordion .ui-accordion-content {
 	background: #e4efd7 !important;
 	background-image: none !important;
+	padding: 0 1.5em 1em 1.2em !important;
 }
-#accordion a {
+#accordion h3 a {
 	background-color: rgb(201,223,175);
 	color: #4b5341 !important;
 }

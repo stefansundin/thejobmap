@@ -24,9 +24,9 @@ public class OpenIDServlet extends HttpServlet {
 	 * List of OpenID providers.
 	 */
 	String providers[][] = {
-			{ "google",    "google.com/accounts/o8/id" },
-			{ "myopenid",  "myopenid.com" },
-			{ "yahoo",     "yahoo.com" },
+			{ "Google",    "google.com/accounts/o8/id" },
+			{ "myOpenID",  "myopenid.com" },
+			{ "Yahoo",     "yahoo.com" },
 	};
 	
 	/**

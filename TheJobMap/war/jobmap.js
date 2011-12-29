@@ -4,7 +4,6 @@
  * @author Alexandra Tsampikakis
  */
 
-/* http://closure-compiler.appspot.com/home
 
 // ==ClosureCompiler==
 // @compilation_level SIMPLE_OPTIMIZATIONS
@@ -12,9 +11,8 @@
 // @code_url http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js
 // @code_url http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.js
 // ==/ClosureCompiler==
-
 // <insert jobmap.js here>
-*/
+// http://closure-compiler.appspot.com/home
 
 
 /**
@@ -172,45 +170,52 @@ var jobmap = {
 	
 	//The side menu
 	sideMenu: function(){
-		$('<div id="accordion"><h3><a href="#"><b>Find a job</b></a></h3><div>'+
-		'<p>Click on a city to see the available jobs in the area. Then uncheck the boxes for the categories you are not interested in.</p>'+
+		$('<div id="accordion">'+
+		'<h3><a href="#"><b>Find a job</b></a></h3>'+
+		'<div>'+
+		'<p>Click on a city to see available jobs in the area.</p>'+
+		'<p>Then uncheck the boxes for the categories you are not interested in.</p>'+
 		'<p><b>Filter jobs:</b></p>'+
-		'<div id="categorieList"></div>'+
+		'<div id="categoryList"></div>'+
 		'</div>'+
 		
-		'<h3><a href="#"><b>Log in</b></a></h3><div>'+
-		'<p>The first time you log in, you can either update '+
-		'your profile with personal information or just view all '+
-		'the markers on the map. When you are logged in you can apply '+
-		'for the jobs you are interested in.</p>'+
+		'<h3><a href="#"><b>Log in</b></a></h3>'+
+		'<div>'+
+		'<p>You must log in to apply for jobs on The Job Map.</p>'+
+		'<p>When you log in for the first time, you should update your profile and upload a CV. Your CV is automatically attached to your job applications.</p>'+
+		'<p>When that is done, feel free to apply for the jobs your are interested in.</p>'+
 		'</div>'+
 		
-		'<h3><a href="#"><b>Apply for a job</b></a></h3><div>'+
-		'<p>If you want to apply for a job, just click on the marker '+
-		'and press apply for job. Make sure you have a CV uploaded, write a '+
-		'personal note to the company and then press send.</p>'+  
+		'<h3><a href="#"><b>Apply for a job</b></a></h3>'+
+		'<div>'+
+		'<p>To apply for a job, simply click the marker and then press the button called "Apply for job". You will be asked to write a short motivation to send along with your application.</p>'+
+		'<p>Make sure you have a CV uploaded since it will be attached to your job application.</p>'+
 		'</div>'+
 		
-		'<h3><a href="#"><b>Put yourself on the map</b></a></h3><div>'+
-		'<p>Place a marker where you live so all the '+
-		'companies can see you. You can choose if you want to be visible '+
-		'for just companies or both companies and other poeple who is looking for a job.</p>'+
+		'<h3><a href="#"><b>Put yourself on the map</b></a></h3>'+
+		'<div>'+
+		'<p>Press the "Create my marker" button to put your own marker on the map. Place it where you live so all companies in your area can see you.</p>'+
+		'<p>You can choose if you want the visibility of your marker to be limited to companies.</p>'+
 		'</div>'+
 		
-		'<h3><a href="#"><b>Information for companies</b></a></h3><div>'+
-		'<p>If you are a company and you want to put markers on the map, then send us an email and we will upgrade your account. '+
-		' </p>'+
-		'<p><b>Email: </b><a href="#">company@thejobmap.se</a></p>'+
+		'<h3><a href="#"><b>Information for companies</b></a></h3>'+
+		'<div>'+
+		'<p>If you are a company and you want to put job offers on the map, then send us an email and we will upgrade your account.</p>'+
+		'<p>You must send the email from the same account that you use to login to The Job Map. You must also include details about your company.</p>'+
+		'<p><b>Email: </b><a href="mailto:company@thejobmap.se?subject=Company%20upgrade%20request" target="_blank">company@thejobmap.se</a></p>'+
 		'</div>'+
 		
-		'<h3><a href="#"><b>About The Job Map</b></a></h3><div><p>'+
-		'The Job Map is a project in course M7011E, Luleå university of technology, '+
-		'made by Alexandra Tsampikakis and Stefan Sundin 2011. </p></div>').appendTo('#sidebar');
+		'<h3><a href="#"><b>About The Job Map</b></a></h3>'+
+		'<div>'+
+		'<p>The Job Map is a project by <b>Alexandra Tsampikakis</b> and <b>Stefan Sundin</b>.</p>'+
+		'<p>You can contact us at <i>firstname</i>@thejobmap.se.</p>'+
+		'</div>'+
+		'</div>').appendTo('#sidebar');
 		
 		$.each(jobmap.categories, function(id, cat){
-			$('<label><input type="checkbox" id="'+id+'" /> '+cat+'</label><br/>').click(jobmap.filterMarkers).appendTo('#categorieList');
+			$('<label><input type="checkbox" id="'+id+'" /> '+cat+'</label><br/>').click(jobmap.filterMarkers).appendTo('#categoryList');
 		});
-		$('<label><input type="checkbox" id="showRandoms" /> Display job searchers</label><br/>').appendTo('#categorieList');
+		$('<label><input type="checkbox" id="showRandoms" /> Display job searchers</label><br/>').appendTo('#categoryList');
 		
 		$('#accordion input').attr('checked', true);
 		$( "#accordion" ).accordion({ fillSpace: true });
@@ -300,7 +305,7 @@ var jobmap = {
 	 */
 	filterMarkers: function() {
 		var selectedCategories = [];
-		$('#categorieList :checked').each(function() {
+		$('#categoryList :checked').each(function() {
 			selectedCategories.push($(this).attr('id'));
 		});
 		$.each(jobmap.markers, function(i, marker) {
@@ -379,6 +384,12 @@ var jobmap = {
 		google.maps.event.addListener(mapMarker, 'dragend', function() {
 			jobmap.postMarker(marker);
 		});
+		if (marker.type == 'city') {
+			google.maps.event.addListener(mapMarker, 'dblclick', function() {
+				jobmap.infoWindow.close();
+				jobmap.zoomToMarker(marker);
+			});
+		}
 		
 		// Add marker
 		if (jobmap.filter.indexOf(marker.type) != -1
@@ -712,7 +723,7 @@ var jobmap = {
 		});
 
 		// Add google image now to make it appear faster
-		$('<img src="images/openid/google.png" id="openid-google" />').appendTo('#loginForm');
+		$('<img src="images/openid/google.png" id="openid-google" title="Login with your Google account" />').appendTo('#loginForm');
 		$.getJSON('/rest/openid')
 		.done(function(data) {
 			printInfo('OpenID providers: ', data);
@@ -732,7 +743,7 @@ var jobmap = {
 				$('#loginForm').dialog('option', 'height', 400);
 			}).appendTo('#loginForm');
 			$.each(data.slice(1), function(key, val) {
-				$('<img src="images/openid/'+val.name+'.png" />').click(val,openLoginWindow).appendTo(moreProviders);
+				$('<img src="images/openid/'+val.name.toLowerCase()+'.png" title="Login with your '+val.name+' account" />').click(val,openLoginWindow).appendTo(moreProviders);
 			});
 		})
 		.fail(function(xhr,txt) {
