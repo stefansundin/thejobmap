@@ -52,8 +52,8 @@ var jobmap = {
 	
 	//Array with categories
 	categories: {administration: 'Administration', construction: 'Construction', projectLeader: 'Project leader', computerScience: 'Computer science',
-		disposalPromotion: 'Disposal & promotion', hotelRestaurant: 'Hotel & restaurant',medicalService: 'Health & medical service',
-		industrialManufacturing: 'Industrial manufacturing',installation: 'Installation', cultureMedia: 'Culture, media, design', 
+		disposalPromotion: 'Disposal & promotion', hotelRestaurant: 'Hotel & restaurant', medicalService: 'Health & medical service',
+		industrialManufacturing: 'Industrial manufacturing', installation: 'Installation', cultureMedia: 'Culture, media, design', 
 		military: 'Military', environmentalScience: 'Environmental science', pedagogical: 'Pedagogical', social: 'Social work', 
 		security: 'Security', technical: 'Technical', transport: 'Transport', other: 'Other'},
 	
@@ -62,12 +62,13 @@ var jobmap = {
 	 */
 	init: function(map) {
 		$.ajaxSetup({
-			contentType: 'application/json; charset=utf-8'
+			contentType: 'application/json; charset=UTF-8'
 		});
 		jobmap.map = map;
 		
 		// Console
 		$('body').keypress(function(e) {
+			if (document.activeElement != document.body) return;
 			if (e.which == 167) { // '§'
 				$('#console').removeClass('big').toggle();
 			}
@@ -910,9 +911,14 @@ var jobmap = {
 			width: 380,
 			buttons: {
 				Save: function() {
+					var birthday = new Date($('#userBirthday').val());
+					if (isNaN(birthday.getTime())) {
+						return alert('You must enter a valid date for your birthday. Use the format YYYY-MM-DD.');
+					}
+					
 					var userObj = {
 						name: $('#userName').val(),
-						age: $('#userAge').val(),
+						birthday: birthday.getTime(),
 						sex: $('#userSex').val(),
 						phonenumber: $('#userPhonenumber').val()
 					};
@@ -965,20 +971,24 @@ var jobmap = {
 			}
 		})
 		.keypress(function(e) {
+			// Enable enter keypress to save
 			if (e.which == 13) {
-				$("#updateUserForm").parents('.ui-dialog').first().find('.ui-button').first().click();
+				$('#updateUserForm').parents('.ui-dialog').first().find('.ui-button').first().click();
 			}
 		});
 		$('<p>Email: </p>').add($('<input type="text" id="userEmail" readonly />').val(user.email)).appendTo('#updateUserForm');
 		$('<p>Name: </p>').add($('<input type="text" id="userName" placeholder="Your name" />').val(user.name)).appendTo('#updateUserForm');
 		if (jobmap.user.privileges != 'company') {
-		$('<p>Age: </p>').add($('<input type="number" id="userAge" placeholder="Your age" />').val(user.age)).appendTo('#updateUserForm');
-		$('<p>Sex: </p>').add(($('<select id="userSex"></select>')
-				.append($('<option>Not telling</option>'))
-				.append($('<option>Male</option>'))
-				.append($('<option>Female</option>'))
-				.append($('<option>Other</option>'))
-			).val(user.sex)).appendTo('#updateUserForm');
+			var pad = function(n) { return ('0'+n).slice(-2); };
+			var bday = new Date(user.birthday);
+			bday = bday.getFullYear()+'-'+pad(bday.getMonth()+1)+'-'+pad(bday.getDate());
+			$('<p>Date of birth: </p>').add($('<input type="text" id="userBirthday" placeholder="YYYY-MM-DD" />').val(bday)).appendTo('#updateUserForm');
+			$('<p>Sex: </p>').add(($('<select id="userSex"></select>')
+					.append($('<option>Not telling</option>'))
+					.append($('<option>Male</option>'))
+					.append($('<option>Female</option>'))
+					.append($('<option>Other</option>'))
+				).val(user.sex)).appendTo('#updateUserForm');
 		}
 		$('<p>Phone number: </p>').add($('<input type="tel" id="userPhonenumber" placeholder="Your phone number" />').val(user.phonenumber)).appendTo('#updateUserForm');
 		if (jobmap.isAdmin()) {

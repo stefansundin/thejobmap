@@ -389,7 +389,7 @@ public class UserServlet extends HttpServlet {
 			name = email.substring(0, email.indexOf('@'));
 		}
 		entityUser.setProperty("name", name);
-		entityUser.setProperty("age", null);
+		entityUser.setProperty("birthday", null);
 		entityUser.setProperty("sex", "Not telling");
 		entityUser.setProperty("phonenumber", null);
 		entityUser.setProperty("privileges", "random");
