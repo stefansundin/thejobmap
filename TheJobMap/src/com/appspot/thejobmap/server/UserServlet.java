@@ -36,6 +36,12 @@ import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
 import com.google.gson.Gson;
 
+/**
+ * This servlet handles users.
+ * 
+ * @author Stefan Sundin
+ * @author Alexandra Tsampikakis
+ */
 public class UserServlet extends HttpServlet {
 	
 	private static final long serialVersionUID = 2179295545476158168L;

@@ -42,6 +42,12 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.gson.Gson;
 
+/**
+ * This servlet handles job applications.
+ * 
+ * @author Stefan Sundin
+ * @author Alexandra Tsampikakis
+ */
 public class ApplyServlet extends HttpServlet {
 
 	private static final long serialVersionUID = -265508910555704883L;

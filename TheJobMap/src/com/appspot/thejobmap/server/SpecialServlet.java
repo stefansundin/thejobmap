@@ -26,7 +26,11 @@ import com.google.appengine.api.users.UserServiceFactory;
 
 /**
  * This servlet handles special requests.
- * Right now these are only callbacks from other parts of the website, like OpenID login return and file upload. 
+ * Right now these are only callbacks from other parts of the website, like OpenID login return and file upload.
+ * The user does not make requests directly to this servlet.
+ * 
+ * @author Stefan Sundin
+ * @author Alexandra Tsampikakis
  */
 public class SpecialServlet extends HttpServlet {
 	

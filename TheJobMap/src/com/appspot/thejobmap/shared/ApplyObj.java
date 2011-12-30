@@ -1,8 +1,17 @@
 package com.appspot.thejobmap.shared;
 
+/**
+ * This is the object that is sent to the server when the user wants to apply for a job.
+ * 
+ * @author Stefan Sundin
+ * @author Alexandra Tsampikakis
+ */
 public class ApplyObj {
 	public String motivation;
-	
+
+	/**
+	 * The no-arg constructor.
+	 */
 	public ApplyObj() {}
 	
 	/**

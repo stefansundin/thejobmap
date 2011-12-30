@@ -16,6 +16,12 @@ import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
 import com.google.gson.Gson;
 
+/**
+ * This servlet handles OpenID-specific requests.
+ * 
+ * @author Stefan Sundin
+ * @author Alexandra Tsampikakis
+ */
 public class OpenIDServlet extends HttpServlet {
 	
 	private static final long serialVersionUID = 6738917481662936792L;

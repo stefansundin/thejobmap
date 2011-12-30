@@ -5,6 +5,14 @@ import java.util.List;
 
 import com.google.appengine.api.datastore.Entity;
 
+/**
+ * This is the object with information about the user that is passed between the server and the client.
+ * The server sends it when the user requests his or her details,
+ * and the client sends it when the user wants to update his or her details.
+ * 
+ * @author Stefan Sundin
+ * @author Alexandra Tsampikakis
+ */
 public class UserObj {
 	public String email;
 	public String name;
@@ -19,6 +27,9 @@ public class UserObj {
 	public String logoutUrl;
 	public String auth_key;
 	
+	/**
+	 * The no-arg constructor with default values for this object.
+	 */
 	public UserObj() {
 		privileges = "random";
 	}
@@ -69,15 +80,16 @@ public class UserObj {
 	}
 	
 	/**
-	 * Validate object. This automatically sanitize()s the object too.
+	 * Validate object.
+	 * This automatically sanitize()s the object too.
 	 */
 	public Boolean validate() {
 		sanitize();
 		
-		List<String> sex = Arrays.asList("Not telling", "Male", "Female", "Other");
-		List<String> privileges = Arrays.asList("random", "company", "admin");
+		List<String> all_sex = Arrays.asList("Not telling", "Male", "Female", "Other");
+		List<String> all_privileges = Arrays.asList("random", "company", "admin");
 		
-		if (!sex.contains(sex) || !privileges.contains(privileges)) {
+		if (!all_sex.contains(sex) || !all_privileges.contains(privileges)) {
 			return false;
 		}
 		return true;

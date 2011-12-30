@@ -1,18 +1,17 @@
-/**
- * The Job Map.
- * @author Stefan Sundin
- * @author Alexandra Tsampikakis
- */
-
-
 // ==ClosureCompiler==
 // @compilation_level SIMPLE_OPTIMIZATIONS
 // @output_file_name jobmap.min.js
 // @code_url http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js
 // @code_url http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.js
 // ==/ClosureCompiler==
-// <insert jobmap.js here>
 // http://closure-compiler.appspot.com/home
+// <insert jobmap.js here>
+
+/**
+ * The Job Map.
+ * @author Stefan Sundin
+ * @author Alexandra Tsampikakis
+ */
 
 
 /**
@@ -36,6 +35,9 @@ function initialize() {
 	resizeMap();
 }
 
+/**
+ * The jobmap object.
+ */
 var jobmap = {
 	/** Variables */
 	map: null,
@@ -50,7 +52,9 @@ var jobmap = {
 	pins: {},
 	user: null,
 	
-	//Array with categories
+	/**
+	 * Array with categories.
+	 */
 	categories: {administration: 'Administration', construction: 'Construction', projectLeader: 'Project leader', computerScience: 'Computer science',
 		disposalPromotion: 'Disposal & promotion', hotelRestaurant: 'Hotel & restaurant', medicalService: 'Health & medical service',
 		industrialManufacturing: 'Industrial manufacturing', installation: 'Installation', cultureMedia: 'Culture, media, design', 
@@ -76,6 +80,9 @@ var jobmap = {
 				$('#console').addClass('big').show();
 			}
 		});
+
+		// Init side menu
+		jobmap.sideMenu();
 		
 		// Init OverlayView
 		jobmap.mapOverlay = new google.maps.OverlayView();
@@ -153,9 +160,7 @@ var jobmap = {
 		
 		// User
 		$('<div id="account"></div>').appendTo('#panel');
-		$('<a id="accname"></a>').click(function() {
-			jobmap.updateUserForm();
-		}).addClass('hidden').appendTo('#account');
+		$('<a id="accname"></a>').click(jobmap.updateUserForm).addClass('hidden').appendTo('#account');
 		$('<button id="logButton"></button>').click(jobmap.logButton).appendTo('#account');
 		jobmap.getUser();
 		
@@ -164,12 +169,11 @@ var jobmap = {
 		
 		// Markers
 		jobmap.refreshMarkers();
-		
-		// Side menu
-		jobmap.sideMenu();
 	},
 	
-	//The side menu
+	/**
+	 * Initialize the side menu.
+	 */
 	sideMenu: function(){
 		$('<div id="accordion">'+
 		'<h3><a href="#"><b>Find a job</b></a></h3>'+
@@ -219,7 +223,7 @@ var jobmap = {
 		$('<label><input type="checkbox" id="showRandoms" /> Display job searchers</label><br/>').appendTo('#categoryList');
 		
 		$('#accordion input').attr('checked', true);
-		$( "#accordion" ).accordion({ fillSpace: true });
+		$('#accordion').accordion({ fillSpace: true });
 	},
 	
 	/** Zoom */
@@ -462,7 +466,7 @@ var jobmap = {
 				type: ($('#markerType').val() || jobmap.user.privileges),
 			};
 			if (marker.type == 'random') {
-				marker.privacy = ($('#markerPrivacy').val()=='on'?'private':'public');
+				marker.privacy = ($('#markerPrivacy')[0].checked?'private':'public');
 			}
 			else if (marker.type == 'company') {
 				marker.cat = $('#markerCat').val();
@@ -659,7 +663,6 @@ var jobmap = {
 				$(markerCat).val(marker.cat);
 			}
 			if (jobmap.user.privileges == 'random') {
-				printInfo((marker.privacy=='private'));
 				$('<label><input type="checkbox" id="markerPrivacy" /> Only show my marker to companies</label>').appendTo(info);
 				$('#markerPrivacy',info).attr('checked', (marker.privacy == 'private'));
 			}
@@ -670,7 +673,7 @@ var jobmap = {
 					marker.info = $('#markerInfo').val();
 					marker.type = $('#markerType').val() || marker.type;
 					marker.cat = $('#markerCat').val() || marker.cat;
-					marker.privacy = ($('#markerPrivacy').val()=='on'?'private':'public') || marker.privacy;
+					marker.privacy = ($('#markerPrivacy')[0].checked?'private':'public') || marker.privacy;
 					jobmap.postMarker(marker);
 					jobmap.infoWindow.close();
 				}
@@ -837,7 +840,7 @@ var jobmap = {
 		$('<h4>Settings:</h4>').appendTo('#adminDialog');
 		$('<label><input type="checkbox" id="showAllMarkers" /> Always show all markers</label>').appendTo('#adminDialog');
 		$('#showAllMarkers').click(function() {
-			jobmap.showAll = ($('#showAllMarkers').val() == 'on');
+			jobmap.showAll = $('#showAllMarkers')[0].checked;
 			jobmap.filterMarkers();
 		});
 		$('<br/>').appendTo('#adminDialog');
@@ -903,7 +906,7 @@ var jobmap = {
 	 * 
 	 */
 	updateUserForm: function(user) {
-		if (!user) user=jobmap.user;
+		if (typeof user != 'string') user=jobmap.user;
 		var who = jobmap.who = (user==jobmap.user?'me':user.email);
 		if ($('#updateUserForm').length) return;
 		
@@ -915,24 +918,26 @@ var jobmap = {
 			width: 380,
 			buttons: {
 				Save: function() {
-					var birthday = new Date($('#userBirthday').val());
-					if (isNaN(birthday.getTime())) {
-						return alert('You must enter a valid date for your birthday. Use the format YYYY-MM-DD.');
-					}
-					
 					var userObj = {
 						name: $('#userName').val(),
-						birthday: birthday.getTime(),
 						sex: $('#userSex').val(),
 						phonenumber: $('#userPhonenumber').val()
 					};
-					if (jobmap.isAdmin()) {
-						$.extend(userObj, {
-							privileges: $('#userPrivileges').val()
-						});
-					}
-					printInfo('Sending user ('+who+') details: ', userObj);
 					
+					var birthday = $('#userBirthday').val();
+					if (birthday != "") {
+						var bday = new Date(birthday);
+						userObj.birthday = bday.getTime();
+						if (isNaN(userObj.birthday)) {
+							return alert('You must enter a valid date for your birthday. Use the format YYYY-MM-DD.');
+						}
+					}
+					
+					if (jobmap.isAdmin()) {
+						userObj.privileges = $('#userPrivileges').val();
+					}
+					
+					printInfo('Sending user ('+who+') details: ', userObj);
 					$.ajax({
 						url: '/rest/user/'+who,
 						type: 'POST',
@@ -984,8 +989,11 @@ var jobmap = {
 		$('<p>Name: </p>').add($('<input type="text" id="userName" placeholder="Your name" />').val(user.name)).appendTo('#updateUserForm');
 		if (jobmap.user.privileges != 'company') {
 			var pad = function(n) { return ('0'+n).slice(-2); };
-			var bday = new Date(user.birthday);
-			bday = bday.getFullYear()+'-'+pad(bday.getMonth()+1)+'-'+pad(bday.getDate());
+			var bday = "";
+			if (user.birthday) {
+				bday = new Date(user.birthday);
+				bday = bday.getFullYear()+'-'+pad(bday.getMonth()+1)+'-'+pad(bday.getDate());
+			}
 			$('<p>Date of birth: </p>').add($('<input type="text" id="userBirthday" placeholder="YYYY-MM-DD" />').val(bday)).appendTo('#updateUserForm');
 			$('<p>Sex: </p>').add(($('<select id="userSex"></select>')
 					.append($('<option>Not telling</option>'))
@@ -1042,16 +1050,20 @@ var jobmap = {
 	}
 };
 
-// Dynamically resize map
+/**
+ * Dynamically resize map height.
+ * This can not be done with CSS.
+ */
 function resizeMap() {
 	var page = document.getElementById('page');
 	var panel = document.getElementById('panel');
 	var viewportHeight = document.body.clientHeight;
-	
 	page.style.height = (viewportHeight-panel.offsetHeight)+'px';
 }
 
-// Console
+/**
+ * Console functions.
+ */
 function print(txt, json, style) {
 	if (!style) style = 'info';
 	if (json && json.result == 'fail') style = 'error';
@@ -1073,7 +1085,9 @@ function printError(txt, json) {
 	$('#console').show();
 }
 
-// Google Analytics
+/**
+ * Google Analytics
+ */
 var _gaq = _gaq || [];
 _gaq.push(['_setAccount', 'UA-27056070-2']);
 _gaq.push(['_trackPageview']);

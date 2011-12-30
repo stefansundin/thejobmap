@@ -62,7 +62,7 @@ h1,h2,h3,h4 {
 	text-decoration: underline !important;
 	margin-right: 10px;
 }
-#panel #account #accname:after{
+#panel #account #accname:after {
 	content: " ▼";
 	font-size: x-small;
 }

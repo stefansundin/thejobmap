@@ -8,6 +8,14 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Text;
 
+/**
+ * This is the object with information about a marker that is passed between the server and the client.
+ * The server sends it when the user requests markers,
+ * and the client sends it when the user wants to update or add a marker.
+ * 
+ * @author Stefan Sundin
+ * @author Alexandra Tsampikakis
+ */
 public class MarkerObj {
 	public String id;
 	public Double lat;
@@ -22,7 +30,10 @@ public class MarkerObj {
 	public Long creationDate;
 	public Long updatedDate;
 	public Long numApply;
-	
+
+	/**
+	 * The no-arg constructor with default values for this object.
+	 */
 	public MarkerObj() {
 		privacy = "public";
 		numApply = 0L;
@@ -105,13 +116,14 @@ public class MarkerObj {
 	}
 
 	/**
-	 * Validate object. This automatically sanitize()s the object too.
+	 * Validate object.
+	 * This automatically sanitize()s the object too.
 	 */
 	public Boolean validate() {
 		sanitize();
 		
-		List<String> type = Arrays.asList("random", "company", "admin", "city");
-		List<String> privacy = Arrays.asList("public", "private");
+		List<String> all_type = Arrays.asList("random", "company", "admin", "city");
+		List<String> all_privacy = Arrays.asList("public", "private");
 		List<String> categories = Arrays.asList("administration", "construction", "projectLeader",
 				"computerScience", "disposalPromotion", "hotelRestaurant", "medicalService",
 				"industrialManufacturing", "installation", "cultureMedia", "military",
@@ -119,8 +131,8 @@ public class MarkerObj {
 				"transport", "other");
 		
 		if (lat.isNaN() || lng.isNaN()
-			|| !type.contains(type)
-			|| !privacy.contains(privacy)
+			|| !all_type.contains(type)
+			|| !all_privacy.contains(privacy)
 			|| ("company".equals(type) && !categories.contains(cat))) {
 			return false;
 		}

@@ -29,6 +29,12 @@ import com.google.gson.Gson;
 
 import java.util.logging.Logger;
 
+/**
+ * This servlet handles markers.
+ * 
+ * @author Stefan Sundin
+ * @author Alexandra Tsampikakis
+ */
 public class MarkerServlet extends HttpServlet {
 	
 	private static final long serialVersionUID = -919160328227007218L;
