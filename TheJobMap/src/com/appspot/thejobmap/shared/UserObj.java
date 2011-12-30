@@ -20,7 +20,7 @@ public class UserObj {
 	public String auth_key;
 	
 	public UserObj() {
-		this.privileges = "random";
+		privileges = "random";
 	}
 	
 	/**
@@ -30,14 +30,14 @@ public class UserObj {
 		if (entityUser == null) {
 			return;
 		}
-		this.email = entityUser.getKey().getName();
-		this.name = (String) entityUser.getProperty("name");
-		this.birthday = (Long) entityUser.getProperty("birthday");
-		this.sex = (String) entityUser.getProperty("sex");
-		this.phonenumber = (String) entityUser.getProperty("phonenumber");
-		this.privileges = (String) entityUser.getProperty("privileges");
-		this.cvUploaded = (Boolean) entityUser.hasProperty("cv");
-		this.lastLogin = (Long) entityUser.getProperty("lastLogin");
+		email = entityUser.getKey().getName();
+		name = (String) entityUser.getProperty("name");
+		birthday = (Long) entityUser.getProperty("birthday");
+		sex = (String) entityUser.getProperty("sex");
+		phonenumber = (String) entityUser.getProperty("phonenumber");
+		privileges = (String) entityUser.getProperty("privileges");
+		cvUploaded = (Boolean) entityUser.hasProperty("cv");
+		lastLogin = (Long) entityUser.getProperty("lastLogin");
 	}
 
 	/**
@@ -46,15 +46,14 @@ public class UserObj {
 	 * entityMe param makes sure that the current user has permission to update some properties.
 	 */
 	public void extend(UserObj other, Entity entityMe) {
-		this.name = other.name;
-		this.birthday = other.birthday;
-		this.sex = other.sex;
-		this.phonenumber = other.phonenumber;
+		name = other.name;
+		birthday = other.birthday;
+		sex = other.sex;
+		phonenumber = other.phonenumber;
 
 		String myPrivileges = (String) entityMe.getProperty("privileges");
 		if (myPrivileges.equals("admin")) {
-			if (other.privileges != null)
-				this.privileges = other.privileges;
+			if (other.privileges != null) privileges = other.privileges;
 		}
 	}
 	
@@ -62,11 +61,11 @@ public class UserObj {
 	 * Convenience function update an entity with data from this UserObj.
 	 */
 	public void updateEntity(Entity entityUser) {
-		entityUser.setProperty("name", this.name);
-		entityUser.setProperty("birthday", this.birthday);
-		entityUser.setProperty("sex", this.sex);
-		entityUser.setProperty("phonenumber", this.phonenumber);
-		entityUser.setProperty("privileges", this.privileges);
+		entityUser.setProperty("name",        name);
+		entityUser.setProperty("birthday",    birthday);
+		entityUser.setProperty("sex",         sex);
+		entityUser.setProperty("phonenumber", phonenumber);
+		entityUser.setProperty("privileges",  privileges);
 	}
 	
 	/**
@@ -78,24 +77,24 @@ public class UserObj {
 		List<String> sex = Arrays.asList("Not telling", "Male", "Female", "Other");
 		List<String> privileges = Arrays.asList("random", "company", "admin");
 		
-		if (!sex.contains(this.sex) || !privileges.contains(this.privileges)) {
+		if (!sex.contains(sex) || !privileges.contains(privileges)) {
 			return false;
 		}
 		return true;
 	}
 
 	/**
-	 * Function to make the data in this object safe to use.
+	 * Function to make the user-supplied data in this object safe to use.
 	 */
 	public void sanitize() {
-		this.name = this.name.replaceAll("\\<.*?>","");
-		this.phonenumber = this.phonenumber.replaceAll("\\<.*?>","");
+		name = name.replaceAll("\\<.*?>","");
+		phonenumber = phonenumber.replaceAll("\\<.*?>","");
 	}
 	
 	/**
 	 * Is the user an admin?
 	 */
 	public Boolean isAdmin() {
-		return ("admin".equals(this.privileges));
+		return ("admin".equals(privileges));
 	}
 }

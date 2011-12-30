@@ -460,9 +460,13 @@ var jobmap = {
 				info: $('#markerInfo').val(),
 				title: ($('#markerTitle').val() || jobmap.user.name),
 				type: ($('#markerType').val() || jobmap.user.privileges),
-				cat: ($('#markerCat').val() || null),
-				privacy: (($('#markerPrivacy').val()=='on'?'private':'public') || null)
 			};
+			if (marker.type == 'random') {
+				marker.privacy = ($('#markerPrivacy').val()=='on'?'private':'public');
+			}
+			else if (marker.type == 'company') {
+				marker.cat = $('#markerCat').val();
+			}
 			json = JSON.stringify(marker);
 			if (jobmap.user.privileges == 'random') {
 				id = 'me';

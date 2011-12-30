@@ -20,11 +20,14 @@ public class MarkerObj {
 	public String author;
 	public String privacy;
 	public Long creationDate;
+	public Long updatedDate;
 	public Long numApply;
 	
 	public MarkerObj() {
 		privacy = "public";
 		numApply = 0L;
+		creationDate = new Date().getTime();
+		updatedDate = new Date().getTime();
 	}
 
 	/**
@@ -33,22 +36,23 @@ public class MarkerObj {
 	public void convertFromEntity(Entity entityMarker) {
 		Key markerKey = entityMarker.getKey();
 		if (markerKey.getId() == 0) {
-			this.id = markerKey.getName();
+			id = markerKey.getName();
 		}
 		else {
-			this.id = new Long(markerKey.getId()).toString();
+			id = new Long(markerKey.getId()).toString();
 		}
-		this.lat = (Double) entityMarker.getProperty("lat");
-		this.lng = (Double) entityMarker.getProperty("lng");
-		this.type = (String) entityMarker.getProperty("type");
-		this.cat = (String) entityMarker.getProperty("cat");
-		this.near = (String) entityMarker.getProperty("near");
-		this.title = (String) entityMarker.getProperty("title");
-		this.info = ((Text) entityMarker.getProperty("info")).getValue();
-		this.numApply = ((Long) entityMarker.getProperty("numApply"));
-		this.creationDate = (Long) entityMarker.getProperty("creationDate");
-		this.author = (String) entityMarker.getProperty("author");
-		this.privacy = (String) entityMarker.getProperty("privacy");
+		lat =          (Double) entityMarker.getProperty("lat");
+		lng =          (Double) entityMarker.getProperty("lng");
+		type =         (String) entityMarker.getProperty("type");
+		cat =          (String) entityMarker.getProperty("cat");
+		near =         (String) entityMarker.getProperty("near");
+		title =        (String) entityMarker.getProperty("title");
+		info =         ((Text) entityMarker.getProperty("info")).getValue();
+		numApply =     ((Long) entityMarker.getProperty("numApply"));
+		creationDate = (Long) entityMarker.getProperty("creationDate");
+		updatedDate =  (Long) entityMarker.getProperty("updatedDate");
+		author =       (String) entityMarker.getProperty("author");
+		privacy =      (String) entityMarker.getProperty("privacy");
 	}
 
 	/**
@@ -57,31 +61,28 @@ public class MarkerObj {
 	 * entityMe param makes sure that the current user has permission to update some properties.
 	 */
 	public void extend(MarkerObj other, Entity entityMe) {
-		this.lat = other.lat;
-		this.lng = other.lng;
-		this.cat = other.cat;
-		this.near = other.near;
-		this.info = other.info;
-		this.privacy = other.privacy;
+		lat = other.lat;
+		lng = other.lng;
+		cat = other.cat;
+		near = other.near;
+		info = other.info;
+		privacy = other.privacy;
+		updatedDate = new Date().getTime();
 
 		String myName = (String) entityMe.getProperty("name");
 		String myPrivileges = (String) entityMe.getProperty("privileges");
 		
 		if (myPrivileges.equals("random")) {
-			this.title = myName;
+			title = myName;
 		}
 		else {
-			if (other.title != null)
-				this.title = other.title;
+			if (other.title != null) title = other.title;
 		}
 		
 		if (myPrivileges.equals("admin")) {
-			if (other.type != null)
-				this.type = other.type;
-			if (other.author != null)
-				this.author = other.author;
-			if (other.creationDate != null)
-				this.creationDate = other.creationDate;
+			if (other.type != null)         type = other.type;
+			if (other.author != null)       author = other.author;
+			if (other.creationDate != null) creationDate = other.creationDate;
 		}
 	}
 	
@@ -89,39 +90,56 @@ public class MarkerObj {
 	 * Convenience function update an entity with data from this MarkerObj.
 	 */
 	public void updateEntity(Entity entityMarker) {
-		entityMarker.setProperty("lat", this.lat);
-		entityMarker.setProperty("lng", this.lng);
-		entityMarker.setProperty("near", this.near);
-		entityMarker.setProperty("title", this.title);
-		entityMarker.setProperty("info", new Text(this.info));
-		entityMarker.setProperty("cat", this.cat);
-		entityMarker.setProperty("type", this.type);
-		entityMarker.setProperty("author", this.author);
-		entityMarker.setProperty("privacy", this.privacy);
-		entityMarker.setProperty("numApply", this.numApply);
-		entityMarker.setProperty("creationDate", this.creationDate);
-		entityMarker.setProperty("updatedDate", new Date().getTime());
+		entityMarker.setProperty("lat",          lat);
+		entityMarker.setProperty("lng",          lng);
+		entityMarker.setProperty("near",         near);
+		entityMarker.setProperty("title",        title);
+		entityMarker.setProperty("info",         new Text(info));
+		entityMarker.setProperty("cat",          cat);
+		entityMarker.setProperty("type",         type);
+		entityMarker.setProperty("author",       author);
+		entityMarker.setProperty("privacy",      privacy);
+		entityMarker.setProperty("numApply",     numApply);
+		entityMarker.setProperty("creationDate", creationDate);
+		entityMarker.setProperty("updatedDate",  updatedDate);
 	}
 
 	/**
-	 * Validate object.
+	 * Validate object. This automatically sanitize()s the object too.
 	 */
 	public Boolean validate() {
+		sanitize();
+		
 		List<String> type = Arrays.asList("random", "company", "admin", "city");
 		List<String> privacy = Arrays.asList("public", "private");
+		List<String> categories = Arrays.asList("administration", "construction", "projectLeader",
+				"computerScience", "disposalPromotion", "hotelRestaurant", "medicalService",
+				"industrialManufacturing", "installation", "cultureMedia", "military",
+				"environmentalScience", "pedagogical", "social", "security", "technical",
+				"transport", "other");
 		
-		if (this.lat.isNaN() || this.lng.isNaN()
-			|| !type.contains(this.type)
-			|| !privacy.contains(this.privacy)) {
+		if (lat.isNaN() || lng.isNaN()
+			|| !type.contains(type)
+			|| !privacy.contains(privacy)
+			|| ("company".equals(type) && !categories.contains(cat))) {
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Function to make the user-supplied data in this object safe to use.
+	 */
+	public void sanitize() {
+		if (near != null)  near = near.replaceAll("\\<.*?>","");
+		if (title != null) title = title.replaceAll("\\<.*?>","");
+		if (info != null)  info = info.replaceAll("\\<.*?>","");
 	}
 	
 	/**
 	 * Increment numApply.
 	 */
 	public void incApply() {
-		this.numApply++;
+		numApply++;
 	}
 }

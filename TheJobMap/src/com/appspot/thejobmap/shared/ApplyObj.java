@@ -6,12 +6,12 @@ public class ApplyObj {
 	public ApplyObj() {}
 	
 	/**
-	 * Function to make the data in this object safe to use.
+	 * Function to make the user-supplied data in this object safe to use.
 	 */
 	public void sanitize() {
-		this.motivation = this.motivation.replaceAll("\\<.*?>","").replaceAll("\\<","&lt;");
-		if (this.motivation.length() > 500) {
-			this.motivation = this.motivation.substring(0, 500);
+		motivation = motivation.replaceAll("\\<.*?>","").replaceAll("\\<","&lt;");
+		if (motivation.length() > 500) {
+			motivation = motivation.substring(0, 500);
 		}
 	}
 }

@@ -206,7 +206,6 @@ public class MarkerServlet extends HttpServlet {
 			// New marker
 			entityMarker = new Entity("Markers");
 			marker.updateEntity(entityMarker);
-			entityMarker.setProperty("numApply", 0L);
 			entityMarker.setProperty("creationDate", new Date().getTime());
 			if (!me.isAdmin() || marker.type == null) {
 				entityMarker.setProperty("type", me.privileges);
@@ -255,7 +254,6 @@ public class MarkerServlet extends HttpServlet {
 					// Entity does not exist in database, create a new one
 					entityMarker = new Entity("Markers", me.email);
 					marker.updateEntity(entityMarker);
-					entityMarker.setProperty("numApply", 0);
 					entityMarker.setProperty("creationDate", new Date().getTime());
 					entityMarker.setProperty("type", me.privileges);
 					entityMarker.setProperty("author", me.email);
