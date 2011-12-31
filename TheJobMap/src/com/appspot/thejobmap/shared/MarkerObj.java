@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.List;
 
 import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Text;
 
 /**
@@ -17,7 +16,7 @@ import com.google.appengine.api.datastore.Text;
  * @author Alexandra Tsampikakis
  */
 public class MarkerObj {
-	public String id;
+	public Long id;
 	public Double lat;
 	public Double lng;
 	public String type;
@@ -32,40 +31,51 @@ public class MarkerObj {
 	public Long numApply;
 
 	/**
-	 * The no-arg constructor with default values for this object.
+	 * The no-args constructor with default values for this object.
 	 */
 	public MarkerObj() {
+		excludeProps();
+	}
+	
+	/**
+	 * Method to reset properties that should not be editable by a normal user.
+	 * Used after reading a JSON object.
+	 * If the user is an admin this function might not be called.
+	 */
+	public void excludeProps() {
 		privacy = "public";
 		numApply = 0L;
 		creationDate = new Date().getTime();
 		updatedDate = new Date().getTime();
 	}
-
+	
 	/**
 	 * Convenience function to convert database entity to MarkerObj.
 	 */
 	public void convertFromEntity(Entity entityMarker) {
-		Key markerKey = entityMarker.getKey();
-		if (markerKey.getId() == 0) {
-			id = markerKey.getName();
-		}
-		else {
-			id = new Long(markerKey.getId()).toString();
-		}
+		id =           entityMarker.getKey().getId();
 		lat =          (Double) entityMarker.getProperty("lat");
 		lng =          (Double) entityMarker.getProperty("lng");
 		type =         (String) entityMarker.getProperty("type");
-		cat =          (String) entityMarker.getProperty("cat");
 		near =         (String) entityMarker.getProperty("near");
 		title =        (String) entityMarker.getProperty("title");
 		info =         ((Text) entityMarker.getProperty("info")).getValue();
-		numApply =     ((Long) entityMarker.getProperty("numApply"));
-		creationDate = (Long) entityMarker.getProperty("creationDate");
-		updatedDate =  (Long) entityMarker.getProperty("updatedDate");
-		author =       (String) entityMarker.getProperty("author");
-		privacy =      (String) entityMarker.getProperty("privacy");
+		// Convert properties that might be null
+		Object prop;
+		prop = entityMarker.getProperty("cat");
+		if (prop != null) cat = (String) prop;
+		prop = entityMarker.getProperty("numApply");
+		if (prop != null) numApply = (Long) prop;
+		prop = entityMarker.getProperty("creationDate");
+		if (prop != null) creationDate = (Long) prop;
+		prop = entityMarker.getProperty("updatedDate");
+		if (prop != null) updatedDate = (Long) prop;
+		prop = entityMarker.getProperty("author");
+		if (prop != null) author = (String) prop;
+		prop = entityMarker.getProperty("privacy");
+		if (prop != null) privacy = (String) prop;
 	}
-
+	
 	/**
 	 * Convenience function to extend this MarkerObj with another MarkerObj.
 	 * Normally used when updating the database.
@@ -95,6 +105,8 @@ public class MarkerObj {
 			if (other.author != null)       author = other.author;
 			if (other.creationDate != null) creationDate = other.creationDate;
 		}
+		
+		//TODO: Remove properties that do not apply anymore if the type was changed (not important, low priority).
 	}
 	
 	/**
@@ -114,7 +126,7 @@ public class MarkerObj {
 		entityMarker.setProperty("creationDate", creationDate);
 		entityMarker.setProperty("updatedDate",  updatedDate);
 	}
-
+	
 	/**
 	 * Validate object.
 	 * This automatically sanitize()s the object too.
@@ -138,7 +150,7 @@ public class MarkerObj {
 		}
 		return true;
 	}
-
+	
 	/**
 	 * Function to make the user-supplied data in this object safe to use.
 	 */

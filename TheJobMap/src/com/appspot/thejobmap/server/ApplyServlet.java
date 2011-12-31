@@ -39,7 +39,6 @@ import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.gson.Gson;
 
 /**
@@ -87,6 +86,14 @@ public class ApplyServlet extends HttpServlet {
 		}
 		me.convertFromEntity(entityMe);
 		
+		// Check so that the user has provided enough information
+		if (!me.canApply()) {
+			res.setStatus(403);
+			writer.write(gson.toJson(new ResultObj("fail", "not enough user info")));
+			writer.close();
+			return;
+		}
+		
 		/*
 		// Check privileges
 		if ("random".equals(me.privileges) && (resource.length <= 1 || !me.email.equals(resource[1]))) {
@@ -105,14 +112,13 @@ public class ApplyServlet extends HttpServlet {
 			// POST /apply/<id>
 			// Apply for a job
 			// Sends an email to the author of the pin
-			try {
-				entityMarker = db.get(markerServlet.getMarkerKey(resource[1]));
-				dbMarker.convertFromEntity(entityMarker);
-			} catch (EntityNotFoundException e) {
+			entityMarker = markerServlet.getMarker(resource[1]);
+			if (entityMarker == null) {
 				writer.write(gson.toJson(new ResultObj("fail", "no such marker")));
 				writer.close();
 				return;
 			}
+			dbMarker.convertFromEntity(entityMarker);
 			if (!"company".equals(dbMarker.type)) {
 				writer.write(gson.toJson(new ResultObj("fail", "not a company marker")));
 				writer.close();
@@ -166,7 +172,7 @@ public class ApplyServlet extends HttpServlet {
 					BlobKey blobKey = new BlobKey((String) entityMe.getProperty("cv"));
 					BlobInfoFactory blobInfoFactory = new BlobInfoFactory(db);
 					BlobInfo blobInfo = blobInfoFactory.loadBlobInfo(blobKey);
-					byte[] cv = blobstoreService.fetchData(blobKey, 0, 1024*1024);
+					byte[] cv = blobstoreService.fetchData(blobKey, 0, blobInfo.getSize());
 					
 					// Attach CV
 					MimeBodyPart attachment = new MimeBodyPart();
@@ -182,6 +188,7 @@ public class ApplyServlet extends HttpServlet {
 				
 				// Send email
 				Transport.send(msg);
+				System.out.println("Sent job application to "+dbMarker.author+" concerning \""+dbMarker.title+"\"");
 			} catch (AddressException e) {
 				throw new ServletException("AddressException");
 			} catch (MessagingException e) {

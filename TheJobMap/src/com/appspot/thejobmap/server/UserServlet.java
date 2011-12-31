@@ -29,6 +29,7 @@ import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.FetchOptions;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.users.User;
@@ -352,7 +353,25 @@ public class UserServlet extends HttpServlet {
 		}
 		writer.close();
 	}
-
+	
+	/**
+	 * Get datastore key for user.
+	 */
+	public Key getUserKey(String email) {
+		return KeyFactory.createKey("Users", email);
+	}
+	
+	/**
+	 * Get datastore key for "me".
+	 */
+	public Key getUserKey() {
+		User u = UserServiceFactory.getUserService().getCurrentUser();
+		if (u == null) { //Not logged in
+			return null;
+		}
+		return getUserKey(u.getEmail());
+	}
+	
 	/**
 	 * Get details of user.
 	 */
@@ -366,9 +385,9 @@ public class UserServlet extends HttpServlet {
 			return null;
 		}
 	}
-
+	
 	/**
-	 * Get details for me.
+	 * Get details for "me".
 	 * Used pretty much everywhere.
 	 */
 	public Entity getUser() {
@@ -426,7 +445,7 @@ public class UserServlet extends HttpServlet {
 			return privileges;
 		} catch (EntityNotFoundException e) {
 			//throw new IllegalArgumentException("User does not exist!");
-			System.out.println("Error: getPrivileges("+email+"): User does not exist!");
+			System.out.println("Warning: getPrivileges("+email+"): User does not exist!");
 			return "random";
 		}
 	}

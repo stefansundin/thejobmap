@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -25,6 +24,7 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.FilterOperator;
+import com.google.appengine.api.datastore.Text;
 import com.google.gson.Gson;
 
 import java.util.logging.Logger;
@@ -102,9 +102,9 @@ public class MarkerServlet extends HttpServlet {
 					marker.author = null;
 				}
 				*/
-				if (marker.id.equals(me.email)) {
+				/*if (marker.id.equals(me.email)) {
 					marker.id = "me";
-				}
+				}*/
 				markers.add(marker);
 			}
 			writer.write(gson.toJson(markers));
@@ -134,17 +134,14 @@ public class MarkerServlet extends HttpServlet {
 		else if (resource.length == 2) {
 			// GET /marker/<id/email>
 			// Return marker details
-			Key markerKey = getMarkerKey(resource[1]);
-			Entity entityMarker = null;
-			try {
-				entityMarker = db.get(markerKey);
-			} catch (EntityNotFoundException e) {
+			Entity markerEntity = getMarker(resource[1]);
+			if (markerEntity == null) {
 				writer.write(gson.toJson(new ResultObj("fail", "no such marker")));
 				writer.close();
 				return;
 			}
 			MarkerObj marker = new MarkerObj();
-			marker.convertFromEntity(entityMarker);
+			marker.convertFromEntity(markerEntity);
 			writer.write(gson.toJson(marker));
 		}
 		else {
@@ -169,7 +166,7 @@ public class MarkerServlet extends HttpServlet {
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
 		UserObj me = new UserObj();
-		Entity entityMarker = null;
+		Entity markerEntity = null;
 		MarkerObj dbMarker = new MarkerObj();
 		
 		// Parse path
@@ -205,19 +202,20 @@ public class MarkerServlet extends HttpServlet {
 		
 		// Parse input
 		MarkerObj marker = gson.fromJson(reader, MarkerObj.class);
+		if (!me.isAdmin()) marker.excludeProps();
 		reader.close();
 		
 		if (resource.length <= 1) {
 			// POST /marker/
 			// New marker
-			entityMarker = new Entity("Markers");
-			marker.updateEntity(entityMarker);
-			entityMarker.setProperty("creationDate", new Date().getTime());
+			Key userKey = userServlet.getUserKey();
+			markerEntity = new Entity("Markers", userKey);
+			marker.updateEntity(markerEntity);
 			if (!me.isAdmin() || marker.type == null) {
-				entityMarker.setProperty("type", me.privileges);
+				markerEntity.setProperty("type", me.privileges);
 			}
-			entityMarker.setProperty("author", me.email);
-			marker.convertFromEntity(entityMarker);
+			markerEntity.setProperty("author", me.email);
+			marker.convertFromEntity(markerEntity);
 			if (!marker.validate()) {
 				throw new ServletException("Invalid entry.");
 			}
@@ -225,8 +223,8 @@ public class MarkerServlet extends HttpServlet {
 			log.info("Title: "+marker.title);
 			log.info("Info: "+marker.info);
 			// Insert in database
-			db.put(entityMarker);
-			Long id = entityMarker.getKey().getId();
+			db.put(markerEntity);
+			Long id = markerEntity.getKey().getId();
 			
 			// Send response
 			writer.write(gson.toJson(new ResultObj("ok", id)));
@@ -235,49 +233,28 @@ public class MarkerServlet extends HttpServlet {
 			// POST /marker/<id/email>
 			// Update marker details
 			// Randoms must create their marker this way
-			try {
-				// Try first with id as numeric
-				Long id = Long.parseLong(resource[1]);
-				Key markerKey = KeyFactory.createKey("Markers", id);
-				// Fetch marker
-				try {
-					entityMarker = db.get(markerKey);
-					dbMarker.convertFromEntity(entityMarker);
-					dbMarker.extend(marker, entityMe);
-				} catch (EntityNotFoundException e) {
-					writer.write(gson.toJson(new ResultObj("fail", "no such marker")));
-					writer.close();
-					return;
-				}
-			} catch (NumberFormatException e) {
-				// If it's not numeric, it is a marker by a random
-				Key markerKey = KeyFactory.createKey("Markers", resource[1]);
-				try {
-					entityMarker = db.get(markerKey);
-					dbMarker.convertFromEntity(entityMarker);
-					dbMarker.extend(marker, entityMe);
-				} catch (EntityNotFoundException e2) {
-					// Entity does not exist in database, create a new one
-					entityMarker = new Entity("Markers", me.email);
-					marker.updateEntity(entityMarker);
-					entityMarker.setProperty("creationDate", new Date().getTime());
-					entityMarker.setProperty("type", me.privileges);
-					entityMarker.setProperty("author", me.email);
-					dbMarker.convertFromEntity(entityMarker);
-				}
+			markerEntity = getMarker(resource[1]);
+			if (markerEntity == null) {
+				// This happens only if resource[1] was numeric (i.e. not a marker for a random)
+				writer.write(gson.toJson(new ResultObj("fail", "no such marker")));
+				writer.close();
+				return;
 			}
+			dbMarker.convertFromEntity(markerEntity);
+			dbMarker.extend(marker, entityMe);
 			
 			// Update entity properties
 			if (!dbMarker.validate()) {
 				throw new ServletException("Invalid entry.");
 			}
-			dbMarker.updateEntity(entityMarker);
+			dbMarker.updateEntity(markerEntity);
 			
 			// Insert/update in database
-			db.put(entityMarker);
+			db.put(markerEntity);
+			Long id = markerEntity.getKey().getId();
 			
 			// Send response
-			writer.write(gson.toJson(new ResultObj("ok")));
+			writer.write(gson.toJson(new ResultObj("ok", id)));
 		}
 		else {
 			throw new ServletException("Unimplemented request.");
@@ -331,17 +308,15 @@ public class MarkerServlet extends HttpServlet {
 			// Delete marker
 			
 			// Check if marker exists
-			Key markerKey = getMarkerKey(resource[1]);
-			try {
-				db.get(markerKey);
-			} catch (EntityNotFoundException e) {
+			Entity markerEntity = getMarker(resource[1]);
+			if (markerEntity == null) {
 				writer.write(gson.toJson(new ResultObj("fail", "marker does not exist")));
 				writer.close();
 				return;
 			}
 			
 			// Delete marker
-			db.delete(markerKey);
+			db.delete(markerEntity.getKey());
 			
 			// Send response
 			writer.write(gson.toJson(new ResultObj("ok")));
@@ -352,15 +327,77 @@ public class MarkerServlet extends HttpServlet {
 		writer.close();
 	}
 	
-	public Key getMarkerKey(String id) {
-		try {
-			// Try first with id as numeric
-			Long num = Long.parseLong(id);
-			return KeyFactory.createKey("Markers", num);
-		} catch (NumberFormatException e) {
-			// If it's not numeric, it is a marker by a random
-			return KeyFactory.createKey("Markers", id);
+	/**
+	 * Get the Entity of a marker based on a path.
+	 * If id is a string, it is a marker for a random. If it does not exist, then create it.
+	 */
+	public Entity getMarker(String path) throws ServletException {
+		Entity markerEntity = null;
+		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
+		Key userKey = userServlet.getUserKey();
+		
+		// Parse path
+		int colon = path.indexOf(':');
+		if (colon != -1) {
+			String email = path.substring(0, colon);
+			Long id = Long.parseLong(path.substring(colon+1));
+			userKey = userServlet.getUserKey(email);
+			Key markerKey = KeyFactory.createKey(userKey, "Markers", id);
+			try {
+				markerEntity = db.get(markerKey);
+			} catch (EntityNotFoundException e) {}
 		}
+		else if ("me".equals(path)) {
+			Query q = new Query("Markers", userKey);
+			markerEntity = db.prepare(q).asSingleEntity();
+		}
+		else {
+			try {
+				// Try first with a numeric id
+				Long id = Long.parseLong(path);
+				Key markerKey = KeyFactory.createKey(userKey, "Markers", id);
+				try {
+					markerEntity = db.get(markerKey);
+				} catch (EntityNotFoundException e) {
+					// This entity probably belongs to someone else
+					// Search the database
+					Query q = new Query("Users");
+					q.addFilter("privileges", FilterOperator.EQUAL, "company");
+					List<Entity> dbList = db.prepare(q).asList(FetchOptions.Builder.withLimit(1000));
+					for (int i=0; i < dbList.size(); i++) {
+						userKey = dbList.get(i).getKey();
+						markerKey = KeyFactory.createKey(userKey, "Markers", id);
+						try {
+							markerEntity = db.get(markerKey);
+							break;
+						} catch (EntityNotFoundException e2) { }
+					}
+				}
+			} catch (NumberFormatException e) {
+				// If it's not numeric, it is a marker by a random
+				userKey = userServlet.getUserKey(path);
+				Query q = new Query("Markers", userKey);
+				markerEntity = db.prepare(q).asSingleEntity();
+			}
+		}
+		
+		// If the Entity does not exist in database, create it
+		if (markerEntity == null) {
+			markerEntity = new Entity("Markers", userKey);
+			// Get user and set properties
+			UserObj user = new UserObj();
+			try {
+				Entity userEntity = db.get(userKey);
+				user.convertFromEntity(userEntity);
+			} catch (EntityNotFoundException e) {
+				throw new ServletException("User does not exist. Unable to create marker.");
+			}
+			markerEntity.setProperty("author", user.email);
+			markerEntity.setProperty("type", user.privileges);
+			markerEntity.setProperty("info", new Text(""));
+		}
+		
+		return markerEntity;
 	}
 
 }

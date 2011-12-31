@@ -68,6 +68,9 @@ var jobmap = {
 		$.ajaxSetup({
 			contentType: 'application/json; charset=UTF-8'
 		});
+		$(document).ajaxError(function(e, xhr, settings, exception) {
+			printError(settings.type+' '+settings.url+' failed: ', xhr.responseText);
+		});
 		jobmap.map = map;
 		
 		// Console
@@ -160,7 +163,9 @@ var jobmap = {
 		
 		// User
 		$('<div id="account"></div>').appendTo('#panel');
-		$('<a id="accname"></a>').click(jobmap.updateUserForm).addClass('hidden').appendTo('#account');
+		$('<a id="accname"></a>').click(function() {
+			jobmap.updateUserForm();
+		}).addClass('hidden').appendTo('#account');
 		$('<button id="logButton"></button>').click(jobmap.logButton).appendTo('#account');
 		jobmap.getUser();
 		
@@ -494,12 +499,7 @@ var jobmap = {
 				jobmap.newMarker.setMap(null);
 				jobmap.newMarker = null;
 				marker.author = jobmap.user.email;
-				if (jobmap.user.privileges == 'random') {
-					marker.id = jobmap.user.email;
-				}
-				else {
-					marker.id = data.id;
-				}
+				marker.id = data.id;
 				jobmap.addMarker(marker);
 			}
 		})
@@ -539,11 +539,16 @@ var jobmap = {
 	 * Applies for a job.
 	 */
 	applyJob: function(marker) {
+		var application = {
+			motivation: $('#applyInfo').val()
+		}
+		printInfo('Sending job application: ', application);
+		
 		$.ajax({
 			url: '/rest/apply/'+marker.id,
 			type: 'POST',
 			dataType: 'json',
-			data: JSON.stringify({motivation:$('#applyInfo').val()})
+			data: JSON.stringify(application)
 		})
 		.done(function(data) {
 			printInfo('Reply: ', data);
@@ -589,6 +594,12 @@ var jobmap = {
 						alert('You must log in first.');
 						return;
 					}
+					if (!jobmap.user.birthday) {
+						return alert('You have to enter your birthday before you can apply for jobs. Click your name in the top right corner to do so.');
+					}
+					if (!jobmap.user.cvUploaded) {
+						return alert('You have to upload a CV before you can apply for jobs. Click your name in the top right corner to do so.');
+					}
 					jobmap.setInfoWindow(marker, 'apply');
 					jobmap.infoWindow.open(jobmap.map, marker.mapMarker);
 				}).appendTo(info);
@@ -630,6 +641,7 @@ var jobmap = {
 				$('<input id="markerTitle" placeholder="Marker title" />').val(marker.title || jobmap.user.name).appendTo(info);
 			}
 			if (jobmap.isAdmin()) {
+				$(info).append(' ');
 				$('<select id="markerType">'+
 					'<option>company</option>'+
 					'<option>city</option>'+
@@ -647,13 +659,12 @@ var jobmap = {
 						else $('#markerCat').hide();
 					}).appendTo(info);
 			}
-			$('<textarea id="markerInfo"></textarea>')
+			$('<p></p>').append($('<textarea id="markerInfo"></textarea>')
 				.attr('placeholder',(jobmap.user.privileges=='random'
 					?'Write a little text about yourself here. It\'s what the companies will see first, so be intuitive.'
 					:'Write the job description here. It\'s what the job searchers will see first, so be intuitive.'))
-				.val(marker.info)
+				.val(marker.info))
 				.appendTo(info);
-			$('<br/>').appendTo(info);
 			// Add categories
 			if (marker.type == 'company' || jobmap.user.privileges == 'company' || jobmap.isAdmin()) {
 				var markerCat = $('<select id="markerCat"></select>').appendTo(info);
@@ -663,7 +674,7 @@ var jobmap = {
 				$(markerCat).val(marker.cat);
 			}
 			if (jobmap.user.privileges == 'random') {
-				$('<label><input type="checkbox" id="markerPrivacy" /> Only show my marker to companies</label>').appendTo(info);
+				$('<p><label><input type="checkbox" id="markerPrivacy" /> Only show my marker to companies</label></p>').appendTo(info);
 				$('#markerPrivacy',info).attr('checked', (marker.privacy == 'private'));
 			}
 			// Save button
@@ -906,7 +917,7 @@ var jobmap = {
 	 * 
 	 */
 	updateUserForm: function(user) {
-		if (typeof user != 'string') user=jobmap.user;
+		if (!user) user=jobmap.user;
 		var who = jobmap.who = (user==jobmap.user?'me':user.email);
 		if ($('#updateUserForm').length) return;
 		

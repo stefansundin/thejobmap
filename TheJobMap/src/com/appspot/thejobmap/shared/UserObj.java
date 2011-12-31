@@ -28,7 +28,7 @@ public class UserObj {
 	public String auth_key;
 	
 	/**
-	 * The no-arg constructor with default values for this object.
+	 * The no-args constructor with default values for this object.
 	 */
 	public UserObj() {
 		privileges = "random";
@@ -108,5 +108,13 @@ public class UserObj {
 	 */
 	public Boolean isAdmin() {
 		return ("admin".equals(privileges));
+	}
+	
+	/**
+	 * Can the user apply for a job?
+	 * The user must have supplied birthday and uploaded a CV.
+	 */
+	public Boolean canApply() {
+		return (birthday != null && cvUploaded);
 	}
 }

@@ -12,7 +12,7 @@ public class OpenIDProviderObj {
 	public String loginUrl;
 
 	/**
-	 * The no-arg constructor.
+	 * The no-args constructor.
 	 */
 	public OpenIDProviderObj() {}
 }

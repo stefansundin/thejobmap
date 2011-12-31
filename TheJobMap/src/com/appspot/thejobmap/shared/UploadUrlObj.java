@@ -11,7 +11,7 @@ public class UploadUrlObj {
 	public String uploadUrl;
 
 	/**
-	 * The no-arg constructor.
+	 * The no-args constructor.
 	 */
 	public UploadUrlObj() {}
 }

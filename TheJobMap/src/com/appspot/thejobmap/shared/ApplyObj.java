@@ -10,7 +10,7 @@ public class ApplyObj {
 	public String motivation;
 
 	/**
-	 * The no-arg constructor.
+	 * The no-args constructor.
 	 */
 	public ApplyObj() {}
 	
