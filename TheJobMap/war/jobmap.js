@@ -94,7 +94,10 @@ var jobmap = {
 		
 		// Create map controls
 		var mapControls = $('<div id="MapControls"></div>').css('opacity','0');
-		$('<button id="refreshMarkersButton">Refresh markers</button>').click(jobmap.refreshMarkers).appendTo(mapControls);
+		$('<button id="refreshMarkersButton">Refresh markers</button>').click(function() {
+			jobmap.clearMarkers();
+			jobmap.getMarkers('');
+		}).appendTo(mapControls);
 		$('<button id="createMarkerButton">Create my marker</button>').click(jobmap.createMarker).attr('disabled',true).appendTo(mapControls);
 		$('<button id="zoomOutButton">Zoom out</button>').click(jobmap.resetZoom).appendTo(mapControls);
 		jobmap.mapControls = mapControls;
@@ -167,13 +170,19 @@ var jobmap = {
 			jobmap.updateUserForm();
 		}).addClass('hidden').appendTo('#account');
 		$('<button id="logButton"></button>').click(jobmap.logButton).appendTo('#account');
-		jobmap.getUser();
 		
 		// Add listeners
 		google.maps.event.addListener(map, 'zoom_changed', jobmap.zoomChanged);
+		jobmap.zoom = jobmap.map.getZoom();
 		
-		// Markers
-		jobmap.refreshMarkers();
+		// Make requests
+		jobmap.getMarkers('city');
+		setTimeout(function() {
+			jobmap.getUser();
+		}, 50);
+		setTimeout(function() {
+			jobmap.getMarkers('');
+		}, 100);
 	},
 	
 	/**
@@ -223,9 +232,9 @@ var jobmap = {
 		'</div>').appendTo('#sidebar');
 		
 		$.each(jobmap.categories, function(id, cat){
-			$('<label><input type="checkbox" id="'+id+'" /> '+cat+'</label><br/>').click(jobmap.filterMarkers).appendTo('#categoryList');
+			$('<label><input type="checkbox" value="'+id+'" /> '+cat+'</label><br/>').change(jobmap.filterMarkers).appendTo('#categoryList');
 		});
-		$('<label><input type="checkbox" id="showRandoms" /> Display job searchers</label><br/>').appendTo('#categoryList');
+		$('<label><input type="checkbox" id="showRandoms" /> Display job searchers</label><br/>').change(jobmap.filterMarkers).appendTo('#categoryList');
 		
 		$('#accordion input').attr('checked', true);
 		$('#accordion').accordion({ fillSpace: true });
@@ -237,23 +246,25 @@ var jobmap = {
 	 * Filter markers based on zoom level.
 	 */
 	zoomChanged: function() {
-		var zoom = jobmap.map.getZoom();
-		var filter_old = jobmap.filter.slice();
-		if (zoom > 7) {
-			jobmap.filter = ['company', 'random', 'admin'];
+		//printInfo('old zoom: '+jobmap.zoom+', new zoom: '+jobmap.map.getZoom());
+		
+		var old_zoom = jobmap.zoom;
+		jobmap.zoom = jobmap.map.getZoom();
+		if ((old_zoom <= 7 && jobmap.zoom <= 7) || (old_zoom > 7 && jobmap.zoom > 7)) {
+			return; // No update is required
+		}
+		
+		if (jobmap.zoom > 7) {
+			jobmap.filter = ['company', 'admin'];
+			if ($('#showRandoms')[0].checked) {
+				jobmap.filter.push('random');
+			}
 		}
 		else {
 			jobmap.filter = ['city'];
 		}
 		
-		// Filter markers if necessary
-		/*var array_diff = function(a,b) {
-			return a.filter(function(i) { return !(b.indexOf(i) > -1 || ); });
-		};
-		var filter_diff = array_diff(jobmap.filter, filter_old);
-		if (filter_diff.length > 0) {*/
-			jobmap.filterMarkers();
-		//}
+		jobmap.filterMarkers();
 	},
 	
 	/**
@@ -294,45 +305,20 @@ var jobmap = {
 	/**
 	 * Fetch markers from server.
 	 */
-	refreshMarkers: function() {
-		$.getJSON('/rest/marker')
+	getMarkers: function(type) {
+		$.getJSON('/rest/marker/'+(type?type:''))
 		.done(function(data) {
 			printInfo('Received '+data.length+' markers: ', data);
-			jobmap.clearMarkers();
 			$.each(data, function(key, marker) {
-				jobmap.markers.push(marker);
 				jobmap.addMarker(marker);
 			});
-			jobmap.filterMarkers();
+			//jobmap.filterMarkers();
 		})
 		.fail(function(xhr,txt) {
 			printError('Getting markers failed: '+txt+'.');
 		});
 	},
 
-	/**
-	 * Show markers by type.
-	 */
-	filterMarkers: function() {
-		var selectedCategories = [];
-		$('#categoryList :checked').each(function() {
-			selectedCategories.push($(this).attr('id'));
-		});
-		$.each(jobmap.markers, function(i, marker) {
-			var show = (jobmap.showAll
-					|| (jobmap.isOwner(marker) && !jobmap.isAdmin())
-					|| (jobmap.filter.indexOf(marker.type) != -1
-							&& (marker.type != 'company' || selectedCategories.indexOf(marker.cat) != -1)));
-			var now = (marker.mapMarker && marker.mapMarker.getMap() != null);
-			if (show && !now) {
-				marker.mapMarker.setMap(jobmap.map);
-			}
-			else if (!show && now) {
-				marker.mapMarker.setMap(null);
-			}
-		});
-	},
-	
 	/**
 	 * Add a marker to the map.
 	 */
@@ -347,31 +333,25 @@ var jobmap = {
 			title: marker.title
 		});
 
-		/*
 		// Check if we already have the marker
 		var alreadyAdded = false;
-		if (marker.id) {
-			for (var i=0; i < jobmap.markers.length; i++) {
-				if (jobmap.markers[i].id == marker.id) {
-					alreadyAdded = true;
-					var oldMapMarker = jobmap.markers[i].mapMarker;
-					oldMapMarker.setPosition(mapMarker.position);
-					marker.mapMarker = mapMarker = oldMapMarker;
-					jobmap.markers[i] = marker;
-					break;
-				}
+		for (var i=0; i < jobmap.markers.length; i++) {
+			if (jobmap.markers[i].id == marker.id) {
+				// Update existing marker
+				alreadyAdded = true;
+				var oldMapMarker = jobmap.markers[i].mapMarker;
+				oldMapMarker.setPosition(mapMarker.position);
+				marker.mapMarker = mapMarker = oldMapMarker;
+				jobmap.markers[i] = marker;
+				break;
 			}
 		}
 		if (!alreadyAdded) {
-			// This is a new marker, add it
-			mapMarker.setMap(jobmap.map);
+			// This is a new marker
 			marker.mapMarker = mapMarker;
 			jobmap.markers.push(marker);
 			jobmap.mapMarkers.push(mapMarker);
 		}
-		*/
-		marker.mapMarker = mapMarker;
-		jobmap.mapMarkers.push(mapMarker);
 
 		// Set marker icon
 		var pin = jobmap.pins[(!jobmap.isAdmin()&&jobmap.isOwner(marker))?'me':marker.type];
@@ -406,6 +386,37 @@ var jobmap = {
 		 || (jobmap.isOwner(marker) && !jobmap.isAdmin())) {
 			mapMarker.setMap(jobmap.map);
 		}
+	},
+
+	/**
+	 * Filter markers based on type and categories.
+	 */
+	filterMarkers: function() {
+		printInfo('Filtering for: ', jobmap.filter);
+		
+		// Get checked categories
+		var selectedCategories = [];
+		$('#categoryList :checked').each(function() {
+			selectedCategories.push($(this).val());
+		});
+		
+		// Update filter for randoms
+		//$('#showRandoms')[0].checked && (jobmap.filter.indexOf('random') != -1 || jobmap.filter.push('random')) || ()
+		
+		// Filter markers
+		$.each(jobmap.markers, function(i, marker) {
+			var show = (jobmap.showAll
+					|| (jobmap.isOwner(marker) && !jobmap.isAdmin())
+					|| (jobmap.filter.indexOf(marker.type) != -1
+							&& (marker.type != 'company' || selectedCategories.indexOf(marker.cat) != -1)));
+			var now = (marker.mapMarker && marker.mapMarker.getMap() != null);
+			if (show && !now) {
+				marker.mapMarker.setMap(jobmap.map);
+			}
+			else if (!show && now) {
+				marker.mapMarker.setMap(null);
+			}
+		});
 	},
 	
 	/**
@@ -772,6 +783,7 @@ var jobmap = {
 	
 	/**
 	 * Gets user info from the server.
+	 * Called when initializing and when logging in.
 	 */
 	getUser: function(who) {
 		if (!who) who='me';
