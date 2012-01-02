@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>The Job Map API Example</title>
+	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+	<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=true"></script>
+	<script type="text/javascript" src="/jquery/js/jquery-1.7.1.min.js"></script>
+	<script type="text/javascript" src="/jquery/js/jquery-ui-1.8.16.custom.min.js"></script>
+	<script type="text/javascript">
+var baseUrl = 'http://localhost:8888'; // Use http://localhost:8888 when running locally
+
+function initialize() {
+	// Set up error callback
+	$(document).ajaxError(function(e, xhr, settings, exception) {
+		alert(settings.type+' '+settings.url+' failed: '+xhr.responseText.replace(/<.*?>/g,"").trim().substring(0,200));
+	});
+	// Load jobmap object
+	var js = document.createElement('script');
+	js.type = 'text/javascript';
+	js.src = baseUrl+'/api/jobmap.v1.js';
+	$(js).appendTo('head');
+	jobmap.init();
+}
+
+function getMarkers(data) {
+	$('#page').empty();
+	$('<h2>Markers:</h2>').appendTo('#page');
+	$.each(data, function(key, marker) {
+		var el = $('<p>'+JSON.stringify(marker)+'</p>').appendTo('#page');
+		$('<p></p>').append($('<button>Edit marker</button>').click(function() {
+			if (!jobmap.isOwner(marker)) return alert('You are not the owner of this marker');
+			markerForm(el);
+			$('#markerId').val(marker.id);
+			$('#markerLat').val(marker.lat);
+			$('#markerLng').val(marker.lng);
+			$('#markerCat').val(marker.cat);
+			$('#markerTitle').val(marker.title);
+			$('#markerInfo').val(marker.info);
+		})).append($('<button>Delete marker</button>').click(function() {
+			if (!jobmap.isOwner(marker)) return alert('You are not the owner of this marker');
+			if (!confirm('Are you sure you want to delete this marker?')) return;
+			jobmap.deleteMarker(marker.id, function(data) {
+				$('<p>'+JSON.stringify(data)+'</p>').insertAfter(el);
+			});
+		})).appendTo('#page');
+	});
+}
+
+function newMarker() {
+	$('#page').empty();
+	var el = $('<h2>New marker:</h2>').appendTo('#page');
+	markerForm(el);
+}
+
+function markerForm(insertAfter) {
+	$('#editMarker').detach();
+	var cat = '<select id="markerCat">';
+	$.each(jobmap.categories, function(key,val) {
+		cat += '<option value="'+key+'">'+val+'</option>';
+	});
+	cat += '</select>';
+	$('<p id="editMarker">'+
+		'<input type="hidden" id="markerId" />'+
+		'Lat: <input type="text" id="markerLat" placeholder="lat" />'+
+		'Lng: <input type="text" id="markerLng" placeholder="lng" />'+
+		'Cat: '+cat+
+		'Title: <input type="text" id="markerTitle" placeholder="marker title" />'+
+		'Info: <textarea type="text" id="markerInfo" placeholder="job description"></textarea>'+
+		'<button onclick="submitMarker();">Submit marker</button>'+
+		'</p>').insertAfter(insertAfter);
+}
+
+function submitMarker() {
+	var marker = {
+		lat: $('#markerLat').val(),
+		lng: $('#markerLng').val(),
+		cat: $('#markerCat').val(),
+		title: $('#markerTitle').val(),
+		info: $('#markerInfo').val()
+	};
+	var id = $('#markerId').val();
+	if (id != '') {
+		marker.id = id;
+	}
+	
+	jobmap.postMarker(marker, function(data) {
+		$('#editMarker').replaceWith('<p>'+JSON.stringify(data)+'</p>');
+	});
+}
+
+function getUser(data) {
+	$('#page').empty();
+	$('<h2>User details:</h2>').appendTo('#page');
+	$('<p>'+JSON.stringify(data)+'</p>').appendTo('#page');
+	$('<p></p>').append($('<button>Edit details</button>').click(function() {
+		$('#editUser').detach();
+		$('<p id="editUser">'+
+			'Name: <input type="text" id="userName" placeholder="name" /><br/>'+
+			'Sex: <select id="userSex"><option>Not telling</option><option>Male</option><option>Female</option><option>Other</option></select><br/>'+
+			'Phonenumber: <input type="text" id="userPhonenumber" placeholder="phonenumber" /><br/>'+
+			'Birthday: <input type="text" id="userBirthday" placeholder="12345678 (Unix time)" /><br/>'+
+			'<button onclick="updateUser();">Submit</button>'+
+			'</p>').appendTo('#page');
+		$('#userName').val(data.name);
+		$('#userSex').val(data.sex);
+		$('#userPhonenumber').val(data.phonenumber);
+		$('#userBirthday').val(data.birthday);
+	})).append($('<button>Upload CV</button>').click(function() {
+		jobmap.getCvUploadUrl(function(data) {
+			$('<p>'+JSON.stringify(data)+'</p>').appendTo('#page');
+		});
+	})).appendTo('#page');
+}
+
+function updateUser() {
+	var user = {
+		name: $('#userName').val(),
+		sex: $('#userSex').val(),
+		phonenumber: $('#userPhonenumber').val(),
+		birthday: $('#userBirthday').val()
+	};
+	user.birthday || delete user.birthday;
+	jobmap.updateUser(user, function(data) {
+		$('<p>'+JSON.stringify(data)+'</p>').appendTo('#page');
+	});
+}
+
+function getLoginUrls(data) {
+	$('#page').empty();
+	$('<h2>OpenID providers:</h2>').appendTo('#page');
+	$.each(data, function(key, val) {
+		$('<p>'+JSON.stringify(val)+' <button onclick="openWindow(\''+baseUrl+val.loginUrl+'\');">Login using this provider</button></p>').appendTo('#page');
+		
+	});
+}
+
+function logout(data) {
+	$('#page').empty();
+	$('<h2>Logout</h2>').appendTo('#page');
+	if (!jobmap.user) {
+		$('<p>Not logged in!</p>').appendTo('#page');
+	}
+	else {
+		$('<p>'+data.logoutUrl+' <button onclick="openWindow(\''+baseUrl+data.logoutUrl+'\');">Logout</button></p>').appendTo('#page');
+	}
+}
+
+function openWindow(url) {
+	var width = 800;
+	var height = 600;
+	window.open(url, 'thejobmap-openid',
+		'width='+width+',height='+height+','+
+		'left='+($(window).width()/2-width/2)+',top='+($(window).height()/2-height/2)+
+		',location=yes,status=yes,resizable=yes');
+}
+
+function printCats() {
+	$('#page').empty();
+	$('<h2>Marker categories</h2>').appendTo('#page');
+	$('<p>'+JSON.stringify(jobmap.categories)+'</p>').appendTo('#page');
+}
+	</script>
+	<style type="text/css">
+#markers {
+	font-family: Consolas, monospace;
+	font-size: small;
+}
+	</style>
+</head>
+<body onload="initialize()">
+	<div id="controls">
+		User:
+		<button onclick="jobmap.getUser(getUser);">Get user</button>
+		<button onclick="jobmap.getLoginUrls(getLoginUrls);">Get login urls</button>
+		<button onclick="jobmap.getUser(logout);">Logout</button>
+		Markers:
+		<button onclick="jobmap.getMarkers('',getMarkers);">Get markers</button>
+		<button onclick="newMarker();">Create new marker</button>
+		<button onclick="printCats();">Print categories</button>
+	</div>
+	<div id="page"></div>
+</body>
+</html>

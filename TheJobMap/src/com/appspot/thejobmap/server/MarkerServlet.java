@@ -96,15 +96,10 @@ public class MarkerServlet extends HttpServlet {
 			for (int i=0; i < dbList.size(); i++) {
 				MarkerObj marker = new MarkerObj();
 				marker.convertFromEntity(dbList.get(i));
-				/*
 				if ((entityMe == null || !me.email.equals(marker.author)) && !me.isAdmin()) {
 					// Remove extra information if not needed
 					marker.author = null;
 				}
-				*/
-				/*if (marker.id.equals(me.email)) {
-					marker.id = "me";
-				}*/
 				markers.add(marker);
 			}
 			writer.write(gson.toJson(markers));
@@ -123,7 +118,7 @@ public class MarkerServlet extends HttpServlet {
 			for (int i=0; i < dbList.size(); i++) {
 				MarkerObj marker = new MarkerObj();
 				marker.convertFromEntity(dbList.get(i));
-				if (entityMe != null && !me.isAdmin() && !me.email.equals(marker.author)) {
+				if ((entityMe == null || !me.email.equals(marker.author)) && !me.isAdmin()) {
 					// Remove extra information if not needed
 					marker.author = null;
 				}
@@ -390,7 +385,7 @@ public class MarkerServlet extends HttpServlet {
 				Entity userEntity = db.get(userKey);
 				user.convertFromEntity(userEntity);
 			} catch (EntityNotFoundException e) {
-				throw new ServletException("User does not exist. Unable to create marker.");
+				throw new ServletException("User does not exist.");
 			}
 			markerEntity.setProperty("author", user.email);
 			markerEntity.setProperty("type", user.privileges);
