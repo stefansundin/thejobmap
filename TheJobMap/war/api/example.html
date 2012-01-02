@@ -22,6 +22,12 @@ function initialize() {
 	jobmap.init();
 }
 
+function about() {
+	$('#page').empty();
+	$('<h2>About example:</h2>').appendTo('#page');
+	$('<p>This example shows how to use the JS library for The Job Map. The example has been designed from a company point of view. Companies can use this sample code to interface with their own internal job database.</p>').appendTo('#page');
+}
+
 function getMarkers(data) {
 	$('#page').empty();
 	$('<h2>Markers:</h2>').appendTo('#page');
@@ -169,11 +175,12 @@ function printCats() {
 </head>
 <body onload="initialize()">
 	<div id="controls">
-		User:
+		<button onclick="about();">About example</button>
+		&mdash; User:
 		<button onclick="jobmap.getUser(getUser);">Get user</button>
 		<button onclick="jobmap.getLoginUrls(getLoginUrls);">Get login urls</button>
 		<button onclick="jobmap.getUser(logout);">Logout</button>
-		Markers:
+		&mdash; Markers:
 		<button onclick="jobmap.getMarkers('',getMarkers);">Get markers</button>
 		<button onclick="newMarker();">Create new marker</button>
 		<button onclick="printCats();">Print categories</button>
