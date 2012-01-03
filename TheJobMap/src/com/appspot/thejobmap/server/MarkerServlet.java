@@ -27,8 +27,6 @@ import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Text;
 import com.google.gson.Gson;
 
-import java.util.logging.Logger;
-
 /**
  * This servlet handles markers.
  * 
@@ -69,21 +67,6 @@ public class MarkerServlet extends HttpServlet {
 			resource[1] = me.email;
 		}
 		
-		// Is this a private marker?
-		Boolean privMarker = false;
-		if (resource.length > 1 && !"random".equals(resource[1]) && !"company".equals(resource[1])) {
-			privMarker = true;
-		}
-
-		/*
-		// Check privileges
-		if (privMarker && (!me.email.equals(resource[1]) || !me.isAdmin())) {
-			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
-			writer.close();
-			return;
-		}
-		*/
-
 		if (resource.length <= 1) {
 			// GET /marker/
 			// Return list of all public markers
@@ -96,8 +79,8 @@ public class MarkerServlet extends HttpServlet {
 			for (int i=0; i < dbList.size(); i++) {
 				MarkerObj marker = new MarkerObj();
 				marker.convertFromEntity(dbList.get(i));
+				// Remove extra information if not needed
 				if ((entityMe == null || !me.email.equals(marker.author)) && !me.isAdmin()) {
-					// Remove extra information if not needed
 					marker.author = null;
 				}
 				markers.add(marker);
@@ -118,8 +101,8 @@ public class MarkerServlet extends HttpServlet {
 			for (int i=0; i < dbList.size(); i++) {
 				MarkerObj marker = new MarkerObj();
 				marker.convertFromEntity(dbList.get(i));
+				// Remove extra information if not needed
 				if ((entityMe == null || !me.email.equals(marker.author)) && !me.isAdmin()) {
-					// Remove extra information if not needed
 					marker.author = null;
 				}
 				markers.add(marker);
@@ -129,14 +112,26 @@ public class MarkerServlet extends HttpServlet {
 		else if (resource.length == 2) {
 			// GET /marker/<id/email>
 			// Return marker details
-			Entity markerEntity = getMarker(resource[1]);
+			Entity markerEntity = getMarker(resource[1], false);
 			if (markerEntity == null) {
+				res.setStatus(403);
 				writer.write(gson.toJson(new ResultObj("fail", "no such marker")));
 				writer.close();
 				return;
 			}
 			MarkerObj marker = new MarkerObj();
 			marker.convertFromEntity(markerEntity);
+			// Check privileges
+			if ("private".equals(marker.privacy) && !me.email.equals(marker.author) && !me.isAdmin()) {
+				res.setStatus(403);
+				writer.write(gson.toJson(new ResultObj("fail", "private marker")));
+				writer.close();
+				return;
+			}
+			// Remove extra information if not needed
+			if ((entityMe == null || !me.email.equals(marker.author)) && !me.isAdmin()) {
+				marker.author = null;
+			}
 			writer.write(gson.toJson(marker));
 		}
 		else {
@@ -177,6 +172,7 @@ public class MarkerServlet extends HttpServlet {
 		// Fetch user details
 		Entity entityMe = userServlet.getUser();
 		if (entityMe == null) {
+			res.setStatus(403);
 			writer.write(gson.toJson(new ResultObj("fail", "not logged in")));
 			writer.close();
 			return;
@@ -188,14 +184,13 @@ public class MarkerServlet extends HttpServlet {
 			resource[1] = me.email;
 		}
 		
-		/*
 		// Check privileges
 		if ("random".equals(me.privileges) && (resource.length <= 1 || !me.email.equals(resource[1]))) {
+			res.setStatus(403);
 			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 			writer.close();
 			return;
 		}
-		*/
 		
 		// Parse input
 		MarkerObj marker = gson.fromJson(reader, MarkerObj.class);
@@ -230,9 +225,10 @@ public class MarkerServlet extends HttpServlet {
 			// POST /marker/<id/email>
 			// Update marker details
 			// Randoms must create their marker this way
-			markerEntity = getMarker(resource[1]);
+			markerEntity = getMarker(resource[1], true);
 			if (markerEntity == null) {
 				// This happens only if resource[1] was numeric (i.e. not a marker for a random)
+				res.setStatus(403);
 				writer.write(gson.toJson(new ResultObj("fail", "no such marker")));
 				writer.close();
 				return;
@@ -273,6 +269,7 @@ public class MarkerServlet extends HttpServlet {
 		// Check if logged in
 		Entity entityMe = userServlet.getUser();
 		if (entityMe == null) {
+			res.setStatus(403);
 			writer.write(gson.toJson(new ResultObj("fail", "not logged in")));
 			writer.close();
 			return;
@@ -291,23 +288,25 @@ public class MarkerServlet extends HttpServlet {
 			resource[1] = me.email;
 		}
 		
-/*
-		// Check privileges
-		if ((resource.length == 1 || !me.email.equals(resource[1])) && !me.isAdmin()) {
-			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
-			writer.close();
-			return;
-		}
-*/
-		
 		if (resource.length == 2) {
 			// DELETE /marker/<id>
 			// Delete marker
 			
 			// Check if marker exists
-			Entity markerEntity = getMarker(resource[1]);
+			Entity markerEntity = getMarker(resource[1], false);
 			if (markerEntity == null) {
+				res.setStatus(403);
 				writer.write(gson.toJson(new ResultObj("fail", "marker does not exist")));
+				writer.close();
+				return;
+			}
+			MarkerObj marker = new MarkerObj();
+			marker.convertFromEntity(markerEntity);
+			
+			// Check privileges
+			if (!me.email.equals(marker.author) && !me.isAdmin()) {
+				res.setStatus(403);
+				writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 				writer.close();
 				return;
 			}
@@ -328,7 +327,7 @@ public class MarkerServlet extends HttpServlet {
 	 * Get the Entity of a marker based on a path.
 	 * If id is a string, it is a marker for a random. If it does not exist, then create it.
 	 */
-	public Entity getMarker(String path) throws ServletException {
+	public Entity getMarker(String path, Boolean create) throws ServletException {
 		Entity markerEntity = null;
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Key userKey = userServlet.getUserKey();
@@ -352,24 +351,21 @@ public class MarkerServlet extends HttpServlet {
 			try {
 				// Try first with a numeric id
 				Long id = Long.parseLong(path);
-				Key markerKey = KeyFactory.createKey(userKey, "Markers", id);
 				try {
+					Key markerKey = KeyFactory.createKey(userKey, "Markers", id);
 					markerEntity = db.get(markerKey);
 				} catch (EntityNotFoundException e) {
 					// This entity probably belongs to someone else
 					// Search the database
-					Query q = new Query("Users");
+					Query q = new Query("Markers");
 					List<Entity> dbList = db.prepare(q).asList(FetchOptions.Builder.withLimit(1000));
 					for (int i=0; i < dbList.size(); i++) {
-						userKey = dbList.get(i).getKey();
-						markerKey = KeyFactory.createKey(userKey, "Markers", id);
-						try {
-							markerEntity = db.get(markerKey);
+						Entity searchEntity = dbList.get(i);
+						if (searchEntity.getKey().getId() == id) {
+							// Found the marker
+							markerEntity = searchEntity;
 							break;
-						} catch (EntityNotFoundException e2) { }
-					}
-					if (markerEntity == null) {
-						throw new ServletException("The user that created this marker do no longer exists. Database inconsistency.");
+						}
 					}
 				}
 			} catch (NumberFormatException e) {
@@ -380,8 +376,8 @@ public class MarkerServlet extends HttpServlet {
 			}
 		}
 		
-		// If the Entity does not exist in database, create it
-		if (markerEntity == null) {
+		// If the Entity does not exist in database, create it if the caller wants us to
+		if (markerEntity == null && create) {
 			markerEntity = new Entity("Markers", userKey);
 			// Get user and set properties
 			UserObj user = new UserObj();

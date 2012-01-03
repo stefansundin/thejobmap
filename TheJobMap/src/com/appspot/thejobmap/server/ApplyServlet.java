@@ -80,6 +80,7 @@ public class ApplyServlet extends HttpServlet {
 		// Fetch user details
 		Entity entityMe = userServlet.getUser();
 		if (entityMe == null) {
+			res.setStatus(403);
 			writer.write(gson.toJson(new ResultObj("fail", "not logged in")));
 			writer.close();
 			return;
@@ -94,15 +95,6 @@ public class ApplyServlet extends HttpServlet {
 			return;
 		}
 		
-		/*
-		// Check privileges
-		if ("random".equals(me.privileges) && (resource.length <= 1 || !me.email.equals(resource[1]))) {
-			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
-			writer.close();
-			return;
-		}
-		*/
-		
 		// Parse input
 		ApplyObj application = gson.fromJson(reader, ApplyObj.class);
 		application.sanitize();
@@ -112,14 +104,16 @@ public class ApplyServlet extends HttpServlet {
 			// POST /apply/<id>
 			// Apply for a job
 			// Sends an email to the author of the pin
-			entityMarker = markerServlet.getMarker(resource[1]);
+			entityMarker = markerServlet.getMarker(resource[1], false);
 			if (entityMarker == null) {
+				res.setStatus(403);
 				writer.write(gson.toJson(new ResultObj("fail", "no such marker")));
 				writer.close();
 				return;
 			}
 			dbMarker.convertFromEntity(entityMarker);
 			if (!"company".equals(dbMarker.type)) {
+				res.setStatus(403);
 				writer.write(gson.toJson(new ResultObj("fail", "not a company marker")));
 				writer.close();
 				return;
