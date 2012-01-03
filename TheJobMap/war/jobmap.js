@@ -42,7 +42,7 @@ var jobmap = {
 	/** Variables */
 	map: null,
 	markers: [],
-	filter: ['city'],
+	filter: {type:['city'], cat:[]},
 	mapMarkers: [],
 	newMarker: null,
 	myMarkers: [],
@@ -53,13 +53,15 @@ var jobmap = {
 	user: null,
 	
 	/**
-	 * Array with categories.
+	 * Available categories.
 	 */
-	categories: {administration: 'Administration', construction: 'Construction', projectLeader: 'Project leader', computerScience: 'Computer science',
+	categories: {
+		administration: 'Administration', construction: 'Construction', projectLeader: 'Project leader', computerScience: 'Computer science',
 		disposalPromotion: 'Disposal & promotion', hotelRestaurant: 'Hotel & restaurant', medicalService: 'Health & medical service',
 		industrialManufacturing: 'Industrial manufacturing', installation: 'Installation', cultureMedia: 'Culture, media, design', 
 		military: 'Military', environmentalScience: 'Environmental science', pedagogical: 'Pedagogical', social: 'Social work', 
-		security: 'Security', technical: 'Technical', transport: 'Transport', other: 'Other'},
+		security: 'Security', technical: 'Technical', transport: 'Transport', other: 'Other'
+	},
 	
 	/**
 	 * Initialize The Job Map.
@@ -98,7 +100,7 @@ var jobmap = {
 			jobmap.clearMarkers();
 			jobmap.getMarkers('');
 		}).appendTo(mapControls);
-		$('<button id="createMarkerButton">Create my marker</button>').click(jobmap.createMarker).attr('disabled',true).appendTo(mapControls);
+		$('<button id="createMarkerButton">Create my marker</button>').click(jobmap.createMarker).appendTo(mapControls);
 		$('<button id="zoomOutButton">Zoom out</button>').click(jobmap.resetZoom).appendTo(mapControls);
 		jobmap.mapControls = mapControls;
 		map.controls[google.maps.ControlPosition.TOP_CENTER].push(mapControls[0]);
@@ -182,7 +184,7 @@ var jobmap = {
 		}, 50);
 		setTimeout(function() {
 			jobmap.getMarkers('');
-		}, 100);
+		}, 500);
 	},
 	
 	/**
@@ -233,6 +235,7 @@ var jobmap = {
 		
 		$.each(jobmap.categories, function(id, cat){
 			$('<label><input type="checkbox" value="'+id+'" /> '+cat+'</label><br/>').change(jobmap.filterMarkers).appendTo('#categoryList');
+			jobmap.filter.cat.push(id);
 		});
 		$('<label><input type="checkbox" id="showRandoms" /> Display job searchers</label><br/>').change(jobmap.filterMarkers).appendTo('#categoryList');
 		
@@ -255,13 +258,13 @@ var jobmap = {
 		}
 		
 		if (jobmap.zoom > 7) {
-			jobmap.filter = ['company', 'admin'];
+			jobmap.filter.type = ['company', 'admin'];
 			if ($('#showRandoms')[0].checked) {
-				jobmap.filter.push('random');
+				jobmap.filter.type.push('random');
 			}
 		}
 		else {
-			jobmap.filter = ['city'];
+			jobmap.filter.type = ['city'];
 		}
 		
 		jobmap.filterMarkers();
@@ -312,10 +315,6 @@ var jobmap = {
 			$.each(data, function(key, marker) {
 				jobmap.addMarker(marker);
 			});
-			//jobmap.filterMarkers();
-		})
-		.fail(function(xhr,txt) {
-			printError('Getting markers failed: '+txt+'.');
 		});
 	},
 
@@ -362,7 +361,7 @@ var jobmap = {
 		if (jobmap.isOwner(marker)) {
 			jobmap.myMarkers.push(marker);
 			if (jobmap.user.privileges == 'random') {
-				$('#createMarkerButton',jobmap.mapControls).contents().replaceWith('Edit my marker');
+				$('#createMarkerButton',jobmap.mapControls).text('Edit my marker');
 			}
 		}
 		
@@ -382,8 +381,7 @@ var jobmap = {
 		}
 		
 		// Add marker
-		if (jobmap.filter.indexOf(marker.type) != -1
-		 || (jobmap.isOwner(marker) && !jobmap.isAdmin())) {
+		if (jobmap.markerVisible(marker)) {
 			mapMarker.setMap(jobmap.map);
 		}
 	},
@@ -392,23 +390,18 @@ var jobmap = {
 	 * Filter markers based on type and categories.
 	 */
 	filterMarkers: function() {
-		printInfo('Filtering for: ', jobmap.filter);
-		
-		// Get checked categories
-		var selectedCategories = [];
+		// Update category filter
+		jobmap.filter.cat = [];
 		$('#categoryList :checked').each(function() {
-			selectedCategories.push($(this).val());
+			jobmap.filter.cat.push($(this).val());
 		});
 		
-		// Update filter for randoms
-		//$('#showRandoms')[0].checked && (jobmap.filter.indexOf('random') != -1 || jobmap.filter.push('random')) || ()
+		// Debug output
+		printInfo('Filtering for: ', jobmap.filter);
 		
 		// Filter markers
 		$.each(jobmap.markers, function(i, marker) {
-			var show = (jobmap.showAll
-					|| (jobmap.isOwner(marker) && !jobmap.isAdmin())
-					|| (jobmap.filter.indexOf(marker.type) != -1
-							&& (marker.type != 'company' || selectedCategories.indexOf(marker.cat) != -1)));
+			var show = jobmap.markerVisible(marker);
 			var now = (marker.mapMarker && marker.mapMarker.getMap() != null);
 			if (show && !now) {
 				marker.mapMarker.setMap(jobmap.map);
@@ -417,6 +410,15 @@ var jobmap = {
 				marker.mapMarker.setMap(null);
 			}
 		});
+	},
+	
+	/**
+	 * Returns whether or not a marker should be visible with the current filters, and so on.
+	 */
+	markerVisible: function(marker) {
+		return (jobmap.showAll
+			|| (jobmap.isOwner(marker) && !jobmap.isAdmin())
+			|| (jobmap.filter.type.indexOf(marker.type) != -1 && (marker.type != 'company' || jobmap.filter.cat.indexOf(marker.cat) != -1)));
 	},
 	
 	/**
@@ -513,9 +515,6 @@ var jobmap = {
 				marker.id = data.id;
 				jobmap.addMarker(marker);
 			}
-		})
-		.fail(function(xhr,txt) {
-			printError('Sending marker failed: '+txt+'.');
 		});
 	},
 
@@ -532,7 +531,9 @@ var jobmap = {
 			marker.mapMarker.setMap(null);
 			if (marker == jobmap.myMarkers[0]) {
 				jobmap.myMarkers.splice(0, 1);
-				$('#createMarkerButton',jobmap.mapControls).contents().replaceWith('Create my marker');
+				if (jobmap.user.privileges == 'random') {
+					$('#createMarkerButton',jobmap.mapControls).text('Create my marker');
+				}
 			}
 			for (var i=0; i < jobmap.markers.length; i++) {
 				if (marker.id == jobmap.markers[i].id) {
@@ -540,9 +541,6 @@ var jobmap = {
 					break;
 				}
 			}
-		})
-		.fail(function(xhr,txt) {
-			printError('Delete marker failed: '+txt+'.');
 		});
 	},
 
@@ -566,7 +564,6 @@ var jobmap = {
 			marker.numApply++;
 		})
 		.fail(function(xhr,txt) {
-			printError('applyJob failed: '+txt+'.');
 			$('#applyButton').text('Send application').attr('disabled', false);
 			$('#applyInfo').attr('disabled', false);
 		});
@@ -578,7 +575,12 @@ var jobmap = {
 	setInfoWindow: function(marker, mode) {
 		if (!mode && marker == jobmap.newMarker) {
 			mode = 'new';
-			marker = {mapMarker: jobmap.newMarker};
+			marker = {
+				title: jobmap.user.name,
+				privileges: jobmap.user.privileges,
+				mapMarker: jobmap.newMarker
+			};
+			jobmap.isAdmin() && (marker.type = 'company');
 		}
 		if (!mode) mode='view';
 		
@@ -649,7 +651,7 @@ var jobmap = {
 		else if (mode == 'edit' || mode == 'new') {
 			$('<h3></h3>').text((mode=='edit'?'Edit marker':'Enter details')).appendTo(info);
 			if (jobmap.user.privileges != 'random') {
-				$('<input id="markerTitle" placeholder="Marker title" />').val(marker.title || jobmap.user.name).appendTo(info);
+				$('<input id="markerTitle" placeholder="Marker title" />').val(marker.title).appendTo(info);
 			}
 			if (jobmap.isAdmin()) {
 				$(info).append(' ');
@@ -666,8 +668,8 @@ var jobmap = {
 						marker.mapMarker.setIcon(pin.icon);
 						marker.mapMarker.setShadow(pin.shadow);
 						// Hide or show category
-						if (type == 'company') $('#markerCat').show();
-						else $('#markerCat').hide();
+						if (type == 'company') $('#markerCat').css('visibility', 'visible');
+						else $('#markerCat').css('visibility', 'hidden');
 					}).appendTo(info);
 			}
 			$('<p></p>').append($('<textarea id="markerInfo"></textarea>')
@@ -678,35 +680,43 @@ var jobmap = {
 				.appendTo(info);
 			// Add categories
 			if (marker.type == 'company' || jobmap.user.privileges == 'company' || jobmap.isAdmin()) {
-				var markerCat = $('<select id="markerCat"></select>').appendTo(info);
+				var markerCat = $('<select id="markerCat"></select>');
 				$.each(jobmap.categories, function(id,cat) {
 					$('<option></option>').val(id).text(cat).appendTo(markerCat);
 				});
 				$(markerCat).val(marker.cat);
+				if (marker.type != 'company' && jobmap.isAdmin()) $(markerCat).css('visibility', 'hidden');
+				$('<p></p>').append(markerCat).appendTo(info);
 			}
 			if (jobmap.user.privileges == 'random') {
 				$('<p><label><input type="checkbox" id="markerPrivacy" /> Only show my marker to companies</label></p>').appendTo(info);
 				$('#markerPrivacy',info).attr('checked', (marker.privacy == 'private'));
 			}
 			// Save button
-			$('<button></button>').text((mode=='edit'?'Save changes':'Store marker')).click(function() {
-				if (mode == 'edit') {
-					marker.title = $('#markerTitle').val() || marker.title;
-					marker.info = $('#markerInfo').val();
-					marker.type = $('#markerType').val() || marker.type;
-					marker.cat = $('#markerCat').val() || marker.cat;
-					marker.privacy = ($('#markerPrivacy')[0].checked?'private':'public') || marker.privacy;
-					jobmap.postMarker(marker);
-					jobmap.infoWindow.close();
-				}
-				else {
-					jobmap.postMarker();
-				}
-			}).appendTo(info);
+			var buttons = $('<p></p>').append(
+				$('<button></button>').text((mode=='edit'?'Save changes':'Store marker')).click(function() {
+					if (mode == 'edit') {
+						marker.title = $('#markerTitle').val() || marker.title;
+						marker.info = $('#markerInfo').val();
+						marker.type = $('#markerType').val() || marker.type;
+						if (marker.type == 'company') {
+							marker.cat = $('#markerCat').val() || marker.cat;
+						}
+						else if (marker.type == 'random') {
+							marker.privacy = ($('#markerPrivacy')[0].checked?'private':'public');
+						}
+						jobmap.postMarker(marker);
+						jobmap.infoWindow.close();
+					}
+					else {
+						jobmap.postMarker();
+					}
+				})
+			).appendTo(info);
 			if (mode == 'edit') {
 				$('<button>Delete marker</button>').click(function() {
 					jobmap.deleteMarker(marker);
-				}).appendTo(info);
+				}).appendTo(buttons);
 			}
 		}
 		
@@ -775,9 +785,6 @@ var jobmap = {
 			$.each(data.slice(1), function(key, val) {
 				$('<img src="images/openid/'+val.name.toLowerCase()+'.png" title="Login with your '+val.name+' account" />').click(val,openLoginWindow).appendTo(moreProviders);
 			});
-		})
-		.fail(function(xhr,txt) {
-			printError('Getting OpenID providers failed: '+txt+'.');
 		});
 	},
 	
@@ -799,17 +806,14 @@ var jobmap = {
 			jobmap.user = data;
 			
 			// Update controls
-			$('#createMarkerButton',jobmap.mapControls).attr('disabled', false);
-			$('#accname').empty().append(jobmap.getUsername()).removeClass('hidden');
+			$('#createMarkerButton',jobmap.mapControls).text('Create '+(jobmap.user.privileges=='random'?'my':'a')+' marker');
+			$('#accname').text(jobmap.getUsername()).removeClass('hidden');
 			$(jobmap.mapControls).animate({opacity:1}, 'slow');
 			if (jobmap.isAdmin()) {
-				$('<button id="adminButton">Admin</button>').click(jobmap.admin).appendTo('#account');
+				$('<button id="adminButton">Admin</button>').click(jobmap.admin).insertBefore('#logButton');
 			}
 			
 			// Go through already added markers
-			if (jobmap.user.privileges == 'company') {
-			
-			}
 			$.each(jobmap.markers, function(i, marker) {
 				if (jobmap.isOwner(marker) && !jobmap.isAdmin()) {
 					marker.mapMarker.setIcon(jobmap.pins.me.icon);
@@ -820,11 +824,8 @@ var jobmap = {
 				}
 			});
 		})
-		.fail(function(xhr,txt) {
-			printError('getUser failed: '+txt+'.');
-		})
 		.always(function() {
-			$('#logButton').empty().append(jobmap.user?'Logout':'Login');
+			$('#logButton').text(jobmap.user?'Logout':'Login');
 			$('#account').fadeIn('slow');
 		});
 	},
@@ -884,10 +885,6 @@ var jobmap = {
 					jobmap.updateUserForm(val);
 				}).appendTo('#adminDialog');
 			});
-			
-		})
-		.fail(function(xhr,txt) {
-			printError('getUsers failed: '+txt+'.');
 		});
 	},
 	
@@ -933,71 +930,88 @@ var jobmap = {
 		var who = jobmap.who = (user==jobmap.user?'me':user.email);
 		if ($('#updateUserForm').length) return;
 		
+		// Define buttons and their actions
+		var buttons = {
+			Save: function() {
+				var userObj = {
+					name: $('#userName').val(),
+					sex: $('#userSex').val(),
+					phonenumber: $('#userPhonenumber').val()
+				};
+				
+				var birthday = $('#userBirthday').val();
+				if (birthday != "") {
+					var bday = new Date(birthday);
+					userObj.birthday = bday.getTime();
+					if (isNaN(userObj.birthday)) {
+						return alert('You must enter a valid date for your birthday. Use the format YYYY-MM-DD.');
+					}
+				}
+				
+				if (jobmap.isAdmin()) {
+					userObj.privileges = $('#userPrivileges').val();
+				}
+				
+				printInfo('Sending user ('+who+') details: ', userObj);
+				$.ajax({
+					url: '/rest/user/'+who,
+					type: 'POST',
+					dataType: 'json',
+					data: JSON.stringify(userObj)
+				})
+				.done(function(data) {
+					printInfo('Reply: ', data);
+					$('#updateUserForm').dialog('close');
+					$.extend(user, userObj);
+					$('#accname').text(jobmap.getUsername());
+				});
+				
+				// Delete CV?
+				if ($('#userDeleteCv').attr('checked')) {
+					printInfo('Deleting CV');
+
+					$.ajax({
+						url: '/rest/user/'+who+'/cv',
+						type: 'DELETE'
+					})
+					.done(function(data) {
+						printInfo('Reply: ', data);
+						user.cvUploaded = false;
+					});
+				}
+			},
+			Cancel: function() {
+				$(this).dialog('close');
+			}
+		};
+		// Define admin buttons
+		if (jobmap.isAdmin()) {
+			buttons = {
+				Save: buttons.Save,
+				'Delete user': function() {
+					if (!confirm('Are you sure you want to delete this user: '+who+'?')) return;
+					
+					$.ajax({
+						url: '/rest/user/'+who,
+						type: 'DELETE'
+					})
+					.done(function(data) {
+						alert('User was successfully deleted.');
+						$('#updateUserForm').dialog('close');
+					});
+				},
+				Cancel: buttons.Cancel
+			}
+		}
+		
+		// Create dialog
 		$('<div id="updateUserForm"></div>').dialog({
 			title: (who=='me'?'Your personal information':who),
 			dialogClass: 'updateUserForm',
 			position: ['right', 70],
 			height: 530,
 			width: 380,
-			buttons: {
-				Save: function() {
-					var userObj = {
-						name: $('#userName').val(),
-						sex: $('#userSex').val(),
-						phonenumber: $('#userPhonenumber').val()
-					};
-					
-					var birthday = $('#userBirthday').val();
-					if (birthday != "") {
-						var bday = new Date(birthday);
-						userObj.birthday = bday.getTime();
-						if (isNaN(userObj.birthday)) {
-							return alert('You must enter a valid date for your birthday. Use the format YYYY-MM-DD.');
-						}
-					}
-					
-					if (jobmap.isAdmin()) {
-						userObj.privileges = $('#userPrivileges').val();
-					}
-					
-					printInfo('Sending user ('+who+') details: ', userObj);
-					$.ajax({
-						url: '/rest/user/'+who,
-						type: 'POST',
-						dataType: 'json',
-						data: JSON.stringify(userObj)
-					})
-					.done(function(data) {
-						printInfo('Reply: ', data);
-						$('#updateUserForm').dialog('close');
-						$.extend(user, userObj);
-						$('#accname').empty().append(jobmap.getUsername());
-					})
-					.fail(function(xhr,txt) {
-						printError('Sending user details failed: '+txt+'.');
-					});
-					
-					// Delete CV?
-					if ($('#userDeleteCv').attr('checked')) {
-						printInfo('Deleting CV');
-
-						$.ajax({
-							url: '/rest/user/'+who+'/cv',
-							type: 'DELETE'
-						})
-						.done(function(data) {
-							printInfo('Reply: ', data);
-							user.cvUploaded = false;
-						})
-						.fail(function(xhr,txt) {
-							printError('Delete CV failed: '+txt+'.');
-						});
-					}
-				},
-				Cancel: function() {
-					$(this).dialog('close');
-				}
-			},
+			buttons: buttons,
 			close: function() {
 				$(this).remove();
 			}
@@ -1008,6 +1022,8 @@ var jobmap = {
 				$('#updateUserForm').parents('.ui-dialog').first().find('.ui-button').first().click();
 			}
 		});
+		
+		// Add elements to dialog
 		$('<p>Email: </p>').add($('<input type="text" id="userEmail" readonly />').val(user.email)).appendTo('#updateUserForm');
 		$('<p>Name: </p>').add($('<input type="text" id="userName" placeholder="Your name" />').val(user.name)).appendTo('#updateUserForm');
 		if (jobmap.user.privileges != 'company') {
@@ -1066,9 +1082,6 @@ var jobmap = {
 		.done(function(data) {
 			printInfo('CV upload url: ', data);
 			$('#cvIframe').contents().find('#form').attr('action', data.uploadUrl);
-		})
-		.fail(function(xhr,txt) {
-			printError('Getting CV upload url failed: '+txt+'.');
 		});
 	}
 };

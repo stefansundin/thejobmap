@@ -8,6 +8,7 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -32,6 +33,8 @@ import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
@@ -70,37 +73,28 @@ public class UserServlet extends HttpServlet {
 			writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 		}
 		
-		// Check if logged in
-		UserService userService = UserServiceFactory.getUserService();
-		User u = userService.getCurrentUser();
-		if (u == null) {
+		// Fetch user details
+		Entity entityMe = getUser();
+		if (entityMe == null) {
+			// Not logged in
 			writer.write(gson.toJson(new ResultObj("fail", "not logged in")));
 			writer.close();
 			return;
 		}
-		
 		// Logged in
-		me.email = u.getEmail();
+		me.convertFromEntity(entityMe);
+		// Get logout url
+		UserService userService = UserServiceFactory.getUserService();
 		me.logoutUrl = userService.createLogoutURL("/");
 		
-		// Fetch user details
-		Entity entityMe = getUser();
-		if (entityMe == null) {
-			// User is logged in but does not exist in database yet (due to delays)
-			// Return stub
-			writer.write(gson.toJson(me));
-			writer.close();
-			return;
-		}
-		me.convertFromEntity(entityMe);
-		
 		// Handle "me"
-		if (resource.length >= 2 && "me".equals(resource[1])) {
+		if (resource.length > 1 && "me".equals(resource[1])) {
 			resource[1] = me.email;
 		}
 		
 		// Check privileges
-		if ((resource.length <= 1 || !me.email.equals(resource[1])) && !"admin".equals(me.privileges)) {
+		if ((resource.length <= 1 || !me.email.equals(resource[1])) && !me.isAdmin()) {
+			res.setStatus(403);
 			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 			writer.close();
 			return;
@@ -112,6 +106,7 @@ public class UserServlet extends HttpServlet {
 		if (resource.length > 1 && !me.email.equals(resource[1])) {
 			entityUser = getUser(resource[1]);
 			if (entityUser == null) {
+				res.setStatus(403);
 				writer.write(gson.toJson(new ResultObj("fail", "no such user")));
 				writer.close();
 				return;
@@ -174,6 +169,7 @@ public class UserServlet extends HttpServlet {
 
 			// Fail if CV already is uploaded
 			if (user.cvUploaded) {
+				res.setStatus(403);
 				writer.write(gson.toJson(new ResultObj("fail", "already has cv")));
 				writer.close();
 				return;
@@ -212,6 +208,7 @@ public class UserServlet extends HttpServlet {
 		// Fetch user details
 		Entity entityMe = getUser();
 		if (entityMe == null) {
+			res.setStatus(403);
 			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 			writer.close();
 			return;
@@ -219,12 +216,13 @@ public class UserServlet extends HttpServlet {
 		me.convertFromEntity(entityMe);
 		
 		// Handle "me"
-		if (resource.length >= 2 && "me".equals(resource[1])) {
+		if (resource.length > 1 && "me".equals(resource[1])) {
 			resource[1] = me.email;
 		}
 		
 		// Check privileges
-		if ((resource.length <= 1 || !me.email.equals(resource[1])) && !"admin".equals(me.privileges)) {
+		if ((resource.length <= 1 || !me.email.equals(resource[1])) && !me.isAdmin()) {
+			res.setStatus(403);
 			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 			writer.close();
 			return;
@@ -236,6 +234,7 @@ public class UserServlet extends HttpServlet {
 		if (resource.length > 1 && !me.email.equals(resource[1])) {
 			entityUser = getUser(resource[1]);
 			if (entityUser == null) {
+				res.setStatus(403);
 				writer.write(gson.toJson(new ResultObj("fail", "no such user")));
 				writer.close();
 				return;
@@ -283,6 +282,7 @@ public class UserServlet extends HttpServlet {
 		// Check if logged in
 		Entity entityMe = getUser();
 		if (entityMe == null) {
+			res.setStatus(403);
 			writer.write(gson.toJson(new ResultObj("fail", "not logged in")));
 			writer.close();
 			return;
@@ -298,12 +298,13 @@ public class UserServlet extends HttpServlet {
 		String[] resource = path.split("/");
 		
 		// Handle "me"
-		if (resource.length >= 2 && "me".equals(resource[1])) {
+		if (resource.length > 1 && "me".equals(resource[1])) {
 			resource[1] = me.email;
 		}
 		
 		// Check privileges
-		if ((resource.length == 1 || !me.email.equals(resource[1])) && !"admin".equals(me.privileges)) {
+		if ((resource.length == 1 || !me.email.equals(resource[1])) && !me.isAdmin()) {
+			res.setStatus(403);
 			writer.write(gson.toJson(new ResultObj("fail", "not enough privileges")));
 			writer.close();
 			return;
@@ -312,7 +313,7 @@ public class UserServlet extends HttpServlet {
 		// Fetch user object if not me
 		UserObj user = new UserObj();
 		Entity entityUser = entityMe;
-		if (resource.length >= 3 && !me.email.equals(resource[1])) {
+		if (resource.length > 1 && !me.email.equals(resource[1])) {
 			entityUser = getUser(resource[1]);
 		}
 		user.convertFromEntity(entityUser);
@@ -324,7 +325,28 @@ public class UserServlet extends HttpServlet {
 		}
 		else if (resource.length == 2) {
 			// DELETE /user/<email>
-			// Delete user
+			// Delete user and all associated information
+			
+			// Delete CV
+			// Cannot be done in same transaction as below since it's an operation in the blobstore
+			if (user.cvUploaded) {
+				BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
+				BlobKey blobKey = new BlobKey((String) entityUser.getProperty("cv"));
+				blobstoreService.delete(blobKey);
+			}
+			
+			// Delete user and his/her markers in an atomic transaction
+			Transaction txn = db.beginTransaction();
+			db.delete(entityUser.getKey());
+			Query q = new Query("Markers");
+			q.addFilter("author", FilterOperator.EQUAL, user.email);
+			Iterator<Entity> it = db.prepare(q).asIterator();
+			while (it.hasNext()) {
+				Entity entityMarker = it.next();
+				System.out.println(entityMarker.getKey());
+				db.delete(entityMarker.getKey());
+			}
+			txn.commit();
 		}
 		else if (resource.length == 3
 				&& "cv".equals(resource[2])) {
@@ -332,7 +354,8 @@ public class UserServlet extends HttpServlet {
 			// Delete CV
 			
 			// Make sure CV exists
-			if (!entityUser.hasProperty("cv")) {
+			if (!user.cvUploaded) {
+				res.setStatus(403);
 				writer.write(gson.toJson(new ResultObj("fail", "user cv does not exist")));
 				writer.close();
 				return;
@@ -375,14 +398,14 @@ public class UserServlet extends HttpServlet {
 	/**
 	 * Get details of user.
 	 */
-	public Entity getUser(String email) {
+	public Entity getUser(String email) throws ServletException {
 		// Query the database
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		try {
 			Entity entityUser = db.get(KeyFactory.createKey("Users", email));
 			return entityUser;
 		} catch (EntityNotFoundException e) {
-			return null;
+			throw new ServletException("User is logged in but does not exist in database.");
 		}
 	}
 	
@@ -390,7 +413,7 @@ public class UserServlet extends HttpServlet {
 	 * Get details for "me".
 	 * Used pretty much everywhere.
 	 */
-	public Entity getUser() {
+	public Entity getUser() throws ServletException {
 		User u = UserServiceFactory.getUserService().getCurrentUser();
 		if (u == null) { //Not logged in
 			return null;

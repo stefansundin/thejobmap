@@ -12,7 +12,7 @@ a {
 	color: blue !important;
 	cursor: pointer;
 }
-input {
+input, select, button, textarea {
 	margin: 0;
 }
 input[readonly] {
@@ -48,7 +48,7 @@ h1,h2,h3,h4 {
 	float: right;
 	margin-top: -10px;
 	background-color: rgb(201,223,175);
-	padding: 2px 8px 3px 20px;
+	padding: 2px 4px 3px 20px;
 	
 	border-left: 2px solid rgb(234,236,201);
 	border-bottom: 2px solid rgb(234,236,201);
@@ -57,6 +57,7 @@ h1,h2,h3,h4 {
 	border-bottom-left-radius: 20px;
 }
 #panel #account button {
+	margin: 2px 3px;
 }
 #panel #account #accname {
 	text-decoration: underline !important;

@@ -65,13 +65,13 @@ public class MarkerServlet extends HttpServlet {
 		me.convertFromEntity(entityMe);
 
 		// Handle "me"
-		if (resource.length >= 2 && "me".equals(resource[1])) {
+		if (resource.length > 1 && "me".equals(resource[1])) {
 			resource[1] = me.email;
 		}
 		
 		// Is this a private marker?
 		Boolean privMarker = false;
-		if (resource.length >= 2 && !"random".equals(resource[1]) && !"company".equals(resource[1])) {
+		if (resource.length > 1 && !"random".equals(resource[1]) && !"company".equals(resource[1])) {
 			privMarker = true;
 		}
 
@@ -149,8 +149,10 @@ public class MarkerServlet extends HttpServlet {
 	 * POST - Addition or update of marker.
 	 */
 	protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-		Logger log = Logger.getLogger(MarkerServlet.class.getName());
-		log.info(req.getCharacterEncoding());
+		System.out.println("Encoding: "+req.getCharacterEncoding());
+		System.out.flush();
+		//Logger log = Logger.getLogger(MarkerServlet.class.getName());
+		//log.info(req.getCharacterEncoding());
 		
 		
 		// Initialize stuff like streams
@@ -182,7 +184,7 @@ public class MarkerServlet extends HttpServlet {
 		me.convertFromEntity(entityMe);
 		
 		// Handle "me"
-		if (resource.length >= 2 && "me".equals(resource[1])) {
+		if (resource.length > 1 && "me".equals(resource[1])) {
 			resource[1] = me.email;
 		}
 		
@@ -215,8 +217,8 @@ public class MarkerServlet extends HttpServlet {
 				throw new ServletException("Invalid entry.");
 			}
 			
-			log.info("Title: "+marker.title);
-			log.info("Info: "+marker.info);
+			//log.info("Title: "+marker.title);
+			//log.info("Info: "+marker.info);
 			// Insert in database
 			db.put(markerEntity);
 			Long id = markerEntity.getKey().getId();
@@ -285,7 +287,7 @@ public class MarkerServlet extends HttpServlet {
 		String[] resource = path.split("/");
 		
 		// Handle "me"
-		if (resource.length >= 2 && "me".equals(resource[1])) {
+		if (resource.length > 1 && "me".equals(resource[1])) {
 			resource[1] = me.email;
 		}
 		
@@ -357,7 +359,6 @@ public class MarkerServlet extends HttpServlet {
 					// This entity probably belongs to someone else
 					// Search the database
 					Query q = new Query("Users");
-					q.addFilter("privileges", FilterOperator.EQUAL, "company");
 					List<Entity> dbList = db.prepare(q).asList(FetchOptions.Builder.withLimit(1000));
 					for (int i=0; i < dbList.size(); i++) {
 						userKey = dbList.get(i).getKey();
@@ -366,6 +367,9 @@ public class MarkerServlet extends HttpServlet {
 							markerEntity = db.get(markerKey);
 							break;
 						} catch (EntityNotFoundException e2) { }
+					}
+					if (markerEntity == null) {
+						throw new ServletException("The user that created this marker do no longer exists. Database inconsistency.");
 					}
 				}
 			} catch (NumberFormatException e) {
