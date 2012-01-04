@@ -57,7 +57,7 @@ public class UserServlet extends HttpServlet {
 		// Initialize stuff like streams
 		req.setCharacterEncoding("UTF-8");
 		res.setContentType("application/json; charset=UTF-8");
-		res.setHeader("Access-Control-Allow-Origin", "http://localhost:*/");
+		res.setHeader("Access-Control-Allow-Origin", "http://localhost:8888/");
 		BufferedWriter writer = null; //We can't initialize this yet since serving CV through blobstore does not like it
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
@@ -194,6 +194,7 @@ public class UserServlet extends HttpServlet {
 		// Initialize stuff like streams
 		req.setCharacterEncoding("UTF-8");
 		res.setContentType("application/json; charset=UTF-8");
+		res.setHeader("Access-Control-Allow-Origin", "http://localhost:8888/");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(req.getInputStream()));
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
@@ -275,6 +276,7 @@ public class UserServlet extends HttpServlet {
 	protected void doDelete(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
 		// Initialize stuff like streams
 		res.setContentType("application/json; charset=UTF-8");
+		res.setHeader("Access-Control-Allow-Origin", "http://localhost:8888/");
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();

@@ -57,10 +57,10 @@ public class UserObj {
 	 * entityMe param makes sure that the current user has permission to update some properties.
 	 */
 	public void extend(UserObj other, Entity entityMe) {
-		name = other.name;
-		birthday = other.birthday;
-		sex = other.sex;
-		phonenumber = other.phonenumber;
+		if (other.name != null)        name = other.name;
+		if (other.birthday != null)    birthday = other.birthday;
+		if (other.sex != null)         sex = other.sex;
+		if (other.phonenumber != null) phonenumber = other.phonenumber;
 
 		String myPrivileges = (String) entityMe.getProperty("privileges");
 		if (myPrivileges.equals("admin")) {
