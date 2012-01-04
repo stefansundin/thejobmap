@@ -196,6 +196,7 @@ public class UserServlet extends HttpServlet {
 		req.setCharacterEncoding("UTF-8");
 		res.setContentType("application/json; charset=UTF-8");
 		//res.setHeader("Access-Control-Allow-Origin", "http://localhost:8888/");
+		//res.setHeader("Access-Control-Allow-Credentials", "true");
 		BufferedReader reader = new BufferedReader(new InputStreamReader(req.getInputStream()));
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
@@ -278,6 +279,7 @@ public class UserServlet extends HttpServlet {
 		// Initialize stuff like streams
 		res.setContentType("application/json; charset=UTF-8");
 		//res.setHeader("Access-Control-Allow-Origin", "http://localhost:8888/");
+		//res.setHeader("Access-Control-Allow-Credentials", "true");
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();

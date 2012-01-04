@@ -35,11 +35,11 @@ var jobmap = {
 	 */
 	init: function(settings) {
 		$.ajaxSetup({
-			contentType: 'application/json; charset=UTF-8',
+			contentType: 'application/json; charset=UTF-8'/*,
 			crossDomain: true,
 			xhrFields: {
 				withCredentials: true
-			}
+			}*/
 		});
 		jobmap.baseUrl = settings.baseUrl;
 		if (settings.onload) settings.onload();
