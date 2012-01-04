@@ -209,7 +209,10 @@ public class ApplyServlet extends HttpServlet {
 	 * For cross-site scripting.
 	 */
 	protected void doOptions(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-		res.setHeader("Access-Control-Allow-Origin", "http://localhost/");
+		String origin = req.getHeader("Origin");
+		if ("http://localhost".equals(origin) || origin.indexOf("http://localhost:") != -1) {
+			res.setHeader("Access-Control-Allow-Origin", origin);
+		}
 		res.setHeader("Access-Control-Allow-Credentials", "true");
 		res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
 		res.setHeader("Access-Control-Allow-Headers", "Content-Type");
