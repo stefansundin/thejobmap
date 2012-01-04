@@ -142,7 +142,7 @@ function getLoginUrls(data) {
 	$('#page').empty();
 	$('<h2>OpenID providers:</h2>').appendTo('#page');
 	$.each(data, function(key, val) {
-		$('<p>'+JSON.stringify(val)+' <button onclick="openWindow(\''+baseUrl+val.loginUrl+'\');">Login using this provider</button></p>').appendTo('#page');
+		$('<p>'+JSON.stringify(val)+' <button onclick="openWindow(\''+val.loginUrl+'\');">Login using this provider</button></p>').appendTo('#page');
 		
 	});
 }
@@ -154,7 +154,7 @@ function logout(data) {
 		$('<p>Not logged in!</p>').appendTo('#page');
 	}
 	else {
-		$('<p>'+data.logoutUrl+' <button onclick="openWindow(\''+baseUrl+data.logoutUrl+'\');">Logout</button></p>').appendTo('#page');
+		$('<p>'+data.logoutUrl+' <button onclick="openWindow(\''+data.logoutUrl+'\');">Logout</button></p>').appendTo('#page');
 	}
 }
 

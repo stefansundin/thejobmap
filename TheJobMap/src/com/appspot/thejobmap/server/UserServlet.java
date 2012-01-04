@@ -388,6 +388,7 @@ public class UserServlet extends HttpServlet {
 	}
 	protected void setAccessControl(HttpServletRequest req, HttpServletResponse res) {
 		String origin = req.getHeader("Origin");
+		if (origin == null) return;
 		if ("http://localhost".equals(origin) || origin.startsWith("http://localhost:")) {
 			res.setHeader("Access-Control-Allow-Origin", origin);
 		}
