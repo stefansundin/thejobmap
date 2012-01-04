@@ -1,8 +1,6 @@
 // ==ClosureCompiler==
 // @compilation_level SIMPLE_OPTIMIZATIONS
 // @output_file_name jobmap.v1.min.js
-// @code_url http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js
-// @code_url http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.js
 // ==/ClosureCompiler==
 // http://closure-compiler.appspot.com/home
 // <insert jobmap.v1.js here>

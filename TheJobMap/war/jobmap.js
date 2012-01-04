@@ -234,8 +234,8 @@ var jobmap = {
 		
 		'<h3><a href="#"><b>Put yourself on the map</b></a></h3>'+
 		'<div>'+
-		'<p>Press the "Create my marker" button to put your own marker on the map. Place it where you live so all companies in your area can see you.</p>'+
-		'<p>You can choose if you want the visibility of your marker to be limited to companies.</p>'+
+		'<p>Press the "Create my marker" button on the top of the map to put yourself on the map. Place it where you live so the companies in your area can see you.</p>'+
+		'<p>You can choose if you want the visibility of your marker to be limited to companies only.</p>'+
 		'</div>'+
 		
 		'<h3><a href="#"><b>Information for companies</b></a></h3>'+
@@ -500,7 +500,7 @@ var jobmap = {
 				lng: jobmap.newMarker.getPosition().lng(),
 				info: $('#markerInfo').val(),
 				title: ($('#markerTitle').val() || jobmap.user.name),
-				type: ($('#markerType').val() || jobmap.user.privileges),
+				type: ($('#markerType').val() || jobmap.user.privileges)
 			};
 			if (marker.type == 'random') {
 				marker.privacy = ($('#markerPrivacy')[0].checked?'private':'public');
@@ -596,8 +596,8 @@ var jobmap = {
 		if (!mode && marker == jobmap.newMarker) {
 			mode = 'new';
 			marker = {
+				type: jobmap.user.privileges,
 				title: jobmap.user.name,
-				privileges: jobmap.user.privileges,
 				mapMarker: jobmap.newMarker
 			};
 			jobmap.isAdmin() && (marker.type = 'company');
@@ -699,7 +699,7 @@ var jobmap = {
 				.val(marker.info))
 				.appendTo(info);
 			// Add categories
-			if (marker.type == 'company' || jobmap.user.privileges == 'company' || jobmap.isAdmin()) {
+			if (marker.type == 'company' || jobmap.isAdmin()) {
 				var markerCat = $('<select id="markerCat"></select>');
 				$.each(jobmap.categories, function(id,cat) {
 					$('<option></option>').val(id).text(cat).appendTo(markerCat);
@@ -708,7 +708,7 @@ var jobmap = {
 				if (marker.type != 'company' && jobmap.isAdmin()) $(markerCat).css('visibility', 'hidden');
 				$('<p></p>').append(markerCat).appendTo(info);
 			}
-			if (jobmap.user.privileges == 'random') {
+			if (marker.type == 'random') {
 				$('<p><label><input type="checkbox" id="markerPrivacy" /> Only show my marker to companies</label></p>').appendTo(info);
 				$('#markerPrivacy',info).attr('checked', (marker.privacy == 'private'));
 			}
