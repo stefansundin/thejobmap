@@ -57,6 +57,7 @@ public class UserServlet extends HttpServlet {
 		// Initialize stuff like streams
 		req.setCharacterEncoding("UTF-8");
 		res.setContentType("application/json; charset=UTF-8");
+		res.setHeader("Access-Control-Allow-Origin", "http://localhost:*/");
 		BufferedWriter writer = null; //We can't initialize this yet since serving CV through blobstore does not like it
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
