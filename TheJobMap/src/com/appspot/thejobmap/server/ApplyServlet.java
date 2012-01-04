@@ -12,11 +12,9 @@ import java.util.Properties;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.mail.Message;
-import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Session;
 import javax.mail.Transport;
-import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
@@ -127,7 +125,7 @@ public class ApplyServlet extends HttpServlet {
 				
 				// Set metadata
 				Message msg = new MimeMessage(session);
-				msg.setFrom(new InternetAddress("thejobmap@appspot.gserviceaccount.com", "The Job Map"));
+				msg.setFrom(new InternetAddress("noreply@thejobmap.se", "The Job Bot"));
 				msg.addRecipient(Message.RecipientType.TO, new InternetAddress(dbMarker.author));
 				msg.setSubject("Job Application: "+dbMarker.title);
 				
@@ -184,10 +182,8 @@ public class ApplyServlet extends HttpServlet {
 				// Send email
 				Transport.send(msg);
 				System.out.println("Sent job application to "+dbMarker.author+" concerning \""+dbMarker.title+"\"");
-			} catch (AddressException e) {
-				throw new ServletException("AddressException");
-			} catch (MessagingException e) {
-				throw new ServletException("MessagingException");
+			} catch (Exception e) {
+				throw new ServletException(e.toString());
 			}
 			
 			// Update numApply
