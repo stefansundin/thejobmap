@@ -386,15 +386,13 @@ public class UserServlet extends HttpServlet {
 	/**
 	 * For cross-site scripting.
 	 */
-	/*
 	protected void doOptions(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-		res.setHeader("Access-Control-Allow-Origin", "http://localhost:8888/");
+		res.setHeader("Access-Control-Allow-Origin", "http://localhost/");
 		res.setHeader("Access-Control-Allow-Credentials", "true");
 		res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+		res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 		res.setHeader("Access-Control-Max-Age", "86400");
-		super.doOptions(req, res);
 	}
-	*/
 	
 	/**
 	 * Get datastore key for user.
