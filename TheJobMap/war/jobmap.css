@@ -36,17 +36,33 @@ h1,h2,h3,h4 {
 
 
 #panel {
-	height: 88px;
+	height: 98px;
 	background: rgb(245,245,245);
 	border-bottom: 1px solid rgb(229,229,229);
-	padding-left: 20px;
-	padding-top: 10px;
+}
+
+#panel #logo {
+	float: left;
+	margin-left: 20px;
+	margin-top: 10px;
+	width: 300px;
+}
+#panel #search {
+	float: left;
+	margin-left: 40px;
+	margin-top: 40px;
+}
+#panel #search #q {
+	width: 280px;
+}
+#panel #search #searchResult {
+	color: grey;
+	font-size: small;
 }
 
 #panel #account {
 	display: none;
 	float: right;
-	margin-top: -10px;
 	background-color: rgb(201,223,175);
 	padding: 2px 4px 3px 20px;
 	
@@ -168,17 +184,18 @@ h1,h2,h3,h4 {
 #PinLegend div:last-child {
 	margin-bottom: 0;
 }
-#PinLegend div span {
+.pinLegend {
 	background: url(images/pins.png) no-repeat;
 	width: 32px;
 	height: 32px;
 	float: left;
 	margin-top: -6px;
 }
-#PinLegend div span.city  { background-position:-96px 0px; }
-#PinLegend div span.red   { background-position:0px 0px; }
-#PinLegend div span.green { background-position:-32px 0px; }
-#PinLegend div span.blue  { background-position:-64px 0px; }
+.pinLegend.city  { background-position:-96px 0px; }
+.pinLegend.red   { background-position:0px 0px; }
+.pinLegend.green { background-position:-32px 0px; }
+.pinLegend.blue  { background-position:-64px 0px; }
+.pinLegend.search  { background-position:-128px 0px; }
 
 #infoWindow {
 	min-width: 225px;

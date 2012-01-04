@@ -406,7 +406,7 @@ public class UserServlet extends HttpServlet {
 			return entityUser;
 		} catch (EntityNotFoundException e) {
 			//throw new ServletException("User is logged in but does not exist in database.");
-			System.out.println("Warning: User "+email+" is logged in but does not exist in database.");
+			//System.out.println("Warning: User "+email+" is logged in but does not exist in database.");
 			return null;
 		}
 	}

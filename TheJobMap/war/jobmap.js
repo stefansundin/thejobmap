@@ -43,9 +43,9 @@ var jobmap = {
 	map: null,
 	markers: [],
 	filter: {type:['city'], cat:[]},
-	mapMarkers: [],
 	newMarker: null,
 	myMarkers: [],
+	searchMatches: [],
 	mapControls: null,
 	mapOverlay: null,
 	infoWindow: null,
@@ -67,13 +67,15 @@ var jobmap = {
 	 * Initialize The Job Map.
 	 */
 	init: function(map) {
+		jobmap.map = map;
+		
+		// Setup ajax
 		$.ajaxSetup({
 			contentType: 'application/json; charset=UTF-8'
 		});
 		$(document).ajaxError(function(e, xhr, settings, exception) {
 			printError(settings.type+' '+settings.url+' failed: ', xhr.responseText);
 		});
-		jobmap.map = map;
 		
 		// Console
 		$('body').keypress(function(e) {
@@ -86,10 +88,22 @@ var jobmap = {
 			}
 		});
 
-		// Init side menu
+		// Zoom
+		google.maps.event.addListener(map, 'zoom_changed', jobmap.zoomChanged);
+		jobmap.zoom = jobmap.map.getZoom();
+
+		// InfoWindow
+		jobmap.infoWindow = new google.maps.InfoWindow({
+			maxWidth: 400
+		});
+		google.maps.event.addListener(jobmap.map, 'click', function() {
+			jobmap.infoWindow.close();
+		});
+		
+		// Side menu
 		jobmap.sideMenu();
 		
-		// Init OverlayView
+		// OverlayView
 		jobmap.mapOverlay = new google.maps.OverlayView();
 		jobmap.mapOverlay.draw = function() {};
 		jobmap.mapOverlay.setMap(jobmap.map);
@@ -97,21 +111,14 @@ var jobmap = {
 		// Create map controls
 		var mapControls = $('<div id="MapControls"></div>').css('opacity','0');
 		$('<button id="refreshMarkersButton">Refresh markers</button>').click(function() {
+			jobmap.clearSearch();
 			jobmap.clearMarkers();
 			jobmap.getMarkers('');
 		}).appendTo(mapControls);
-		$('<button id="createMarkerButton">Create my marker</button>').click(jobmap.createMarker).appendTo(mapControls);
+		$('<button id="createMarkerButton"></button>').click(jobmap.createMarker).appendTo(mapControls);
 		$('<button id="zoomOutButton">Zoom out</button>').click(jobmap.resetZoom).appendTo(mapControls);
 		jobmap.mapControls = mapControls;
 		map.controls[google.maps.ControlPosition.TOP_CENTER].push(mapControls[0]);
-		
-		// Info Window
-		jobmap.infoWindow = new google.maps.InfoWindow({
-			maxWidth: 400
-		});
-		google.maps.event.addListener(jobmap.map, 'click', function() {
-			jobmap.infoWindow.close();
-		});
 		
 		// Define pins
 		// [size], [origin], [point]
@@ -120,8 +127,7 @@ var jobmap = {
 			pushpin: [[59,32], [61,34], [9,32]]
 		};
 		$.each(shadow, function(i, m) {
-			shadow[i] = new google.maps.MarkerImage(
-					'/images/pins.png',
+			shadow[i] = new google.maps.MarkerImage('/images/pins.png',
 				new google.maps.Size(m[0][0],  m[0][1]),
 				new google.maps.Point(m[1][0], m[1][1]),
 				new google.maps.Point(m[2][0], m[2][1])
@@ -131,12 +137,12 @@ var jobmap = {
 			red:     [[32,32], [0,0],  [16,32], shadow.pin],
 			green:   [[32,32], [32,0], [16,32], shadow.pin],
 			blue:    [[32,32], [64,0], [16,32], shadow.pin],
-			pushpin: [[32,32], [96,0], [9,32],  shadow.pushpin]
+			pushpin: [[32,32], [96,0], [9,32],  shadow.pushpin],
+			search:  [[32,32], [128,0],[16,32], shadow.pin]
 		};
 		$.each(pins, function(i, m) {
 			jobmap.pins[i] = {
-				icon: new google.maps.MarkerImage(
-						'/images/pins.png',
+				icon: new google.maps.MarkerImage('/images/pins.png',
 					new google.maps.Size(m[0][0],  m[0][1]),
 					new google.maps.Point(m[1][0], m[1][1]),
 					new google.maps.Point(m[2][0], m[2][1])
@@ -153,10 +159,11 @@ var jobmap = {
 		// Create pin legend
 		var pinLegend = $('<div id="PinLegend">'+
 				'<span class="right ui-icon ui-icon-circle-close" title="Close"></span>'+
-				'<div><span class="city"></span> = A city</div>'+
-				'<div><span class="red"></span> = A job offer</div>'+
-				'<div><span class="green"></span> = You</div>'+
-				'<div><span class="blue"></span> = Someone else</div>'+
+				'<div><span class="pinLegend city"></span> = A city</div>'+
+				'<div><span class="pinLegend red"></span> = A job offer</div>'+
+				'<div><span class="pinLegend search"></span> = Search result</div>'+
+				'<div><span class="pinLegend green"></span> = You</div>'+
+				'<div><span class="pinLegend blue"></span> = Someone else</div>'+
 				'</div>').css('opacity','0');
 		$('.ui-icon',pinLegend).click(function() {
 			$(pinLegend).fadeOut('fast');
@@ -173,9 +180,21 @@ var jobmap = {
 		}).addClass('hidden').appendTo('#account');
 		$('<button id="logButton"></button>').click(jobmap.logButton).appendTo('#account');
 		
-		// Add listeners
-		google.maps.event.addListener(map, 'zoom_changed', jobmap.zoomChanged);
-		jobmap.zoom = jobmap.map.getZoom();
+		// Search
+		$('<div id="search"></div>')
+		.append($('<input type="search" id="q" placeholder="Examples: mechanic, nurse, teacher" />')
+			.keypress(function(e) {
+				if (e.which == 13) jobmap.search();
+				$(this).attr('oldvalue', $(this).val());
+			})
+			.click(function() {
+				if ($(this).val() == '' && $(this).attr('oldvalue') != '') jobmap.clearSearch();
+			}))
+		.append(' ')
+		.append($('<button>Search jobs</button>')
+			.click(jobmap.search))
+		.append($('<p id="searchResult"></p>'))
+		.appendTo('#panel');
 		
 		// Make requests
 		jobmap.getMarkers('city');
@@ -190,7 +209,7 @@ var jobmap = {
 	/**
 	 * Initialize the side menu.
 	 */
-	sideMenu: function(){
+	sideMenu: function() {
 		$('<div id="accordion">'+
 		'<h3><a href="#"><b>Find a job</b></a></h3>'+
 		'<div>'+
@@ -298,11 +317,10 @@ var jobmap = {
 			jobmap.newMarker.setMap(null);
 			jobmap.newMarker = null;
 		}
-		for (var i=0; i < jobmap.mapMarkers.length; i++) {
-			jobmap.mapMarkers[i].setMap(null);
-		}
+		$.each(jobmap.markers, function(key, marker) {
+			marker.mapMarker.setMap(null);
+		});
 		jobmap.markers = [];
-		jobmap.mapMarkers = [];
 	},
 	
 	/**
@@ -349,7 +367,6 @@ var jobmap = {
 			// This is a new marker
 			marker.mapMarker = mapMarker;
 			jobmap.markers.push(marker);
-			jobmap.mapMarkers.push(mapMarker);
 		}
 
 		// Set marker icon
@@ -362,6 +379,7 @@ var jobmap = {
 			jobmap.myMarkers.push(marker);
 			if (jobmap.user.privileges == 'random') {
 				$('#createMarkerButton',jobmap.mapControls).text('Edit my marker');
+				google.maps.event.trigger(jobmap.map, 'resize');
 			}
 		}
 		
@@ -418,7 +436,8 @@ var jobmap = {
 	markerVisible: function(marker) {
 		return (jobmap.showAll
 			|| (jobmap.isOwner(marker) && !jobmap.isAdmin())
-			|| (jobmap.filter.type.indexOf(marker.type) != -1 && (marker.type != 'company' || jobmap.filter.cat.indexOf(marker.cat) != -1)));
+			|| (jobmap.filter.type.indexOf(marker.type) != -1 && (marker.type != 'company' || jobmap.filter.cat.indexOf(marker.cat) != -1))
+			|| (jobmap.searchMatches.indexOf(marker) != -1));
 	},
 	
 	/**
@@ -533,6 +552,7 @@ var jobmap = {
 				jobmap.myMarkers.splice(0, 1);
 				if (jobmap.user.privileges == 'random') {
 					$('#createMarkerButton',jobmap.mapControls).text('Create my marker');
+					google.maps.event.trigger(jobmap.map, 'resize');
 				}
 			}
 			for (var i=0; i < jobmap.markers.length; i++) {
@@ -722,6 +742,74 @@ var jobmap = {
 		
 		jobmap.infoWindow.setContent(info[0]);
 	},
+
+	/** Search */
+	
+	/**
+	 * Searches markers.
+	 */
+	search: function() {
+		jobmap.clearSearch();
+		
+		// Get query
+		var q = $('#q').val().trim();
+		if (!q) {
+			$('#searchResult').text('Please enter a search term.');
+			return;
+		}
+		
+		// Search
+		printInfo('Searching for: ', q);
+		$.each(jobmap.markers, function(key, marker) {
+			if (marker.type == 'company' && (marker.title.indexOf(q) != -1 || marker.info.indexOf(q) != -1)) {
+				jobmap.searchMatches.push(marker);
+			}
+		});
+		
+		// Did we find anything?
+		if (jobmap.searchMatches.length == 0) {
+			$('#searchResult').text('No jobs matched.');
+			return;
+		}
+		
+		// Display results
+		$('#searchResult').text(jobmap.searchMatches.length+' job'+(jobmap.searchMatches.length>1?'s':'')+' matched.');
+		$.each(jobmap.searchMatches, function(key, marker) {
+			marker.mapMarker.setIcon(jobmap.pins.search.icon);
+			marker.mapMarker.setShadow(jobmap.pins.search.shadow);
+			marker.mapMarker.setMap(jobmap.map);
+		});
+		
+		// Reposition map
+		if (jobmap.searchMatches.length == 1) {
+			// Only one match, move the center and open the info window
+			jobmap.map.setCenter(jobmap.searchMatches[0].mapMarker.getPosition());
+			google.maps.event.trigger(jobmap.searchMatches[0].mapMarker, 'click');
+		}
+		else {
+			// More than one match, calculate bounds and show all matches
+			var bounds = new google.maps.LatLngBounds();
+			$.each(jobmap.searchMatches, function(key, marker) {
+				bounds.extend(marker.mapMarker.getPosition());
+			});
+			jobmap.map.fitBounds(bounds);
+		}
+	},
+	
+	/**
+	 * Reset markers matched by a previous search.
+	 */
+	clearSearch: function() {
+		$('#searchResult').text('');
+
+		// Restore matches
+		$.each(jobmap.searchMatches, function(key, marker) {
+			var pin = jobmap.pins[(!jobmap.isAdmin()&&jobmap.isOwner(marker))?'me':marker.type];
+			marker.mapMarker.setIcon(pin.icon);
+			marker.mapMarker.setShadow(pin.shadow);
+		});
+		jobmap.searchMatches = [];
+	},
 	
 	/** User */
 	
@@ -805,10 +893,13 @@ var jobmap = {
 			printInfo('User ('+who+'): ', data);
 			jobmap.user = data;
 			
-			// Update controls
+			// Update map controls
 			$('#createMarkerButton',jobmap.mapControls).text('Create '+(jobmap.user.privileges=='random'?'my':'a')+' marker');
-			$('#accname').text(jobmap.getUsername()).removeClass('hidden');
 			$(jobmap.mapControls).animate({opacity:1}, 'slow');
+			google.maps.event.trigger(jobmap.map, 'resize');
+			
+			// Update userbar
+			$('#accname').text(jobmap.getUsername()).removeClass('hidden');
 			if (jobmap.isAdmin()) {
 				$('<button id="adminButton">Admin</button>').click(jobmap.admin).insertBefore('#logButton');
 			}
