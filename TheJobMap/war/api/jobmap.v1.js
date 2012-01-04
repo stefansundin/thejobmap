@@ -17,10 +17,11 @@
  */
 var jobmap = {
 	/** Variables */
+	baseUrl: null,
 	user: null,
 	
 	/**
-	 * Array with categories.
+	 * Available categories.
 	 */
 	categories: {administration: 'Administration', construction: 'Construction', projectLeader: 'Project leader', computerScience: 'Computer science',
 		disposalPromotion: 'Disposal & promotion', hotelRestaurant: 'Hotel & restaurant', medicalService: 'Health & medical service',
@@ -29,13 +30,14 @@ var jobmap = {
 		security: 'Security', technical: 'Technical', transport: 'Transport', other: 'Other'},
 	
 	/**
-	 * Initialize The Job Map.
+	 * Initialize The Job Map API.
 	 */
-	init: function() {
+	init: function(settings) {
 		$.ajaxSetup({
 			contentType: 'application/json; charset=UTF-8'
 		});
-
+		jobmap.baseUrl = settings.baseUrl;
+		if (settings.onload) settings.onload();
 	},
 	
 	/** Markers */
@@ -53,7 +55,7 @@ var jobmap = {
 	 * Make type empty to fetch all types.
 	 */
 	getMarkers: function(type, callback) {
-		$.getJSON('/rest/marker/'+type)
+		$.getJSON(jobmap.baseUrl+'/rest/marker/'+type)
 		.done(function(data) {
 			callback(data);
 		});
@@ -64,7 +66,7 @@ var jobmap = {
 	 */
 	postMarker: function(marker, callback) {
 		$.ajax({
-			url: '/rest/marker/'+(marker.id?marker.id:''),
+			url: jobmap.baseUrl+'/rest/marker/'+(marker.id?marker.id:''),
 			type: 'POST',
 			dataType: 'json',
 			data: JSON.stringify(marker)
@@ -79,7 +81,7 @@ var jobmap = {
 	 */
 	deleteMarker: function(id, callback) {
 		$.ajax({
-			url: '/rest/marker/'+id,
+			url: jobmap.baseUrl+'/rest/marker/'+id,
 			type: 'DELETE'
 		})
 		.done(function(data) {
@@ -88,11 +90,11 @@ var jobmap = {
 	},
 
 	/**
-	 * Applies for a job.
+	 * Apply for a job.
 	 */
 	applyJob: function(id, application, callback) {
 		$.ajax({
-			url: '/rest/apply/'+id,
+			url: jobmap.baseUrl+'/rest/apply/'+id,
 			type: 'POST',
 			dataType: 'json',
 			data: JSON.stringify(application)
@@ -105,20 +107,20 @@ var jobmap = {
 	/** User */
 	
 	/**
-	 * Creates the login dialog.
+	 * Get login urls.
 	 */
 	getLoginUrls: function(callback) {
-		$.getJSON('/rest/openid')
+		$.getJSON(jobmap.baseUrl+'/rest/openid')
 		.done(function(data) {
 			callback(data);
 		});
 	},
 	
 	/**
-	 * Gets user info from the server.
+	 * Get user info from the server.
 	 */
 	getUser: function(callback) {
-		$.getJSON('/rest/user/me')
+		$.getJSON(jobmap.baseUrl+'/rest/user/me')
 		.done(function(data) {
 			jobmap.user = (data.result == "fail")?null:data;
 			callback(data);
@@ -126,21 +128,21 @@ var jobmap = {
 	},
 	
 	/**
-	 * Redirects the user to the logout url.
+	 * Redirect the user to the logout url.
 	 */
 	logout: function() {
 		window.location.assign(jobmap.user.logoutUrl);
 	},
 	
 	/**
-	 * Returns true if user is the creator of marker.
+	 * Return true if user is the creator of marker.
 	 */
 	isOwner: function(marker) {
 		return (jobmap.user && jobmap.user.email == marker.author);
 	},
 	
 	/**
-	 * Returns a nicely formatted name for the user.
+	 * Return a nicely formatted name for the user.
 	 */
 	getUsername: function() {
 		if (!jobmap.user) {
@@ -153,11 +155,11 @@ var jobmap = {
 	},
 	
 	/**
-	 * Updates user details.
+	 * Update user details.
 	 */
 	updateUser: function(user, callback) {
 		$.ajax({
-			url: '/rest/user/me',
+			url: jobmap.baseUrl+'/rest/user/me',
 			type: 'POST',
 			dataType: 'json',
 			data: JSON.stringify(user)
@@ -169,22 +171,24 @@ var jobmap = {
 	},
 
 	/**
-	 * Called when the iframe loads to insert the uploadUrl to the upload form.
+	 * Get upload url for CV.
+	 * Send the file with a normal POST submission to this url.
+	 * The file must have name="cv".
 	 */
 	getCvUploadUrl: function(callback) {
-		$.getJSON('/rest/user/me/cv/uploadUrl')
+		$.getJSON(jobmap.baseUrl+'/rest/user/me/cv/uploadUrl')
 		.done(function(data) {
 			callback(data);
 		});
 	},
 
 	/**
-	 * Deletes the user's CV.
+	 * Delete the user's CV.
 	 * Should only be called if jobmap.user.cvUploaded == true.
 	 */
 	deleteCv: function(callback) {
 		$.ajax({
-			url: '/rest/user/me/cv',
+			url: jobmap.baseUrl+'/rest/user/me/cv',
 			type: 'DELETE'
 		})
 		.done(function(data) {
@@ -194,3 +198,5 @@ var jobmap = {
 	}
 
 };
+
+jobmap.init(window._jobmap);

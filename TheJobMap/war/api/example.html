@@ -6,19 +6,28 @@
 	<script type="text/javascript" src="/jquery/js/jquery-1.7.1.min.js"></script>
 	<script type="text/javascript" src="/jquery/js/jquery-ui-1.8.16.custom.min.js"></script>
 	<script type="text/javascript">
-var baseUrl = 'http://www.thejobmap.se'; // Use http://localhost:8888 when running locally
+//var baseUrl = 'http://www.thejobmap.se'; // Use this for live version
+var baseUrl = 'http://localhost:8888'; // Use this when running locally
 
 function initialize() {
 	// Set up error callback
 	$(document).ajaxError(function(e, xhr, settings, exception) {
 		alert(settings.type+' '+settings.url+' failed: '+xhr.responseText.replace(/<.*?>/g,"").trim().substring(0,200));
 	});
+	// Configure jobmap settings
+	window._jobmap = {
+		baseUrl: baseUrl,
+		onload: onload
+	};
 	// Load jobmap object
 	var js = document.createElement('script');
 	js.type = 'text/javascript';
 	js.src = baseUrl+'/api/jobmap.v1.js';
 	$(js).appendTo('head');
-	jobmap.init();
+}
+
+function onload() {
+	$('<h2>The Job Map API is now loaded.</h2>').appendTo('#page');
 }
 
 function about() {
@@ -172,7 +181,7 @@ function printCats() {
 }
 	</style>
 </head>
-<body onload="initialize()">
+<body onload="initialize();">
 	<div id="controls">
 		<button onclick="about();">About example</button>
 		&mdash; User:
@@ -184,6 +193,6 @@ function printCats() {
 		<button onclick="newMarker();">Create new marker</button>
 		<button onclick="printCats();">Print categories</button>
 	</div>
-	<div id="page"></div>
+	<div id="page"><h2>Wait... Loading API.</h2></div>
 </body>
 </html>

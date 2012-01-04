@@ -74,7 +74,7 @@ var jobmap = {
 			contentType: 'application/json; charset=UTF-8'
 		});
 		$(document).ajaxError(function(e, xhr, settings, exception) {
-			printError(settings.type+' '+settings.url+' failed: ', xhr.responseText);
+			printError(settings.type+' '+settings.url+' failed: ', xhr.responseText.replace(/<.*?>/g,"").trim());
 		});
 		
 		// Console
@@ -1030,16 +1030,17 @@ var jobmap = {
 					phonenumber: $('#userPhonenumber').val()
 				};
 				
-				var birthday = $('#userBirthday').val();
-				if (birthday != "") {
-					var bday = new Date(birthday);
-					userObj.birthday = bday.getTime();
-					if (isNaN(userObj.birthday)) {
-						return alert('You must enter a valid date for your birthday. Use the format YYYY-MM-DD.');
+				if (jobmap.user.privileges == 'random') {
+					var birthday = $('#userBirthday').val();
+					if (birthday != "") {
+						var bday = new Date(birthday);
+						userObj.birthday = bday.getTime();
+						if (isNaN(userObj.birthday)) {
+							return alert('You must enter a valid date for your birthday. Use the format YYYY-MM-DD.');
+						}
 					}
 				}
-				
-				if (jobmap.isAdmin()) {
+				else if (jobmap.isAdmin()) {
 					userObj.privileges = $('#userPrivileges').val();
 				}
 				
