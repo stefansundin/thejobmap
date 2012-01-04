@@ -57,7 +57,7 @@ public class UserServlet extends HttpServlet {
 		// Initialize stuff like streams
 		req.setCharacterEncoding("UTF-8");
 		res.setContentType("application/json; charset=UTF-8");
-		setAccessControl(req, res);
+		TheJobMap.setAccessControl(req, res);
 		BufferedWriter writer = null; //We can't initialize this yet since serving CV through blobstore does not like it
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
@@ -194,7 +194,7 @@ public class UserServlet extends HttpServlet {
 		// Initialize stuff like streams
 		req.setCharacterEncoding("UTF-8");
 		res.setContentType("application/json; charset=UTF-8");
-		setAccessControl(req, res);
+		TheJobMap.setAccessControl(req, res);
 		BufferedReader reader = new BufferedReader(new InputStreamReader(req.getInputStream()));
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
@@ -276,7 +276,7 @@ public class UserServlet extends HttpServlet {
 	protected void doDelete(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
 		// Initialize stuff like streams
 		res.setContentType("application/json; charset=UTF-8");
-		setAccessControl(req, res);
+		TheJobMap.setAccessControl(req, res);
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
 		Gson gson = new Gson();
@@ -384,18 +384,7 @@ public class UserServlet extends HttpServlet {
 	 * For cross-site scripting.
 	 */
 	protected void doOptions(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-		setAccessControl(req, res);
-	}
-	protected void setAccessControl(HttpServletRequest req, HttpServletResponse res) {
-		String origin = req.getHeader("Origin");
-		if (origin == null) return;
-		if ("http://localhost".equals(origin) || origin.startsWith("http://localhost:")) {
-			res.setHeader("Access-Control-Allow-Origin", origin);
-		}
-		res.setHeader("Access-Control-Allow-Credentials", "true");
-		res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-		res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-		res.setHeader("Access-Control-Max-Age", "86400");
+		TheJobMap.setAccessControl(req, res);
 	}
 	
 	/**

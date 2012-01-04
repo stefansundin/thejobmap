@@ -78,7 +78,7 @@ var jobmap = {
 		});
 		
 		// Console
-		$('body').keypress(function(e) {
+		$(document).keypress(function(e) {
 			if (document.activeElement != document.body) return;
 			if (e.which == 167) { // '§'
 				$('#console').removeClass('big').toggle();

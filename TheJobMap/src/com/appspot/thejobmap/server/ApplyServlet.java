@@ -61,8 +61,7 @@ public class ApplyServlet extends HttpServlet {
 		// Initialize stuff like streams
 		req.setCharacterEncoding("UTF-8");
 		res.setContentType("application/json; charset=UTF-8");
-		res.setHeader("Access-Control-Allow-Origin", "http://localhost:8888/");
-		res.setHeader("Access-Control-Allow-Credentials", "true");
+		TheJobMap.setAccessControl(req, res);
 		BufferedReader reader = new BufferedReader(new InputStreamReader(req.getInputStream()));
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(res.getOutputStream()));
 		DatastoreService db = DatastoreServiceFactory.getDatastoreService();
@@ -209,14 +208,7 @@ public class ApplyServlet extends HttpServlet {
 	 * For cross-site scripting.
 	 */
 	protected void doOptions(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
-		String origin = req.getHeader("Origin");
-		if ("http://localhost".equals(origin) || origin.indexOf("http://localhost:") != -1) {
-			res.setHeader("Access-Control-Allow-Origin", origin);
-		}
-		res.setHeader("Access-Control-Allow-Credentials", "true");
-		res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-		res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-		res.setHeader("Access-Control-Max-Age", "86400");
+		TheJobMap.setAccessControl(req, res);
 	}
 	
 }
