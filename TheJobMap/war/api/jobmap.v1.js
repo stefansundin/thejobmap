@@ -1,6 +1,7 @@
 // ==ClosureCompiler==
 // @compilation_level SIMPLE_OPTIMIZATIONS
 // @output_file_name jobmap.v1.min.js
+// @code_url http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.js
 // ==/ClosureCompiler==
 // http://closure-compiler.appspot.com/home
 // <insert jobmap.v1.js here>
@@ -34,7 +35,11 @@ var jobmap = {
 	 */
 	init: function(settings) {
 		$.ajaxSetup({
-			contentType: 'application/json; charset=UTF-8'
+			contentType: 'application/json; charset=UTF-8',
+			crossDomain: true,
+			xhrFields: {
+				withCredentials: true
+			}
 		});
 		jobmap.baseUrl = settings.baseUrl;
 		if (settings.onload) settings.onload();

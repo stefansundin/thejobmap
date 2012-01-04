@@ -3,17 +3,12 @@
 <head>
 	<title>The Job Map API Example</title>
 	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
-	<script type="text/javascript" src="/jquery/js/jquery-1.7.1.min.js"></script>
-	<script type="text/javascript" src="/jquery/js/jquery-ui-1.8.16.custom.min.js"></script>
+	<!--<script type="text/javascript" src="/jquery/js/jquery-1.7.1.min.js"></script>-->
 	<script type="text/javascript">
 var baseUrl = 'http://www.thejobmap.se'; // Use this for live version
 //var baseUrl = 'http://localhost:8888'; // Use this when running locally
 
 function initialize() {
-	// Set up error callback
-	$(document).ajaxError(function(e, xhr, settings, exception) {
-		alert(settings.type+' '+settings.url+' failed: '+xhr.responseText.replace(/<.*?>/g,"").trim().substring(0,200));
-	});
 	// Configure jobmap settings
 	window._jobmap = {
 		baseUrl: baseUrl,
@@ -22,11 +17,15 @@ function initialize() {
 	// Load jobmap object
 	var js = document.createElement('script');
 	js.type = 'text/javascript';
-	js.src = baseUrl+'/api/jobmap.v1.js';
-	$(js).appendTo('head');
+	js.src = baseUrl+'/api/jobmap.v1.min.js';
+	document.getElementsByTagName('head')[0].appendChild(js);
 }
 
 function onload() {
+	// Set up error callback
+	$(document).ajaxError(function(e, xhr, settings, exception) {
+		alert(settings.type+' '+settings.url+' failed: '+xhr.responseText.replace(/<.*?>/g,"").trim().substring(0,200));
+	});
 	$('<h2>The Job Map API is now loaded.</h2>').appendTo('#page');
 }
 
